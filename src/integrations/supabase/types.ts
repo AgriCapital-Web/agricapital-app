@@ -1242,6 +1242,38 @@ export type Database = {
         }
         Relationships: []
       }
+      villages: {
+        Row: {
+          created_at: string | null
+          est_actif: boolean | null
+          id: string
+          nom: string
+          sous_prefecture_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          est_actif?: boolean | null
+          id?: string
+          nom: string
+          sous_prefecture_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          est_actif?: boolean | null
+          id?: string
+          nom?: string
+          sous_prefecture_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "villages_sous_prefecture_id_fkey"
+            columns: ["sous_prefecture_id"]
+            isOneToOne: false
+            referencedRelation: "sous_prefectures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
