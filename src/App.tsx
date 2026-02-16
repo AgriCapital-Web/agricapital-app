@@ -24,45 +24,13 @@ import HistoriqueComplet from "./pages/HistoriqueComplet";
 import AccountRequest from "./pages/AccountRequest";
 import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 import Tickets from "./pages/Tickets";
-import ClientPortal from "./pages/ClientPortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 // Composant pour détecter le domaine et rediriger
 const DomainRouter = () => {
-  const [isClientDomain, setIsClientDomain] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const hostname = window.location.hostname;
-    
-    // Vérifier si c'est le sous-domaine pay uniquement
-    const isPayDomain = 
-      hostname === 'pay.agricapital.ci' || 
-      hostname === 'client.agricapital.ci' ||
-      hostname === 'abonne.agricapital.ci' ||
-      hostname.startsWith('pay.') ||
-      hostname.startsWith('client.') ||
-      hostname.startsWith('abonne.');
-    
-    setIsClientDomain(isPayDomain);
-  }, []);
-
-  // Attendre la détection du domaine
-  if (isClientDomain === null) {
-    return null;
-  }
-
-  // Si c'est le domaine client (pay.agricapital.ci), afficher uniquement le portail souscripteur
-  if (isClientDomain) {
-    return (
-      <Routes>
-        <Route path="*" element={<ClientPortal />} />
-      </Routes>
-    );
-  }
-
-  // Sinon, afficher l'application de gestion normale (CRM) - SANS routes /pay, /client, /abonne
+  // CRM uniquement - le portail client est un projet séparé
   return (
     <Routes>
       {/* Public routes */}

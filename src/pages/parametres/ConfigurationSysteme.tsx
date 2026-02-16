@@ -44,7 +44,7 @@ const ConfigurationSysteme = () => {
   const { data: configurations, isLoading } = useQuery({
     queryKey: ['configurations'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('configurations_systeme')
         .select('*')
         .order('categorie', { ascending: true })
@@ -57,7 +57,7 @@ const ConfigurationSysteme = () => {
 
   const updateConfigMutation = useMutation({
     mutationFn: async ({ id, valeur }: { id: string; valeur: string }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('configurations_systeme')
         .update({ valeur, updated_at: new Date().toISOString() })
         .eq('id', id);
@@ -91,7 +91,7 @@ const ConfigurationSysteme = () => {
   const saveAllMutation = useMutation({
     mutationFn: async () => {
       const updates = Object.entries(editedValues).map(([id, valeur]) => 
-        supabase
+        (supabase as any)
           .from('configurations_systeme')
           .update({ valeur, updated_at: new Date().toISOString() })
           .eq('id', id)
