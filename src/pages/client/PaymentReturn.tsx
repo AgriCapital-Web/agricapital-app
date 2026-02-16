@@ -184,9 +184,9 @@ const PaymentReturn = ({ onBack }: PaymentReturnProps) => {
           
           const totalDA = allDA?.reduce((sum, p) => sum + (p.montant_paye || 0), 0) || 0;
           
-          await supabase
+          await (supabase as any)
             .from('souscripteurs')
-            .update({ total_da_verse: totalDA })
+            .update({ montant_da_paye: totalDA })
             .eq('id', paiement.souscripteur_id);
         }
       }

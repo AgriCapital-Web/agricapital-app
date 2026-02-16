@@ -45,7 +45,7 @@ const AccountRequest = () => {
   // Fetch regions on mount
   useEffect(() => {
     const fetchRegions = async () => {
-      const { data } = await supabase.from('regions').select('*').order('nom');
+      const { data } = await (supabase as any).from('regions').select('*').order('nom');
       setRegions(data || []);
     };
     fetchRegions();
@@ -55,7 +55,7 @@ const AccountRequest = () => {
   useEffect(() => {
     const fetchDistricts = async () => {
       if (formData.region) {
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from('districts')
           .select('*')
           .eq('region_id', formData.region)
@@ -74,7 +74,7 @@ const AccountRequest = () => {
   useEffect(() => {
     const fetchDepartements = async () => {
       if (formData.district) {
-        const { data } = await supabase
+        const { data } = await (supabase as any)
           .from('departements')
           .select('*')
           .eq('district_id', formData.district)
@@ -152,7 +152,7 @@ const AccountRequest = () => {
       const districtName = districts.find(d => d.id === formData.district)?.nom || "";
 
       // Create account request
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('account_requests')
         .insert({
           nom_complet: formData.nom_complet,
