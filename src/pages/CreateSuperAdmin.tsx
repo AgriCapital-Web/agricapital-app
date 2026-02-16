@@ -16,7 +16,7 @@ const CreateSuperAdmin = () => {
   const superAdminData = {
     username: 'admin',
     email: 'admin@agricapital.ci',
-    password: '@AgriCapitaladmin',
+    password: '@AgriCapital2025',
     nom_complet: 'KOFFI Inocent',
     telephone: '0759566087',
     photo_url: `${window.location.origin}/images/admin-koffi-inocent.jpg`

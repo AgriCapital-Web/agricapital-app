@@ -28,7 +28,7 @@ interface MainLayoutProps {
 }
 
 const MainLayout = ({ children }: MainLayoutProps) => {
-  const { signOut, profile, hasRole } = useAuth();
+  const { signOut, profile, hasRole, userRoles } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -166,7 +166,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       
       <AIAssistant 
         mode="admin" 
-        context={`Utilisateur: ${profile?.nom_complet || 'Admin'}, Rôle: ${profile?.role || 'admin'}`} 
+        context={`Utilisateur: ${profile?.nom_complet || 'Admin'}, Rôles: ${userRoles.join(', ') || 'N/A'}`} 
       />
     </div>
   );
