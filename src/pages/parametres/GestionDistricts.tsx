@@ -21,7 +21,7 @@ const GestionDistricts = () => {
 
   const fetchDistricts = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("districts")
         .select("*")
         .order("nom");
@@ -41,7 +41,7 @@ const GestionDistricts = () => {
 
   const toggleDistrict = async (districtId: string, currentStatus: boolean) => {
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("districts")
         .update({ est_actif: !currentStatus })
         .eq("id", districtId);

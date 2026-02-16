@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRealtime } from "@/hooks/useRealtime";
 import { logActivity } from "@/utils/traceability";
-import { Search, MapPin } from "lucide-react";
+import { Search, MapPin, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const GestionRegions = () => {
   const { toast } = useToast();
@@ -27,14 +28,13 @@ const GestionRegions = () => {
       const { data: districtsData, error: dErr } = await supabase
         .from("districts")
         .select("*")
-        .eq("est_actif", true)
         .order("nom");
       
       if (dErr) throw dErr;
 
       const { data: regionsData, error: rErr } = await supabase
         .from("regions")
-        .select("*, districts!regions_district_id_fkey(nom)")
+        .select("*, districts!regions_district_id_fkey(nom, est_actif)")
         .order("nom");
 
       if (rErr) throw rErr;
@@ -135,15 +135,24 @@ const GestionRegions = () => {
                   Aucune région trouvée
                 </p>
               ) : (
-                filteredRegions.map((region) => (
+                filteredRegions.map((region) => {
+                  const districtInactif = region.districts?.est_actif === false;
+                  return (
                   <div
                     key={region.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${districtInactif ? 'opacity-50 bg-muted/30' : 'hover:bg-muted/50'}`}
                   >
                     <div className="flex-1">
-                      <Label htmlFor={`region-${region.id}`} className="font-medium cursor-pointer">
-                        {region.nom}
-                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={`region-${region.id}`} className="font-medium cursor-pointer">
+                          {region.nom}
+                        </Label>
+                        {districtInactif && (
+                          <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
+                            <AlertTriangle className="h-3 w-3 mr-1" />District désactivé
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         District: {region.districts?.nom || "Non défini"}
                       </p>
@@ -151,10 +160,12 @@ const GestionRegions = () => {
                     <Switch
                       id={`region-${region.id}`}
                       checked={region.est_active ?? false}
+                      disabled={districtInactif}
                       onCheckedChange={() => toggleRegion(region.id, region.est_active ?? false)}
                     />
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
