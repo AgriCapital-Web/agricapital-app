@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.wave-verification]
 verify_jwt = false
+
+[functions.portal-api]
+verify_jwt = false
