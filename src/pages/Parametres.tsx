@@ -1,7 +1,7 @@
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, MapPin, Settings2, List, Bell, Globe, Package, UsersRound, UserPlus, Database, Map, Building, Home } from "lucide-react";
+import { Users, Shield, MapPin, Settings2, List, Bell, Globe, Package, UsersRound, UserPlus, Database, Map, Building, Home, TreePine } from "lucide-react";
 import Utilisateurs from "@/pages/Utilisateurs";
 import Offres from "@/pages/Offres";
 import Equipes from "@/pages/Equipes";
@@ -11,6 +11,7 @@ import GestionRegions from "@/pages/parametres/GestionRegions";
 import GestionDistricts from "@/pages/parametres/GestionDistricts";
 import GestionDepartements from "@/pages/parametres/GestionDepartements";
 import GestionSousPrefectures from "@/pages/parametres/GestionSousPrefectures";
+import GestionVillages from "@/pages/parametres/GestionVillages";
 import ChampsPersonnalises from "@/pages/parametres/ChampsPersonnalises";
 import GestionStatuts from "@/pages/parametres/GestionStatuts";
 import ConfigurationSysteme from "@/pages/parametres/ConfigurationSysteme";
@@ -73,6 +74,10 @@ const Parametres = () => {
                   <Home className="h-4 w-4 mr-1" />
                   S/Préfectures
                 </TabsTrigger>
+                <TabsTrigger value="villages" className="text-xs sm:text-sm whitespace-nowrap">
+                  <TreePine className="h-4 w-4 mr-1" />
+                  Villages
+                </TabsTrigger>
                 <TabsTrigger value="statuts" className="text-xs sm:text-sm whitespace-nowrap">
                   <List className="h-4 w-4 mr-1" />
                   Statuts
@@ -105,6 +110,7 @@ const Parametres = () => {
             <TabsContent value="regions"><GestionRegions /></TabsContent>
             <TabsContent value="departements"><GestionDepartements /></TabsContent>
             <TabsContent value="sous-prefectures"><GestionSousPrefectures /></TabsContent>
+            <TabsContent value="villages"><GestionVillages /></TabsContent>
             <TabsContent value="champs"><ChampsPersonnalises /></TabsContent>
             <TabsContent value="statuts"><GestionStatuts /></TabsContent>
             <TabsContent value="notifications"><GestionNotifications /></TabsContent>

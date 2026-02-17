@@ -8,113 +8,67 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log("=== KKiaPay Webhook received ===");
-  console.log("Method:", req.method);
   
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get the raw body
     const body = await req.json();
     console.log("Webhook payload:", JSON.stringify(body, null, 2));
     
-    // KKiaPay sends:
-    // - status: "SUCCESS" | "FAILED" | "PENDING"
-    // - transactionId: string
-    // - amount: number
-    // - fees: number
-    // - source: string (payment method)
-    // - data: object (custom data sent during payment)
+    const { status, transactionId, amount, fees, source, data, performed_at } = body;
+    console.log(`Transaction ${transactionId}: Status=${status}, Amount=${amount}`);
     
-    const { 
-      status, 
-      transactionId, 
-      amount, 
-      fees,
-      source,
-      data,
-      performed_at
-    } = body;
-
-    console.log(`Transaction ${transactionId}: Status=${status}, Amount=${amount}, Fees=${fees}`);
-    
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Extract reference from custom data
     const reference = data?.reference;
     const paiementId = data?.paiement_id;
-    
-    if (!reference && !paiementId) {
-      console.log("No reference or paiement_id in webhook data, searching by transaction ID");
-    }
 
     // Find the payment record
-    let query = supabase.from('paiements').select('*');
+    let paiement: any = null;
     
     if (reference) {
-      query = query.eq('reference', reference);
-    } else if (paiementId) {
-      query = query.eq('id', paiementId);
-    } else {
-      // Try to find by transaction ID in metadata
-      query = query.eq('fedapay_transaction_id', transactionId);
+      const { data: records } = await supabase.from('paiements').select('*').eq('reference', reference);
+      paiement = records?.[0];
     }
     
-    const { data: paiementRecords, error: findError } = await query;
-    
-    if (findError) {
-      console.error("Error finding payment:", findError);
-      throw findError;
+    if (!paiement && paiementId) {
+      const { data: records } = await supabase.from('paiements').select('*').eq('id', paiementId);
+      paiement = records?.[0];
     }
     
-    let paiement = paiementRecords?.[0];
-    
-    // If not found by reference, try finding by transaction ID
     if (!paiement && transactionId) {
-      const { data: byTxn } = await supabase
+      const { data: records } = await supabase
         .from('paiements')
         .select('*')
         .contains('metadata', { kkiapay_transaction_id: transactionId });
-      
-      paiement = byTxn?.[0];
+      paiement = records?.[0];
     }
     
     if (!paiement) {
-      console.log("Payment record not found for webhook");
-      // Still return 200 to acknowledge receipt
+      console.log("No matching payment found");
       return new Response(
         JSON.stringify({ success: true, message: "No matching payment found, webhook acknowledged" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
     
-    console.log("Found payment record:", paiement.id);
+    console.log("Found payment:", paiement.id);
     
-    // Map KKiaPay status to our status
+    // Map status
     let newStatus: string;
     switch (status?.toUpperCase()) {
-      case "SUCCESS":
-        newStatus = "valide";
-        break;
-      case "FAILED":
-        newStatus = "echoue";
-        break;
-      case "PENDING":
-        newStatus = "en_attente";
-        break;
-      default:
-        newStatus = paiement.statut; // Keep current status
+      case "SUCCESS": newStatus = "valide"; break;
+      case "FAILED": newStatus = "echoue"; break;
+      case "PENDING": newStatus = "en_attente"; break;
+      default: newStatus = paiement.statut;
     }
     
-    // Update the payment record
     const updateData: any = {
       statut: newStatus,
-      fedapay_transaction_id: transactionId,
       updated_at: new Date().toISOString(),
       metadata: {
         ...(paiement.metadata || {}),
@@ -127,115 +81,68 @@ serve(async (req) => {
       }
     };
     
-    // If payment succeeded, set the payment date and amount
     if (newStatus === "valide") {
       updateData.date_paiement = new Date().toISOString();
       updateData.montant_paye = amount || paiement.montant;
+      updateData.mode_paiement = source || 'KKiaPay';
       
-      // Calculate the "monnaie" (excess payment)
-      const excessAmount = (amount || 0) - (paiement.montant || 0);
-      if (excessAmount > 0) {
-        updateData.metadata.monnaie = excessAmount;
-      }
-      
-      // If it's a DA payment, update the plantation's activated area
+      // DA payment: activate plantation
       if (paiement.type_paiement === 'DA' && paiement.plantation_id) {
         const { data: plantation } = await supabase
           .from('plantations')
-          .select('superficie_ha, superficie_activee, montant_da')
+          .select('superficie_ha, superficie_activee, montant_da, montant_da_paye')
           .eq('id', paiement.plantation_id)
           .single();
         
         if (plantation) {
-          const superficieRestante = (plantation.superficie_ha || 0) - (plantation.superficie_activee || 0);
-          const nouvelleSuperificieActivee = (plantation.superficie_activee || 0) + superficieRestante;
+          const newDaPaye = (plantation.montant_da_paye || 0) + (amount || 0);
+          const totalDa = plantation.montant_da || 0;
+          const isFullyPaid = newDaPaye >= totalDa;
           
-          await supabase
-            .from('plantations')
-            .update({
-              superficie_activee: nouvelleSuperificieActivee,
-              date_activation: new Date().toISOString(),
-              statut_global: 'active',
-              montant_da: (plantation.montant_da || 0) + amount,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', paiement.plantation_id);
+          const plantUpdate: any = {
+            montant_da_paye: newDaPaye,
+            updated_at: new Date().toISOString()
+          };
           
-          console.log(`Plantation ${paiement.plantation_id} activated: ${nouvelleSuperificieActivee} ha`);
-        }
-      }
-      
-      // Update souscripteur total_da_verse if DA payment
-      if (paiement.type_paiement === 'DA' && paiement.souscripteur_id) {
-        const { data: souscripteur } = await supabase
-          .from('souscripteurs')
-          .select('total_da_verse')
-          .eq('id', paiement.souscripteur_id)
-          .single();
-        
-        if (souscripteur) {
-          await supabase
-            .from('souscripteurs')
-            .update({
-              total_da_verse: (souscripteur.total_da_verse || 0) + amount,
-              statut_global: 'actif',
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', paiement.souscripteur_id);
+          if (isFullyPaid) {
+            plantUpdate.superficie_activee = plantation.superficie_ha;
+            plantUpdate.date_activation = new Date().toISOString();
+            plantUpdate.statut = 'active';
+            plantUpdate.statut_global = 'active';
+          }
           
-          console.log(`Souscripteur ${paiement.souscripteur_id} DA total updated`);
+          await supabase.from('plantations').update(plantUpdate).eq('id', paiement.plantation_id);
+          console.log(`Plantation ${paiement.plantation_id} updated, DA payé: ${newDaPaye}/${totalDa}`);
         }
       }
     }
     
-    const { error: updateError } = await supabase
-      .from('paiements')
-      .update(updateData)
-      .eq('id', paiement.id);
+    const { error: updateError } = await supabase.from('paiements').update(updateData).eq('id', paiement.id);
     
     if (updateError) {
       console.error("Error updating payment:", updateError);
       throw updateError;
     }
     
-    console.log(`Payment ${paiement.id} updated to status: ${newStatus}`);
+    console.log(`Payment ${paiement.id} updated to: ${newStatus}`);
     
-    // Log the webhook event for audit
-    await supabase
-      .from('fedapay_events')
-      .insert({
-        event_type: 'kkiapay_webhook',
-        event_id: transactionId,
-        transaction_id: transactionId,
-        transaction_reference: reference,
-        status: status,
-        amount: amount,
-        paiement_id: paiement.id,
-        raw_payload: body,
-        processed: true,
-        processed_at: new Date().toISOString()
-      });
+    // Log in historique_activites
+    await supabase.from('historique_activites').insert({
+      table_name: 'paiements',
+      record_id: paiement.id,
+      action: 'WEBHOOK_KKIAPAY',
+      details: `Webhook KKiaPay: ${status} - ${amount} FCFA - Transaction: ${transactionId}`,
+    });
     
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Webhook processed successfully",
-        paiement_id: paiement.id,
-        new_status: newStatus
-      }),
+      JSON.stringify({ success: true, paiement_id: paiement.id, new_status: newStatus }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
     
   } catch (error: any) {
-    console.error("KKiaPay webhook error:", error);
-    
-    // Always return 200 to acknowledge webhook receipt
+    console.error("Webhook error:", error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || "Webhook processing error",
-        acknowledged: true
-      }),
+      JSON.stringify({ success: false, error: error.message, acknowledged: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   }

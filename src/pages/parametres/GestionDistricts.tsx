@@ -3,15 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRealtime } from "@/hooks/useRealtime";
 import { logActivity } from "@/utils/traceability";
-import { Search, MapPin } from "lucide-react";
+import { Search, MapPin, AlertTriangle } from "lucide-react";
 
 const GestionDistricts = () => {
   const { toast } = useToast();
   const [districts, setDistricts] = useState<any[]>([]);
+  const [regionCounts, setRegionCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -21,19 +23,22 @@ const GestionDistricts = () => {
 
   const fetchDistricts = async () => {
     try {
-      const { data, error } = await supabase
-        .from("districts")
-        .select("*")
-        .order("nom");
+      const [{ data: distData, error: dErr }, { data: regData }] = await Promise.all([
+        supabase.from("districts").select("*").order("nom"),
+        supabase.from("regions").select("district_id")
+      ]);
 
-      if (error) throw error;
-      setDistricts(data || []);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: error.message,
+      if (dErr) throw dErr;
+      setDistricts(distData || []);
+
+      // Count regions per district
+      const counts: Record<string, number> = {};
+      (regData || []).forEach((r: any) => {
+        if (r.district_id) counts[r.district_id] = (counts[r.district_id] || 0) + 1;
       });
+      setRegionCounts(counts);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erreur", description: error.message });
     } finally {
       setLoading(false);
     }
@@ -57,15 +62,13 @@ const GestionDistricts = () => {
 
       toast({
         title: "Succès",
-        description: `District ${!currentStatus ? "activé" : "désactivé"}`,
+        description: !currentStatus 
+          ? "District activé" 
+          : "District désactivé (les régions, départements et sous-préfectures associés sont aussi désactivés)",
       });
       fetchDistricts();
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Erreur", description: error.message });
     }
   };
 
@@ -85,7 +88,7 @@ const GestionDistricts = () => {
             Gestion des Districts
           </CardTitle>
           <CardDescription>
-            Activer ou désactiver les districts selon le déploiement de l'entreprise
+            Activer ou désactiver les districts. ⚠️ La désactivation d'un district désactive automatiquement toutes ses régions, départements et sous-préfectures.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -111,11 +114,22 @@ const GestionDistricts = () => {
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex-1">
-                    <Label htmlFor={`district-${district.id}`} className="font-medium cursor-pointer">
-                      {district.nom}
-                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`district-${district.id}`} className="font-medium cursor-pointer">
+                        {district.nom}
+                      </Label>
+                      <Badge variant="secondary" className="text-xs">
+                        {regionCounts[district.id] || 0} région(s)
+                      </Badge>
+                    </div>
                     {district.code && (
                       <p className="text-xs text-muted-foreground">Code: {district.code}</p>
+                    )}
+                    {!district.est_actif && (
+                      <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Désactivé — ses régions, départements et sous-préfectures sont aussi désactivés
+                      </p>
                     )}
                   </div>
                   <Switch
@@ -135,8 +149,7 @@ const GestionDistricts = () => {
 
           <div className="mt-6 pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              💡 Les districts sont les plus grandes subdivisions administratives de Côte d'Ivoire.
-              Activez les districts où vous êtes déployé.
+              💡 {filteredDistricts.length} district(s) • {filteredDistricts.filter(d => d.est_actif).length} actif(s)
             </p>
           </div>
         </CardContent>
