@@ -157,8 +157,8 @@ const Plantations = () => {
   return (
     <ProtectedRoute>
       <MainLayout>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Nombre Total</CardTitle>
@@ -202,10 +202,10 @@ const Plantations = () => {
             </Card>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold">Gestion des Plantations</h1>
-              <p className="text-muted-foreground mt-1">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Gestion des Plantations</h1>
+              <p className="text-muted-foreground text-sm mt-1">
                 {nombreTotal} plantation(s) enregistrée(s)
               </p>
             </div>
@@ -246,7 +246,7 @@ const Plantations = () => {
             </div>
           </div>
 
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

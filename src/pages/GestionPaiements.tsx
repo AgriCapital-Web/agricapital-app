@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtime } from "@/hooks/useRealtime";
+import { useKkiapay } from "@/hooks/useKkiapay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +52,8 @@ import {
   AlertTriangle,
   ArrowUpRight,
   ArrowDownLeft,
-  Wallet
+  Wallet,
+  Smartphone
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -75,12 +77,15 @@ const GestionPaiements = () => {
   const { toast } = useToast();
   const { hasRole } = useAuth();
   const queryClient = useQueryClient();
+  const { openPayment, onSuccess, onFailed, onClose } = useKkiapay();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPaiement, setSelectedPaiement] = useState<Paiement | null>(null);
   const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
   const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
   const [isConvertDialogOpen, setIsConvertDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isKkiapayDialogOpen, setIsKkiapayDialogOpen] = useState(false);
+  const [kkiapayLoading, setKkiapayLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Transfer state
@@ -106,6 +111,123 @@ const GestionPaiements = () => {
   const [selectedSouscripteurId, setSelectedSouscripteurId] = useState("");
 
   const canManage = hasRole('super_admin') || hasRole('service_client') || hasRole('comptable');
+
+  // KKiaPay payment handler
+  const handleKkiapayPayment = (paiement: Paiement) => {
+    setSelectedPaiement(paiement);
+    setKkiapayLoading(true);
+
+    // Setup callbacks before opening
+    onSuccess(async (response) => {
+      console.log('KKiaPay payment success:', response);
+      
+      // Verify the transaction server-side
+      try {
+        const { data, error } = await supabase.functions.invoke('kkiapay-verify-transaction', {
+          body: { transactionId: response.transactionId }
+        });
+
+        if (error) throw error;
+
+        if (data?.transaction?.isPaymentSuccessful) {
+          // Update payment in database
+          await supabase.from('paiements').update({
+            statut: 'valide',
+            montant_paye: paiement.montant,
+            mode_paiement: 'KKiaPay',
+            date_paiement: new Date().toISOString(),
+            metadata: {
+              ...(paiement.metadata || {}),
+              kkiapay_transaction_id: response.transactionId,
+              kkiapay_method: response.method || 'mobile_money',
+              kkiapay_fees: data.transaction.fees || 0,
+              verified_at: new Date().toISOString()
+            }
+          }).eq('id', paiement.id);
+
+          // If DA payment, activate plantation
+          if (paiement.type_paiement === 'DA' && paiement.plantation_id) {
+            const { data: plantation } = await supabase
+              .from('plantations')
+              .select('superficie_ha, montant_da, montant_da_paye')
+              .eq('id', paiement.plantation_id)
+              .single();
+
+            if (plantation) {
+              const newDaPaye = (plantation.montant_da_paye || 0) + paiement.montant;
+              const isFullyPaid = newDaPaye >= (plantation.montant_da || 0);
+
+              await supabase.from('plantations').update({
+                montant_da_paye: newDaPaye,
+                ...(isFullyPaid ? {
+                  superficie_activee: plantation.superficie_ha,
+                  date_activation: new Date().toISOString(),
+                  statut: 'active',
+                  statut_global: 'active'
+                } : {})
+              }).eq('id', paiement.plantation_id);
+            }
+          }
+
+          toast({
+            title: "Paiement réussi ✅",
+            description: `${formatMontant(paiement.montant)} payé via KKiaPay`
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Paiement échoué",
+            description: data?.transaction?.failureMessage || "La vérification a échoué"
+          });
+        }
+      } catch (err: any) {
+        console.error('Verification error:', err);
+        toast({
+          variant: "destructive",
+          title: "Erreur de vérification",
+          description: err.message
+        });
+      }
+
+      setKkiapayLoading(false);
+      queryClient.invalidateQueries({ queryKey: ['gestion-paiements'] });
+    });
+
+    onFailed((error) => {
+      console.error('KKiaPay payment failed:', error);
+      toast({
+        variant: "destructive",
+        title: "Paiement échoué",
+        description: error.reason || "Le paiement a échoué"
+      });
+      setKkiapayLoading(false);
+    });
+
+    onClose(() => {
+      setKkiapayLoading(false);
+    });
+
+    // Open the widget
+    const success = openPayment({
+      amount: paiement.montant,
+      name: paiement.souscripteurs?.nom_complet || 'Client AgriCapital',
+      phone: paiement.souscripteurs?.telephone || '',
+      data: {
+        paiement_id: paiement.id,
+        reference: paiement.reference,
+        type: paiement.type_paiement
+      }
+    });
+
+    if (!success) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Le widget KKiaPay n'a pas pu s'ouvrir. Vérifiez votre connexion."
+      });
+      setKkiapayLoading(false);
+    }
+  };
 
   // Realtime refresh: when a payment changes (webhooks / validation), refresh lists + stats
   useRealtime({
@@ -655,7 +777,7 @@ const GestionPaiements = () => {
                           </TableCell>
                           <TableCell>{getStatutBadge(paiement.statut)}</TableCell>
                           <TableCell>
-                            <div className="flex gap-1">
+                            <div className="flex gap-1 flex-wrap">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -666,6 +788,23 @@ const GestionPaiements = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
+                              {canManage && paiement.statut === 'en_attente' && (
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="gap-1"
+                                  disabled={kkiapayLoading}
+                                  onClick={() => handleKkiapayPayment(paiement)}
+                                  title="Payer via KKiaPay"
+                                >
+                                  {kkiapayLoading && selectedPaiement?.id === paiement.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Smartphone className="h-3 w-3" />
+                                  )}
+                                  <span className="hidden sm:inline">Payer</span>
+                                </Button>
+                              )}
                               {canManage && paiement.statut === 'valide' && (
                                 <>
                                   <Button
