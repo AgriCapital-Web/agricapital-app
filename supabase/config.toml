@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.portal-api]
 verify_jwt = false
+
+[functions.payment-reminders]
+verify_jwt = false
