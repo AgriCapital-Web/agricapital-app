@@ -9,15 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Search, FileText, Eye, CheckCircle, Clock, MoreVertical, Edit, Archive, Ban, Trash2, RotateCcw } from "lucide-react";
+import { Search, FileText, Eye, CheckCircle, Clock, MoreVertical, Edit, Archive, Ban, Trash2, RotateCcw, LayoutGrid, List } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import PlanteurForm from "@/components/forms/PlanteurForm";
+import KanbanPipeline from "@/components/souscriptions/KanbanPipeline";
 
 const Souscriptions = () => {
   const [souscripteurs, setSouscripteurs] = useState<any[]>([]);
@@ -228,140 +230,158 @@ const Souscriptions = () => {
             </Card>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher par ID, nom, téléphone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <Tabs defaultValue="table" className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par ID, nom, téléphone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <TabsList>
+                <TabsTrigger value="table" className="gap-1.5">
+                  <List className="h-4 w-4" />
+                  <span className="hidden sm:inline">Liste</span>
+                </TabsTrigger>
+                <TabsTrigger value="kanban" className="gap-1.5">
+                  <LayoutGrid className="h-4 w-4" />
+                  <span className="hidden sm:inline">Pipeline</span>
+                </TabsTrigger>
+              </TabsList>
             </div>
-          </div>
 
-          <div className="border rounded-lg overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID Unique</TableHead>
-                  <TableHead>Nom Complet</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Offre</TableHead>
-                  <TableHead>Plantations</TableHead>
-                  <TableHead>Hectares</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      Chargement...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredSouscripteurs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      Aucune souscription trouvée
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredSouscripteurs.map((souscripteur) => (
-                    <TableRow key={souscripteur.id}>
-                      <TableCell className="font-mono text-sm font-medium">
-                        {souscripteur.id_unique}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {souscripteur.nom_complet || `${souscripteur.nom} ${souscripteur.prenoms || ''}`}
-                      </TableCell>
-                      <TableCell>{souscripteur.telephone}</TableCell>
-                      <TableCell>
-                        {souscripteur.offres && (
-                          <Badge style={{ backgroundColor: souscripteur.offres.couleur }}>
-                            {souscripteur.offres.nom}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {souscripteur.nombre_plantations || 0}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {Number(souscripteur.total_hectares || 0).toFixed(2)} ha
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatutBadge(souscripteur.statut || souscripteur.statut_global)}>
-                          {souscripteur.statut || souscripteur.statut_global || 'actif'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(souscripteur.created_at), "dd MMM yyyy", { locale: fr })}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Link to={`/planteur/${souscripteur.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => {
-                                setSelectedSouscripteur(souscripteur);
-                                setIsFormOpen(true);
-                              }}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Modifier
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              {souscripteur.statut !== 'actif' && (
-                                <DropdownMenuItem onClick={() => handleStatusChange(souscripteur.id, 'actif')}>
-                                  <RotateCcw className="mr-2 h-4 w-4 text-green-500" />
-                                  Activer
-                                </DropdownMenuItem>
-                              )}
-                              {souscripteur.statut !== 'suspendu' && (
-                                <DropdownMenuItem onClick={() => handleStatusChange(souscripteur.id, 'suspendu')}>
-                                  <Ban className="mr-2 h-4 w-4 text-orange-500" />
-                                  Suspendre
-                                </DropdownMenuItem>
-                              )}
-                              {souscripteur.statut !== 'archive' && (
-                                <DropdownMenuItem onClick={() => handleStatusChange(souscripteur.id, 'archive')}>
-                                  <Archive className="mr-2 h-4 w-4 text-slate-500" />
-                                  Archiver
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="text-destructive"
-                                onClick={() => {
-                                  setSouscripteurToDelete(souscripteur);
-                                  setDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Supprimer
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
+            <TabsContent value="kanban">
+              <KanbanPipeline souscripteurs={filteredSouscripteurs} onRefresh={fetchData} />
+            </TabsContent>
+
+            <TabsContent value="table">
+              <div className="border rounded-lg overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID Unique</TableHead>
+                      <TableHead>Nom Complet</TableHead>
+                      <TableHead>Téléphone</TableHead>
+                      <TableHead>Offre</TableHead>
+                      <TableHead>Plantations</TableHead>
+                      <TableHead>Hectares</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8">
+                          Chargement...
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredSouscripteurs.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8">
+                          Aucune souscription trouvée
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredSouscripteurs.map((souscripteur) => (
+                        <TableRow key={souscripteur.id}>
+                          <TableCell className="font-mono text-sm font-medium">
+                            {souscripteur.id_unique}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {souscripteur.nom_complet || `${souscripteur.nom} ${souscripteur.prenoms || ''}`}
+                          </TableCell>
+                          <TableCell>{souscripteur.telephone}</TableCell>
+                          <TableCell>
+                            {souscripteur.offres && (
+                              <Badge style={{ backgroundColor: souscripteur.offres.couleur }}>
+                                {souscripteur.offres.nom}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {souscripteur.nombre_plantations || 0}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {Number(souscripteur.total_hectares || 0).toFixed(2)} ha
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatutBadge(souscripteur.statut || souscripteur.statut_global)}>
+                              {souscripteur.statut || souscripteur.statut_global || 'actif'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(new Date(souscripteur.created_at), "dd MMM yyyy", { locale: fr })}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Link to={`/planteur/${souscripteur.id}`}>
+                                <Button variant="ghost" size="sm">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => {
+                                    setSelectedSouscripteur(souscripteur);
+                                    setIsFormOpen(true);
+                                  }}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Modifier
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  {souscripteur.statut !== 'actif' && (
+                                    <DropdownMenuItem onClick={() => handleStatusChange(souscripteur.id, 'actif')}>
+                                      <RotateCcw className="mr-2 h-4 w-4 text-green-500" />
+                                      Activer
+                                    </DropdownMenuItem>
+                                  )}
+                                  {souscripteur.statut !== 'suspendu' && (
+                                    <DropdownMenuItem onClick={() => handleStatusChange(souscripteur.id, 'suspendu')}>
+                                      <Ban className="mr-2 h-4 w-4 text-orange-500" />
+                                      Suspendre
+                                    </DropdownMenuItem>
+                                  )}
+                                  {souscripteur.statut !== 'archive' && (
+                                    <DropdownMenuItem onClick={() => handleStatusChange(souscripteur.id, 'archive')}>
+                                      <Archive className="mr-2 h-4 w-4 text-slate-500" />
+                                      Archiver
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    className="text-destructive"
+                                    onClick={() => {
+                                      setSouscripteurToDelete(souscripteur);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Supprimer
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Dialog de modification */}
