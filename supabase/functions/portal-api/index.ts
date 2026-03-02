@@ -127,11 +127,13 @@ serve(async (req) => {
           { data: regions },
           { data: departements },
           { data: sousPrefectures },
+          { data: villages },
         ] = await Promise.all([
           supabase.from("districts").select("id, nom").eq("est_actif", true).order("nom"),
           supabase.from("regions").select("id, nom, district_id").eq("est_active", true).order("nom"),
           supabase.from("departements").select("id, nom, region_id").eq("est_actif", true).order("nom"),
           supabase.from("sous_prefectures").select("id, nom, departement_id").eq("est_active", true).order("nom"),
+          supabase.from("villages").select("id, nom, sous_prefecture_id").eq("est_actif", true).order("nom"),
         ]);
 
         return new Response(JSON.stringify({
@@ -139,6 +141,7 @@ serve(async (req) => {
           regions: regions || [],
           departements: departements || [],
           sous_prefectures: sousPrefectures || [],
+          villages: villages || [],
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });

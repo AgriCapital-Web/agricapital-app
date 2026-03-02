@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { PERMISSIONS, hasPermission } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationCenter } from "@/components/common/NotificationCenter";
@@ -33,26 +34,20 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
-  // Use hasRole for secure role checking via user_roles table
-  const isAdmin = hasRole('super_admin') || hasRole('directeur_tc');
-  const canViewFinances = isAdmin || hasRole('comptable') || hasRole('responsable_zone');
-  const canViewRapports = isAdmin || hasRole('responsable_zone');
-  const canManageUsers = hasRole('super_admin');
-
   const menuItems = [
-    { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard" },
-    { icon: Users, label: "Souscripteurs", path: "/souscriptions" },
-    { icon: Sprout, label: "Plantations", path: "/plantations" },
-    { icon: CreditCard, label: "Gestion Paiements", path: "/paiements" },
-    { icon: Receipt, label: "Commissions", path: "/commissions", show: canViewFinances },
-    { icon: Wallet, label: "Portefeuilles", path: "/portefeuilles", show: canViewFinances },
-    { icon: BarChart3, label: "Rapports Techniques", path: "/rapports-techniques", show: canViewRapports },
-    { icon: FileText, label: "Rapports Financiers", path: "/rapports-financiers", show: canViewFinances },
-    { icon: Ticket, label: "Tickets Support", path: "/tickets" },
-    { icon: Settings, label: "Paramètres", path: "/parametres", show: isAdmin },
+    { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", permission: PERMISSIONS.VIEW_DASHBOARD },
+    { icon: Users, label: "Souscripteurs", path: "/souscriptions", permission: PERMISSIONS.VIEW_SOUSCRIPTIONS },
+    { icon: Sprout, label: "Plantations", path: "/plantations", permission: PERMISSIONS.VIEW_PLANTATIONS },
+    { icon: CreditCard, label: "Gestion Paiements", path: "/paiements", permission: PERMISSIONS.VIEW_PAIEMENTS },
+    { icon: Receipt, label: "Commissions", path: "/commissions", permission: PERMISSIONS.VIEW_COMMISSIONS },
+    { icon: Wallet, label: "Portefeuilles", path: "/portefeuilles", permission: PERMISSIONS.VIEW_PORTEFEUILLES },
+    { icon: BarChart3, label: "Rapports Techniques", path: "/rapports-techniques", permission: PERMISSIONS.VIEW_RAPPORTS_TECHNIQUES },
+    { icon: FileText, label: "Rapports Financiers", path: "/rapports-financiers", permission: PERMISSIONS.VIEW_RAPPORTS_FINANCIERS },
+    { icon: Ticket, label: "Tickets Support", path: "/tickets", permission: PERMISSIONS.VIEW_TICKETS },
+    { icon: Settings, label: "Paramètres", path: "/parametres", permission: PERMISSIONS.VIEW_PARAMETRES },
   ];
 
-  const visibleMenuItems = menuItems.filter(item => item.show !== false);
+  const visibleMenuItems = menuItems.filter(item => hasPermission(userRoles, item.permission));
 
   const handleLogout = async () => {
     await signOut();
