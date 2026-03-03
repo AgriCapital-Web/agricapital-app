@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
+import { hasPermission, PERMISSIONS, ROLE_SHORT_LABELS } from "@/lib/roles";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +41,7 @@ import {
 } from "recharts";
 
 const Dashboard = () => {
-  const { profile } = useAuth();
+  const { profile, userRoles } = useAuth();
   const [connectionTime] = useState(new Date().toLocaleTimeString("fr-FR"));
   const [stats, setStats] = useState({
     totalPlanteurs: 0,
@@ -253,20 +254,20 @@ const Dashboard = () => {
                   Bienvenue, <span className="text-accent font-extrabold">{profile?.nom_complet || "Utilisateur"}</span>
                 </h1>
                 <p className="text-primary-foreground/90 mt-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm">
+                  <span className="bg-white/20 px-2 py-0.5 rounded text-xs font-semibold">
+                    {userRoles.map(r => ROLE_SHORT_LABELS[r] || r).join(' / ')}
+                  </span>
                   <span className="flex items-center gap-1">
                     📞 {profile?.telephone || 'Non renseigné'}
                   </span>
                   <span className="hidden sm:inline text-primary-foreground/70">•</span>
                   <span>Connecté à {connectionTime}</span>
                 </p>
-                <p className="text-primary-foreground/70 text-xs mt-1">
-                  Support technique: <a href="tel:+2250759566087" className="text-accent hover:underline font-semibold">+225 07 59 56 60 87</a>
-                </p>
               </div>
             </div>
           </div>
 
-          {/* 1️⃣ APERÇU GLOBAL */}
+          {/* KPIs adaptés au rôle */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             <Card className="hover-scale cursor-pointer transition-all hover:shadow-lg">
               <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-4 lg:p-6">

@@ -4,7 +4,7 @@
  * Hierarchy:
  * - super_admin: Full access to everything
  * - directeur_tc: Almost full access, manages teams & commercial strategy
- * - responsable_zone: Regional manager, sees regional data + reports
+ * - responsable_commercial_zone (RCom): Regional commercial manager
  * - chef_equipe: Team leader (future role)
  * - comptable: Financial operations only
  * - commercial: Field agent - souscriptions, plantations
@@ -30,13 +30,25 @@ export type AppRole = typeof ROLES[keyof typeof ROLES];
 export const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
   directeur_tc: 'Directeur Technico-Commercial',
-  responsable_zone: 'Responsable de Zone',
+  responsable_zone: 'RCom - Responsable Commercial de Zone',
   chef_equipe: "Chef d'Équipe",
   comptable: 'Comptable',
   commercial: 'Commercial',
   service_client: 'Service Client',
   operations: 'Opérations',
   user: 'Utilisateur',
+};
+
+export const ROLE_SHORT_LABELS: Record<string, string> = {
+  super_admin: 'Admin',
+  directeur_tc: 'DTC',
+  responsable_zone: 'RCom',
+  chef_equipe: 'CE',
+  comptable: 'Comptable',
+  commercial: 'Commercial',
+  service_client: 'SC',
+  operations: 'Ops',
+  user: 'User',
 };
 
 export const ROLE_COLORS: Record<string, string> = {

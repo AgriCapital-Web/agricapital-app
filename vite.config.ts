@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => ({
       manifest: false, // Désactiver le manifest généré - on utilise des manifests dynamiques
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*supabase\.co\/.*/i,
@@ -26,9 +27,22 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: "supabase-cache",
               expiration: {
-                maxEntries: 50,
+                maxEntries: 100,
                 maxAgeSeconds: 60 * 60 * 24
-              }
+              },
+              networkTimeoutSeconds: 5
+            }
+          },
+          {
+            urlPattern: /^https:\/\/.*supabase\.co\/rest\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "supabase-api-cache",
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60
+              },
+              networkTimeoutSeconds: 3
             }
           }
         ]

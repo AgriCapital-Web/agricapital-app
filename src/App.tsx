@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
-import { useEffect, useState } from "react";
+import InstallPrompt from "@/components/pwa/InstallPrompt";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -20,6 +20,7 @@ import Commissions from "./pages/Commissions";
 import Portefeuilles from "./pages/Portefeuilles";
 import NouvelleSouscription from "./pages/NouvelleSouscription";
 import Parametres from "./pages/Parametres";
+import Profil from "./pages/Profil";
 import HistoriqueComplet from "./pages/HistoriqueComplet";
 import AccountRequest from "./pages/AccountRequest";
 import CreateSuperAdmin from "./pages/CreateSuperAdmin";
@@ -28,12 +29,10 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Composant pour détecter le domaine et rediriger
 const DomainRouter = () => {
-  // CRM uniquement - le portail client est un projet séparé
   return (
     <Routes>
-      {/* Public routes */}
+      {/* Page d'accueil = Login */}
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -48,6 +47,7 @@ const DomainRouter = () => {
       <Route path="/planteur/:id/historique" element={<HistoriqueComplet />} />
       <Route path="/plantations" element={<Plantations />} />
       <Route path="/nouvelle-souscription" element={<NouvelleSouscription />} />
+      <Route path="/profil" element={<Profil />} />
       
       {/* Paiements */}
       <Route path="/paiements" element={<GestionPaiements />} />
@@ -89,6 +89,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <InstallPrompt />
           <DomainRouter />
         </BrowserRouter>
       </TooltipProvider>
