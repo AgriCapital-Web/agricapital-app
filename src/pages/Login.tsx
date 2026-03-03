@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import logoWhite from "@/assets/logo-white.png";
 import logoGreen from "@/assets/logo-green.png";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -19,62 +19,101 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     const { error } = await signIn(username, password);
-    
-    if (!error) {
-      navigate('/dashboard');
-    }
-    
+    if (!error) navigate('/dashboard');
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary via-primary to-primary-hover p-3 sm:p-4 relative overflow-hidden">
-      {/* Pattern de fond subtil */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNnptMCA0YzEuMTA1IDAgMiAuODk1IDIgMnMtLjg5NSAyLTIgMi0yLS44OTUtMi0yIC44OTUtMiAyLTJ6IiBmaWxsPSIjZmZmIiBvcGFjaXR5PSIuMDUiLz48L2c+PC9zdmc+')] opacity-20"></div>
-      
-      {/* Overlay pour adoucir le fond */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
-      
-      <Card className="w-full max-w-[95%] sm:max-w-md shadow-strong relative z-10 backdrop-blur-sm bg-white/95">
-        <CardHeader className="space-y-2 sm:space-y-4 text-center pb-4 sm:pb-8 px-4 sm:px-6">
-          <div className="flex justify-center mb-2 sm:mb-4">
-            <img src={logoGreen} alt="AgriCapital Logo" className="h-20 sm:h-32 w-auto" />
-          </div>
-          <CardTitle className="text-xl sm:text-2xl font-bold text-primary">
-            Connexion
-          </CardTitle>
-        </CardHeader>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Panneau gauche - Branding (caché sur mobile, visible sur desktop) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-primary relative flex-col items-center justify-center p-12 overflow-hidden">
+        {/* Pattern décoratif */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-40 h-40 rounded-full border-2 border-white/30" />
+          <div className="absolute bottom-32 right-16 w-64 h-64 rounded-full border-2 border-white/20" />
+          <div className="absolute top-1/2 left-1/3 w-20 h-20 rounded-full bg-white/5" />
+        </div>
         
-        <CardContent className="px-4 sm:px-6">
-          <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="username" className="text-foreground font-medium text-sm sm:text-base">
+        <div className="relative z-10 text-center max-w-md">
+          <div className="bg-white rounded-2xl p-8 mb-8 shadow-2xl inline-block">
+            <img src={logoGreen} alt="AgriCapital" className="h-28 w-auto mx-auto" />
+          </div>
+          
+          <h1 className="text-3xl font-bold text-white mb-3">AgriCapital</h1>
+          <p className="text-white/80 text-lg mb-8">
+            Plateforme de Gestion des Planteurs & Plantations
+          </p>
+          
+          <div className="flex items-center justify-center gap-8 text-white/70">
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-2 text-white font-bold">1</div>
+              <span className="text-sm">Souscription</span>
+            </div>
+            <div className="w-8 h-px bg-white/30" />
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-2 text-white font-bold">2</div>
+              <span className="text-sm">Plantation</span>
+            </div>
+            <div className="w-8 h-px bg-white/30" />
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-2 text-white font-bold">3</div>
+              <span className="text-sm">Production</span>
+            </div>
+          </div>
+        </div>
+        
+        <p className="absolute bottom-6 text-white/50 text-xs">
+          © 2025 AgriCapital - Le partenaire idéal des producteurs agricoles
+        </p>
+      </div>
+
+      {/* Panneau droit - Formulaire de connexion */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 bg-background min-h-screen lg:min-h-0">
+        {/* Logo mobile */}
+        <div className="lg:hidden mb-8 text-center">
+          <div className="bg-primary rounded-2xl p-6 inline-block shadow-lg mb-4">
+            <img src={logoWhite} alt="AgriCapital" className="h-16 w-auto" />
+          </div>
+          <h1 className="text-xl font-bold text-primary">AgriCapital CRM</h1>
+          <p className="text-muted-foreground text-sm mt-1">Gestion des Planteurs & Plantations</p>
+        </div>
+
+        <div className="w-full max-w-sm">
+          <div className="mb-8 text-center lg:text-left">
+            <h2 className="text-2xl font-bold text-foreground">Connexion</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Connectez-vous avec votre nom d'utilisateur
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-foreground font-medium">
                 Nom d'utilisateur
               </Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="admin"
+                placeholder="votre_nom_utilisateur"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="h-10 sm:h-11 text-sm sm:text-base"
+                className="h-11"
                 disabled={isLoading}
                 autoComplete="username"
               />
             </div>
-            
-            <div className="space-y-1.5 sm:space-y-2">
+
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-foreground font-medium text-sm sm:text-base">
+                <Label htmlFor="password" className="text-foreground font-medium">
                   Mot de passe
                 </Label>
                 <button
                   type="button"
                   onClick={() => navigate('/forgot-password')}
-                  className="text-xs sm:text-sm text-accent hover:underline font-medium"
+                  className="text-xs text-primary hover:underline font-medium"
                 >
                   Mot de passe oublié ?
                 </button>
@@ -87,14 +126,14 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-10 sm:h-11 pr-10 text-sm sm:text-base"
+                  className="h-11 pr-10"
                   disabled={isLoading}
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-10 sm:h-11 w-10 sm:w-11 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-11 w-11 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
@@ -106,31 +145,35 @@ const Login = () => {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full h-10 sm:h-11 text-sm sm:text-base font-semibold bg-primary hover:bg-primary-hover text-primary-foreground transition-all"
+            <Button
+              type="submit"
+              className="w-full h-11 font-semibold gap-2"
               disabled={isLoading}
             >
-              {isLoading ? "Connexion..." : "Se connecter"}
+              <LogIn className="h-4 w-4" />
+              {isLoading ? "Connexion en cours..." : "Se connecter"}
             </Button>
           </form>
 
-          <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm space-y-2 sm:space-y-4">
-            <p className="text-muted-foreground">Système de Gestion des Planteurs & Plantations</p>
-            <p className="font-semibold text-primary text-xs sm:text-sm">
-              "Le partenaire idéal des producteurs agricoles"
-            </p>
+          <div className="mt-6 text-center">
             <Button
               type="button"
               variant="link"
               onClick={() => navigate('/account-request')}
-              className="text-accent text-xs sm:text-sm p-0 h-auto"
+              className="text-primary text-sm gap-1"
             >
+              <UserPlus className="h-3.5 w-3.5" />
               Demander la création d'un compte
             </Button>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="mt-8 pt-6 border-t text-center">
+            <p className="text-xs text-muted-foreground">
+              Support: <a href="tel:+2250759566087" className="text-primary hover:underline font-medium">+225 07 59 56 60 87</a>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
