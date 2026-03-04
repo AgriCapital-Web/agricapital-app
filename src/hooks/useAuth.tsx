@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
@@ -98,29 +98,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (usernameOrEmail: string, password: string) => {
     try {
-      // Check if input is email or username
       let email = usernameOrEmail;
+      const hashed = await hashPassword(password);
       
       if (!navigator.onLine) {
-        // Offline authentication
+        // Offline authentication with cached credentials
         const cached = await getCachedAuth();
         if (!cached) {
           return { error: { message: 'Aucune donnée hors ligne disponible. Connectez-vous en ligne d\'abord.' } };
         }
-        const hashed = await hashPassword(password);
-        if (cached.email === usernameOrEmail && cached.passwordHash === hashed) {
+        // Check by email or username
+        const emailMatch = cached.email === usernameOrEmail;
+        const usernameMatch = cached.profile?.username === usernameOrEmail;
+        if ((emailMatch || usernameMatch) && cached.passwordHash === hashed) {
+          // Simulate a user object for offline mode
+          setUser({ id: cached.profile?.user_id, email: cached.email } as any);
           setProfile(cached.profile);
           setUserRoles(cached.roles);
           setLoading(false);
           toast({
             title: "Connexion hors ligne",
-            description: "Mode hors ligne activé",
+            description: "Mode hors ligne activé. Les données seront synchronisées dès le retour du réseau.",
           });
           return { error: null };
         }
         return { error: { message: 'Identifiants incorrects (mode hors ligne)' } };
       }
 
+      // Online: resolve username to email
       if (!usernameOrEmail.includes('@')) {
         const { data: profileData, error: profileError } = await (supabase as any)
           .from('profiles')
@@ -134,39 +139,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email = profileData.email;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
+        // Fallback to offline auth if network error
+        if (error.message?.includes('fetch') || error.message?.includes('network')) {
+          const cached = await getCachedAuth();
+          if (cached && (cached.email === email) && cached.passwordHash === hashed) {
+            setUser({ id: cached.profile?.user_id, email: cached.email } as any);
+            setProfile(cached.profile);
+            setUserRoles(cached.roles);
+            setLoading(false);
+            toast({ title: "Connexion hors ligne", description: "Réseau instable — mode hors ligne activé." });
+            return { error: null };
+          }
+        }
         toast({
           variant: "destructive",
           title: "Erreur de connexion",
-          description: error.message === 'Invalid login credentials' 
-            ? 'Identifiants incorrects' 
-            : error.message,
+          description: error.message === 'Invalid login credentials' ? 'Identifiants incorrects' : error.message,
         });
         return { error };
       }
 
       // Cache credentials for offline use
       try {
-        const hashed = await hashPassword(password);
-        const { data: prof } = await (supabase as any).from('profiles').select('*').eq('user_id', (await supabase.auth.getUser()).data.user?.id).maybeSingle();
-        const { data: roles } = await (supabase as any).from('user_roles').select('role').eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+        const userId = authData.user?.id;
+        const { data: prof } = await (supabase as any).from('profiles').select('*').eq('user_id', userId).maybeSingle();
+        const { data: roles } = await (supabase as any).from('user_roles').select('role').eq('user_id', userId);
+        const rolesList = roles?.map((r: any) => r.role) || [];
         if (prof) {
-          await cacheAuthCredentials(email, hashed, prof, roles?.map((r: any) => r.role) || []);
+          await cacheAuthCredentials(email, hashed, prof, rolesList);
         }
       } catch (cacheErr) {
         console.warn('Failed to cache auth:', cacheErr);
       }
 
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue sur AgriCapital CRM",
-      });
-
+      toast({ title: "Connexion réussie", description: "Bienvenue sur AgriCapital CRM" });
       return { error: null };
     } catch (error: any) {
       console.error('Sign in error:', error);
+      // Last resort: try offline auth
+      try {
+        const cached = await getCachedAuth();
+        const hashed = await hashPassword(password);
+        if (cached && cached.passwordHash === hashed) {
+          setUser({ id: cached.profile?.user_id, email: cached.email } as any);
+          setProfile(cached.profile);
+          setUserRoles(cached.roles);
+          setLoading(false);
+          toast({ title: "Connexion hors ligne", description: "Erreur réseau — mode hors ligne activé." });
+          return { error: null };
+        }
+      } catch {}
       return { error };
     }
   };
