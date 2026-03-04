@@ -1,15 +1,20 @@
 /**
  * IndexedDB-based offline storage for AgriCapital CRM
- * Handles caching of souscripteurs, plantations, and auth credentials
- * with bidirectional sync when network is available.
+ * Full offline support: auth, data caching, sync queue, conflict resolution
  */
 
 const DB_NAME = 'agricapital_offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-const STORES = {
+export const STORES = {
   SOUSCRIPTEURS: 'souscripteurs',
   PLANTATIONS: 'plantations',
+  PAIEMENTS: 'paiements',
+  OFFRES: 'offres',
+  REGIONS: 'regions',
+  DEPARTEMENTS: 'departements',
+  SOUS_PREFECTURES: 'sous_prefectures',
+  VILLAGES: 'villages',
   SYNC_QUEUE: 'sync_queue',
   AUTH_CACHE: 'auth_cache',
   META: 'meta',
@@ -23,21 +28,20 @@ function openDB(): Promise<IDBDatabase> {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORES.SOUSCRIPTEURS)) {
-        db.createObjectStore(STORES.SOUSCRIPTEURS, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORES.PLANTATIONS)) {
-        db.createObjectStore(STORES.PLANTATIONS, { keyPath: 'id' });
-      }
-      if (!db.objectStoreNames.contains(STORES.SYNC_QUEUE)) {
-        const store = db.createObjectStore(STORES.SYNC_QUEUE, { keyPath: 'id', autoIncrement: true });
-        store.createIndex('timestamp', 'timestamp');
-      }
-      if (!db.objectStoreNames.contains(STORES.AUTH_CACHE)) {
-        db.createObjectStore(STORES.AUTH_CACHE, { keyPath: 'key' });
-      }
-      if (!db.objectStoreNames.contains(STORES.META)) {
-        db.createObjectStore(STORES.META, { keyPath: 'key' });
+      const storeNames = Object.values(STORES);
+      for (const name of storeNames) {
+        if (!db.objectStoreNames.contains(name)) {
+          if (name === STORES.SYNC_QUEUE) {
+            const store = db.createObjectStore(name, { keyPath: 'id', autoIncrement: true });
+            store.createIndex('timestamp', 'timestamp');
+            store.createIndex('status', 'status');
+          } else if (name === STORES.AUTH_CACHE || name === STORES.META) {
+            db.createObjectStore(name, { keyPath: 'key' });
+          } else {
+            const store = db.createObjectStore(name, { keyPath: 'id' });
+            store.createIndex('updated_at', 'updated_at');
+          }
+        }
       }
     };
     request.onsuccess = () => { dbInstance = request.result; resolve(dbInstance); };
@@ -62,6 +66,7 @@ export async function putItem(storeName: string, item: any): Promise<void> {
 }
 
 export async function putItems(storeName: string, items: any[]): Promise<void> {
+  if (!items.length) return;
   const db = await openDB();
   const tx = db.transaction(storeName, 'readwrite');
   const store = tx.objectStore(storeName);
@@ -108,6 +113,15 @@ export async function clearStore(storeName: string): Promise<void> {
   });
 }
 
+export async function countItems(storeName: string): Promise<number> {
+  const store = await getStore(storeName);
+  return new Promise((resolve, reject) => {
+    const req = store.count();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 // Sync queue operations
 export interface SyncOperation {
   id?: number;
@@ -116,22 +130,29 @@ export interface SyncOperation {
   record_id: string;
   data: any;
   timestamp: number;
-  synced: boolean;
+  status: 'pending' | 'syncing' | 'synced' | 'error';
+  retries: number;
+  error_message?: string;
 }
 
-export async function addToSyncQueue(op: Omit<SyncOperation, 'id' | 'synced'>): Promise<void> {
-  await putItem(STORES.SYNC_QUEUE, { ...op, synced: false });
+export async function addToSyncQueue(op: Omit<SyncOperation, 'id' | 'status' | 'retries'>): Promise<void> {
+  await putItem(STORES.SYNC_QUEUE, { ...op, status: 'pending', retries: 0 });
 }
 
 export async function getPendingSyncOps(): Promise<SyncOperation[]> {
   const all = await getAllItems(STORES.SYNC_QUEUE);
-  return all.filter(op => !op.synced).sort((a, b) => a.timestamp - b.timestamp);
+  return all
+    .filter(op => op.status === 'pending' || op.status === 'error')
+    .filter(op => (op.retries || 0) < 5)
+    .sort((a, b) => a.timestamp - b.timestamp);
 }
 
-export async function markSynced(id: number): Promise<void> {
+export async function markOpStatus(id: number, status: SyncOperation['status'], errorMsg?: string): Promise<void> {
   const item = await getItem(STORES.SYNC_QUEUE, String(id));
   if (item) {
-    item.synced = true;
+    item.status = status;
+    if (errorMsg) item.error_message = errorMsg;
+    if (status === 'error') item.retries = (item.retries || 0) + 1;
     await putItem(STORES.SYNC_QUEUE, item);
   }
 }
@@ -141,11 +162,20 @@ export async function clearSyncedOps(): Promise<void> {
   const db = await openDB();
   const tx = db.transaction(STORES.SYNC_QUEUE, 'readwrite');
   const store = tx.objectStore(STORES.SYNC_QUEUE);
-  all.filter(op => op.synced).forEach(op => store.delete(op.id));
+  all.filter(op => op.status === 'synced').forEach(op => store.delete(op.id));
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+}
+
+export async function getSyncQueueStats(): Promise<{ pending: number; error: number; total: number }> {
+  const all = await getAllItems(STORES.SYNC_QUEUE);
+  return {
+    pending: all.filter(o => o.status === 'pending').length,
+    error: all.filter(o => o.status === 'error').length,
+    total: all.length,
+  };
 }
 
 // Auth cache for offline login
@@ -160,7 +190,7 @@ export async function cacheAuthCredentials(email: string, passwordHash: string, 
   });
 }
 
-export async function getCachedAuth(): Promise<{email: string; passwordHash: string; profile: any; roles: string[]; cachedAt: number} | null> {
+export async function getCachedAuth(): Promise<{ email: string; passwordHash: string; profile: any; roles: string[]; cachedAt: number } | null> {
   return getItem(STORES.AUTH_CACHE, 'last_auth');
 }
 
@@ -174,26 +204,29 @@ export async function getLastSyncTime(table: string): Promise<string | null> {
   return meta?.timestamp || null;
 }
 
-// Cache souscripteurs & plantations
+// Cache helpers
 export async function cacheSouscripteurs(items: any[]): Promise<void> {
   await putItems(STORES.SOUSCRIPTEURS, items);
   await setLastSyncTime(STORES.SOUSCRIPTEURS);
 }
 
-export async function getCachedSouscripteurs(): Promise<any[]> {
-  return getAllItems(STORES.SOUSCRIPTEURS);
-}
+export const getCachedSouscripteurs = () => getAllItems(STORES.SOUSCRIPTEURS);
 
 export async function cachePlantations(items: any[]): Promise<void> {
   await putItems(STORES.PLANTATIONS, items);
   await setLastSyncTime(STORES.PLANTATIONS);
 }
 
-export async function getCachedPlantations(): Promise<any[]> {
-  return getAllItems(STORES.PLANTATIONS);
+export const getCachedPlantations = () => getAllItems(STORES.PLANTATIONS);
+
+export async function cacheReferenceData(storeName: string, items: any[]): Promise<void> {
+  await putItems(storeName, items);
+  await setLastSyncTime(storeName);
 }
 
-// Simple hash for offline auth (not cryptographically secure, just for offline verification)
+export const getCachedItems = (storeName: string) => getAllItems(storeName);
+
+// Simple hash for offline auth
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + 'agricapital_salt_2024');
@@ -202,4 +235,18 @@ export async function hashPassword(password: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-export { STORES };
+// Get offline data stats
+export async function getOfflineStats(): Promise<Record<string, number>> {
+  const stats: Record<string, number> = {};
+  for (const [key, store] of Object.entries(STORES)) {
+    if (store !== STORES.AUTH_CACHE && store !== STORES.META && store !== STORES.SYNC_QUEUE) {
+      try {
+        stats[key] = await countItems(store);
+      } catch { stats[key] = 0; }
+    }
+  }
+  const queueStats = await getSyncQueueStats();
+  stats['PENDING_SYNC'] = queueStats.pending;
+  stats['ERROR_SYNC'] = queueStats.error;
+  return stats;
+}

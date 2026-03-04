@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationCenter } from "@/components/common/NotificationCenter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import AIAssistant from "@/components/ai/AIAssistant";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { 
   LayoutDashboard, Users, Sprout, CreditCard, LogOut, Menu, Receipt,
-  BarChart3, Ticket, Wallet, FileText, Settings, UserCircle, Wifi, WifiOff, RefreshCw
+  BarChart3, Ticket, Wallet, FileText, Settings, UserCircle, Wifi, WifiOff, RefreshCw, Signal
 } from "lucide-react";
 
 interface MainLayoutProps { children: ReactNode; }
@@ -22,7 +23,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
-  const { isOnline, isSyncing, syncNow } = useOfflineSync();
+  const { isOnline, isSyncing, syncNow, pendingCount, networkQuality } = useOfflineSync();
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", permission: PERMISSIONS.VIEW_DASHBOARD },
@@ -41,6 +42,24 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
   const handleLogout = async () => { await signOut(); navigate("/"); };
   const getInitials = (name: string) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'US';
+
+  const NetworkIndicator = ({ compact = false }: { compact?: boolean }) => {
+    if (!isOnline) return (
+      <span className="flex items-center gap-1 text-xs text-destructive">
+        <WifiOff className="h-3 w-3" /> {!compact && 'Hors ligne'}
+      </span>
+    );
+    if (networkQuality === 'slow') return (
+      <span className="flex items-center gap-1 text-xs text-yellow-600">
+        <Signal className="h-3 w-3" /> {!compact && 'Réseau lent'}
+      </span>
+    );
+    return (
+      <span className="flex items-center gap-1 text-xs text-green-600">
+        <Wifi className="h-3 w-3" /> {!compact && 'En ligne'}
+      </span>
+    );
+  };
 
   const SidebarContent = ({ expanded = false }: { expanded?: boolean }) => (
     <div className="flex flex-col h-full bg-primary">
@@ -69,6 +88,22 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       </nav>
 
       <div className="p-2 sm:p-4 border-t border-white/10 flex flex-col gap-2">
+        {/* Offline status in sidebar */}
+        {expanded && (
+          <div className="flex items-center justify-between px-2 py-1">
+            <div className="flex items-center gap-1.5">
+              {!isOnline ? <WifiOff className="h-3 w-3 text-red-300" /> : networkQuality === 'slow' ? <Signal className="h-3 w-3 text-yellow-300" /> : <Wifi className="h-3 w-3 text-green-300" />}
+              <span className="text-[10px] text-primary-foreground/70">
+                {!isOnline ? 'Hors ligne' : networkQuality === 'slow' ? 'Lent' : 'En ligne'}
+              </span>
+            </div>
+            {pendingCount > 0 && (
+              <Badge variant="secondary" className="text-[10px] h-4 px-1.5 bg-yellow-500/20 text-yellow-200 border-0">
+                {pendingCount} en attente
+              </Badge>
+            )}
+          </div>
+        )}
         <NotificationCenter />
         <Button
           variant="ghost"
@@ -107,15 +142,23 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-background border-b px-3 py-2 flex items-center justify-between">
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
           <div className="flex items-center gap-2">
-            <div className="text-right">
-              <p className="text-xs font-medium truncate max-w-[120px]">{profile?.nom_complet}</p>
-            </div>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <NetworkIndicator compact />
+            {pendingCount > 0 && (
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-yellow-500 text-yellow-600">
+                {pendingCount}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={syncNow} disabled={isSyncing || !isOnline}>
+              <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+            </Button>
             <Avatar className="h-8 w-8 cursor-pointer" onClick={() => navigate('/profil')}>
               <AvatarImage src={profile?.photo_url || ''} />
               <AvatarFallback className="bg-primary text-primary-foreground text-xs">
@@ -132,10 +175,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       <main className="flex-1 overflow-auto pt-14 md:pt-0">
         <div className="hidden md:flex items-center justify-end gap-3 px-4 py-3 border-b bg-background">
           <div className="flex items-center gap-2 mr-auto">
-            {isOnline ? (
-              <span className="flex items-center gap-1 text-xs text-green-600"><Wifi className="h-3 w-3" /> En ligne</span>
-            ) : (
-              <span className="flex items-center gap-1 text-xs text-destructive"><WifiOff className="h-3 w-3" /> Hors ligne</span>
+            <NetworkIndicator />
+            {pendingCount > 0 && (
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-yellow-500 text-yellow-600">
+                {pendingCount} modification(s) en attente
+              </Badge>
             )}
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={syncNow} disabled={isSyncing || !isOnline} title="Forcer la synchronisation">
               <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
