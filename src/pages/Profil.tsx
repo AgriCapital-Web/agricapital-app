@@ -25,11 +25,21 @@ const Profil = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    const { data } = await (supabase as any)
+    // Try by user_id first, then by id as fallback
+    let { data } = await (supabase as any)
       .from('profiles')
       .select('*')
       .eq('user_id', user?.id)
       .maybeSingle();
+    
+    if (!data) {
+      const res = await (supabase as any)
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .maybeSingle();
+      data = res.data;
+    }
     if (data) setProfile(data);
   };
 

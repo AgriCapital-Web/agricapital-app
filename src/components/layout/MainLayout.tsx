@@ -9,9 +9,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AIAssistant from "@/components/ai/AIAssistant";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { 
   LayoutDashboard, Users, Sprout, CreditCard, LogOut, Menu, Receipt,
-  BarChart3, Ticket, Wallet, FileText, Settings, UserCircle
+  BarChart3, Ticket, Wallet, FileText, Settings, UserCircle, Wifi, WifiOff, RefreshCw
 } from "lucide-react";
 
 interface MainLayoutProps { children: ReactNode; }
@@ -21,6 +22,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { isOnline, isSyncing, syncNow } = useOfflineSync();
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", permission: PERMISSIONS.VIEW_DASHBOARD },
@@ -129,6 +131,16 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
       <main className="flex-1 overflow-auto pt-14 md:pt-0">
         <div className="hidden md:flex items-center justify-end gap-3 px-4 py-3 border-b bg-background">
+          <div className="flex items-center gap-2 mr-auto">
+            {isOnline ? (
+              <span className="flex items-center gap-1 text-xs text-green-600"><Wifi className="h-3 w-3" /> En ligne</span>
+            ) : (
+              <span className="flex items-center gap-1 text-xs text-destructive"><WifiOff className="h-3 w-3" /> Hors ligne</span>
+            )}
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={syncNow} disabled={isSyncing || !isOnline} title="Forcer la synchronisation">
+              <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
+            </Button>
+          </div>
           <div className="text-right">
             <p className="text-sm font-medium">{profile?.nom_complet || "Utilisateur"}</p>
             <p className="text-xs text-muted-foreground">
