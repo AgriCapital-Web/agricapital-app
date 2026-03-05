@@ -6,14 +6,16 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getOfflineStats, getSyncQueueStats, getLastSyncTime, getAllItems, clearStore, STORES } from "@/lib/offlineDb";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
-import { RefreshCw, Trash2, Database, Wifi, WifiOff, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { RefreshCw, Trash2, Database, Wifi, WifiOff, Clock, AlertTriangle, CheckCircle2, Download, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCSV, exportAllOfflineData, type ExportType } from "@/utils/csvExport";
 
 const STORE_LABELS: Record<string, string> = {
   SOUSCRIPTEURS: "Souscripteurs",
   PLANTATIONS: "Plantations",
   PAIEMENTS: "Paiements",
   OFFRES: "Offres",
+  DISTRICTS: "Districts",
   REGIONS: "Régions",
   DEPARTEMENTS: "Départements",
   SOUS_PREFECTURES: "Sous-préfectures",
@@ -27,7 +29,43 @@ const DiagnosticOffline = () => {
   const [pendingOps, setPendingOps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { isOnline, isSyncing, syncNow, pendingCount, networkQuality } = useOfflineSync();
+  const [exporting, setExporting] = useState(false);
   const { toast } = useToast();
+
+  const handleExportSingle = async (type: ExportType) => {
+    setExporting(true);
+    try {
+      const storeMap: Record<ExportType, string> = {
+        souscripteurs: STORES.SOUSCRIPTEURS,
+        plantations: STORES.PLANTATIONS,
+        paiements: STORES.PAIEMENTS,
+      };
+      const data = await getAllItems(storeMap[type]);
+      const result = await exportToCSV(type, data);
+      if (result.success) {
+        toast({ title: "Export réussi", description: `${result.count} enregistrement(s) exporté(s) en CSV.` });
+      } else {
+        toast({ variant: "destructive", title: "Aucune donnée", description: "Pas de données en cache pour cet export." });
+      }
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Erreur d'export", description: e.message });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportAll = async () => {
+    setExporting(true);
+    try {
+      const results = await exportAllOfflineData();
+      const total = Object.values(results).reduce((acc, r) => acc + (r.count || 0), 0);
+      toast({ title: "Export complet", description: `${total} enregistrement(s) exporté(s) en ${Object.keys(results).length} fichier(s) CSV.` });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Erreur", description: e.message });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const loadStats = async () => {
     setLoading(true);
@@ -156,7 +194,43 @@ const DiagnosticOffline = () => {
           <Trash2 className="h-4 w-4 mr-2" />
           Vider tout le cache
         </Button>
+        <Button onClick={handleExportAll} variant="secondary" size="sm" disabled={exporting}>
+          <Download className={`h-4 w-4 mr-2 ${exporting ? "animate-pulse" : ""}`} />
+          {exporting ? "Export en cours..." : "Exporter tout en CSV"}
+        </Button>
       </div>
+
+      {/* CSV Export */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileDown className="h-5 w-5" />
+            Export CSV hors ligne
+          </CardTitle>
+          <CardDescription>Téléchargez les données en cache au format CSV pour sauvegarde locale</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {([
+              { type: 'souscripteurs' as ExportType, label: 'Souscripteurs', count: stats['SOUSCRIPTEURS'] || 0 },
+              { type: 'plantations' as ExportType, label: 'Plantations', count: stats['PLANTATIONS'] || 0 },
+              { type: 'paiements' as ExportType, label: 'Paiements', count: stats['PAIEMENTS'] || 0 },
+            ]).map(({ type, label, count }) => (
+              <Button
+                key={type}
+                variant="outline"
+                className="h-auto py-4 flex flex-col items-center gap-2"
+                disabled={exporting || count === 0}
+                onClick={() => handleExportSingle(type)}
+              >
+                <Download className="h-5 w-5" />
+                <span className="font-medium">{label}</span>
+                <Badge variant={count > 0 ? "default" : "secondary"} className="text-xs">{count} élément(s)</Badge>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Cache Details */}
       <Card>

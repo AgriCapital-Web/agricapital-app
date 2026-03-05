@@ -16,6 +16,7 @@ const SLOW_NET_THRESHOLD = 1500; // ms
 // Reference tables to cache for full offline use
 const REF_TABLES = [
   { store: STORES.OFFRES, table: 'offres' },
+  { store: STORES.DISTRICTS, table: 'districts' },
   { store: STORES.REGIONS, table: 'regions' },
   { store: STORES.DEPARTEMENTS, table: 'departements' },
   { store: STORES.SOUS_PREFECTURES, table: 'sous_prefectures' },
