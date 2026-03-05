@@ -6,8 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUploadVisual } from "@/components/ui/file-upload-visual";
+import { getCachedItems, STORES } from "@/lib/offlineDb";
 
 const InteractiveMap = lazy(() => import("@/components/maps/InteractiveMap"));
+const OfflineMap = lazy(() => import("@/components/maps/OfflineMap"));
 
 
 interface Etape3Props {
@@ -20,6 +22,15 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
   const [sousPrefectures, setSousPrefectures] = useState<any[]>([]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const on = () => setIsOnline(true);
+    const off = () => setIsOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
 
 
   useEffect(() => {
@@ -39,23 +50,47 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
   }, [formData.departement_id]);
 
   const fetchDistricts = async () => {
-    const { data } = await (supabase as any).from("districts").select("*").eq("est_actif", true).order("nom");
-    setDistricts(data || []);
+    if (navigator.onLine) {
+      const { data } = await (supabase as any).from("districts").select("*").eq("est_actif", true).order("nom");
+      setDistricts(data || []);
+    } else {
+      const cached = await getCachedItems(STORES.REGIONS);
+      // Districts aren't cached separately, derive unique district_ids from regions or use empty
+      try {
+        const res = await getCachedItems("souscripteurs"); // fallback
+        setDistricts([]);
+      } catch { setDistricts([]); }
+    }
   };
 
   const fetchRegions = async (districtId: string) => {
-    const { data } = await (supabase as any).from("regions").select("*").eq("district_id", districtId).eq("est_active", true).order("nom");
-    setRegions(data || []);
+    if (navigator.onLine) {
+      const { data } = await (supabase as any).from("regions").select("*").eq("district_id", districtId).eq("est_active", true).order("nom");
+      setRegions(data || []);
+    } else {
+      const cached = await getCachedItems(STORES.REGIONS);
+      setRegions(cached.filter((r: any) => r.district_id === districtId && r.est_active !== false));
+    }
   };
 
   const fetchDepartements = async (regionId: string) => {
-    const { data } = await (supabase as any).from("departements").select("*").eq("region_id", regionId).eq("est_actif", true).order("nom");
-    setDepartements(data || []);
+    if (navigator.onLine) {
+      const { data } = await (supabase as any).from("departements").select("*").eq("region_id", regionId).eq("est_actif", true).order("nom");
+      setDepartements(data || []);
+    } else {
+      const cached = await getCachedItems(STORES.DEPARTEMENTS);
+      setDepartements(cached.filter((d: any) => d.region_id === regionId && d.est_actif !== false));
+    }
   };
 
   const fetchSousPrefectures = async (departementId: string) => {
-    const { data } = await (supabase as any).from("sous_prefectures").select("*").eq("departement_id", departementId).eq("est_active", true).order("nom");
-    setSousPrefectures(data || []);
+    if (navigator.onLine) {
+      const { data } = await (supabase as any).from("sous_prefectures").select("*").eq("departement_id", departementId).eq("est_active", true).order("nom");
+      setSousPrefectures(data || []);
+    } else {
+      const cached = await getCachedItems(STORES.SOUS_PREFECTURES);
+      setSousPrefectures(cached.filter((sp: any) => sp.departement_id === departementId && sp.est_active !== false));
+    }
   };
 
   const handleFileChange = (field: string, file: File | null, preview: string) => {
@@ -269,18 +304,31 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
               <span className="ml-2">Chargement de la carte...</span>
             </div>
           }>
-            <InteractiveMap
-              mode="pick"
-              position={formData.latitude && formData.longitude ? [parseFloat(formData.latitude), parseFloat(formData.longitude)] : null}
-              onPositionChange={(lat, lng, alt) => {
-                updateFormData({
-                  latitude: lat.toFixed(6),
-                  longitude: lng.toFixed(6),
-                  altitude: alt?.toFixed(2) || formData.altitude,
-                });
-              }}
-              height="300px"
-            />
+            {isOnline ? (
+              <InteractiveMap
+                mode="pick"
+                position={formData.latitude && formData.longitude ? [parseFloat(formData.latitude), parseFloat(formData.longitude)] : null}
+                onPositionChange={(lat, lng, alt) => {
+                  updateFormData({
+                    latitude: lat.toFixed(6),
+                    longitude: lng.toFixed(6),
+                    altitude: alt?.toFixed(2) || formData.altitude,
+                  });
+                }}
+                height="300px"
+              />
+            ) : (
+              <OfflineMap
+                position={formData.latitude && formData.longitude ? [parseFloat(formData.latitude), parseFloat(formData.longitude)] : null}
+                onPositionChange={(lat, lng) => {
+                  updateFormData({
+                    latitude: lat.toFixed(6),
+                    longitude: lng.toFixed(6),
+                  });
+                }}
+                height="300px"
+              />
+            )}
           </Suspense>
 
           {(formData.latitude && formData.longitude) && (

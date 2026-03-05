@@ -1,7 +1,7 @@
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, MapPin, Settings2, List, Bell, Globe, Package, UsersRound, UserPlus, Database, Map, Building, Home, TreePine } from "lucide-react";
+import { Users, Shield, MapPin, Settings2, List, Bell, Globe, Package, UsersRound, UserPlus, Database, Map, Building, Home, TreePine, HardDrive } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PERMISSIONS, hasPermission } from "@/lib/roles";
 import Utilisateurs from "@/pages/Utilisateurs";
@@ -19,6 +19,7 @@ import GestionStatuts from "@/pages/parametres/GestionStatuts";
 import ConfigurationSysteme from "@/pages/parametres/ConfigurationSysteme";
 import GestionNotifications from "@/pages/parametres/GestionNotifications";
 import GestionBaseDonnees from "@/pages/parametres/GestionBaseDonnees";
+import DiagnosticOffline from "@/pages/parametres/DiagnosticOffline";
 import { useSearchParams } from "react-router-dom";
 
 interface TabConfig {
@@ -51,6 +52,7 @@ const Parametres = () => {
     { value: 'notifications', label: 'Notifs', icon: Bell, permission: PERMISSIONS.MANAGE_SYSTEM, component: GestionNotifications },
     { value: 'database', label: 'BDD', icon: Database, permission: PERMISSIONS.MANAGE_SYSTEM, component: GestionBaseDonnees },
     { value: 'systeme', label: 'Système', icon: Globe, permission: PERMISSIONS.MANAGE_SYSTEM, component: ConfigurationSysteme },
+    { value: 'offline', label: 'Hors ligne', icon: HardDrive, permission: PERMISSIONS.MANAGE_SYSTEM, component: DiagnosticOffline },
   ];
 
   const visibleTabs = tabs.filter(tab => hasPermission(userRoles, tab.permission));
