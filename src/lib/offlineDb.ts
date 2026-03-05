@@ -4,13 +4,14 @@
  */
 
 const DB_NAME = 'agricapital_offline';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export const STORES = {
   SOUSCRIPTEURS: 'souscripteurs',
   PLANTATIONS: 'plantations',
   PAIEMENTS: 'paiements',
   OFFRES: 'offres',
+  DISTRICTS: 'districts',
   REGIONS: 'regions',
   DEPARTEMENTS: 'departements',
   SOUS_PREFECTURES: 'sous_prefectures',
