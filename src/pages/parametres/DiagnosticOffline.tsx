@@ -1,0 +1,252 @@
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getOfflineStats, getSyncQueueStats, getLastSyncTime, getAllItems, clearStore, STORES } from "@/lib/offlineDb";
+import { useOfflineSync } from "@/hooks/useOfflineSync";
+import { RefreshCw, Trash2, Database, Wifi, WifiOff, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+const STORE_LABELS: Record<string, string> = {
+  SOUSCRIPTEURS: "Souscripteurs",
+  PLANTATIONS: "Plantations",
+  PAIEMENTS: "Paiements",
+  OFFRES: "Offres",
+  REGIONS: "Régions",
+  DEPARTEMENTS: "Départements",
+  SOUS_PREFECTURES: "Sous-préfectures",
+  VILLAGES: "Villages",
+};
+
+const DiagnosticOffline = () => {
+  const [stats, setStats] = useState<Record<string, number>>({});
+  const [syncStats, setSyncStats] = useState({ pending: 0, error: 0, total: 0 });
+  const [lastSyncTimes, setLastSyncTimes] = useState<Record<string, string | null>>({});
+  const [pendingOps, setPendingOps] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { isOnline, isSyncing, syncNow, pendingCount, networkQuality } = useOfflineSync();
+  const { toast } = useToast();
+
+  const loadStats = async () => {
+    setLoading(true);
+    try {
+      const [offlineStats, queueStats] = await Promise.all([
+        getOfflineStats(),
+        getSyncQueueStats(),
+      ]);
+      setStats(offlineStats);
+      setSyncStats(queueStats);
+
+      const storeKeys = Object.values(STORES).filter(
+        s => s !== "sync_queue" && s !== "auth_cache" && s !== "meta"
+      );
+      const times: Record<string, string | null> = {};
+      for (const store of storeKeys) {
+        times[store] = await getLastSyncTime(store);
+      }
+      setLastSyncTimes(times);
+
+      const ops = await getAllItems(STORES.SYNC_QUEUE);
+      setPendingOps(ops.filter(o => o.status !== "synced").slice(0, 20));
+    } catch (e) {
+      console.error("Error loading offline stats:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadStats(); }, []);
+
+  const handleClearCache = async (storeName: string) => {
+    try {
+      await clearStore(storeName);
+      toast({ title: "Cache vidé", description: `Le cache ${storeName} a été vidé.` });
+      loadStats();
+    } catch {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de vider le cache." });
+    }
+  };
+
+  const handleClearAll = async () => {
+    const storeKeys = Object.values(STORES).filter(s => s !== "auth_cache" && s !== "meta");
+    for (const store of storeKeys) {
+      await clearStore(store);
+    }
+    toast({ title: "Cache complet vidé", description: "Toutes les données hors ligne ont été supprimées." });
+    loadStats();
+  };
+
+  const formatDate = (iso: string | null) => {
+    if (!iso) return "Jamais";
+    return new Date(iso).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+
+  const totalCached = Object.entries(stats)
+    .filter(([k]) => !["PENDING_SYNC", "ERROR_SYNC"].includes(k))
+    .reduce((acc, [, v]) => acc + v, 0);
+
+  return (
+    <div className="space-y-6">
+      {/* Status Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              {isOnline ? <Wifi className="h-8 w-8 text-green-500" /> : <WifiOff className="h-8 w-8 text-destructive" />}
+              <div>
+                <p className="text-sm text-muted-foreground">Réseau</p>
+                <p className="text-lg font-semibold">
+                  {!isOnline ? "Hors ligne" : networkQuality === "slow" ? "Lent" : "En ligne"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Database className="h-8 w-8 text-primary" />
+              <div>
+                <p className="text-sm text-muted-foreground">Éléments cachés</p>
+                <p className="text-lg font-semibold">{totalCached.toLocaleString()}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              {syncStats.pending > 0 ? <Clock className="h-8 w-8 text-yellow-500" /> : <CheckCircle2 className="h-8 w-8 text-green-500" />}
+              <div>
+                <p className="text-sm text-muted-foreground">En attente</p>
+                <p className="text-lg font-semibold">{syncStats.pending}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              {syncStats.error > 0 ? <AlertTriangle className="h-8 w-8 text-destructive" /> : <CheckCircle2 className="h-8 w-8 text-green-500" />}
+              <div>
+                <p className="text-sm text-muted-foreground">Erreurs sync</p>
+                <p className="text-lg font-semibold">{syncStats.error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={syncNow} disabled={isSyncing || !isOnline} size="sm">
+          <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+          {isSyncing ? "Synchronisation..." : "Forcer la synchronisation"}
+        </Button>
+        <Button onClick={loadStats} variant="outline" size="sm" disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+          Rafraîchir les stats
+        </Button>
+        <Button onClick={handleClearAll} variant="destructive" size="sm">
+          <Trash2 className="h-4 w-4 mr-2" />
+          Vider tout le cache
+        </Button>
+      </div>
+
+      {/* Cache Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Détail du cache IndexedDB</CardTitle>
+          <CardDescription>Nombre d'éléments cachés par table et dernière synchronisation</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Table</TableHead>
+                <TableHead className="text-right">Éléments</TableHead>
+                <TableHead>Dernière sync</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Object.entries(STORE_LABELS).map(([key, label]) => {
+                const storeKey = STORES[key as keyof typeof STORES];
+                const count = stats[key] || 0;
+                return (
+                  <TableRow key={key}>
+                    <TableCell className="font-medium">{label}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={count > 0 ? "default" : "secondary"}>{count}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(lastSyncTimes[storeKey] || null)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleClearCache(storeKey)} title="Vider">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Pending Operations */}
+      {pendingOps.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Opérations en attente de synchronisation</CardTitle>
+            <CardDescription>{pendingOps.length} opération(s) en file d'attente</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Table</TableHead>
+                  <TableHead>Opération</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Erreur</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingOps.map((op, i) => (
+                  <TableRow key={op.id || i}>
+                    <TableCell className="font-medium">{op.table}</TableCell>
+                    <TableCell>
+                      <Badge variant={op.operation === "insert" ? "default" : op.operation === "delete" ? "destructive" : "secondary"}>
+                        {op.operation}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={op.status === "error" ? "destructive" : "outline"}>
+                        {op.status} {op.retries > 0 && `(${op.retries}x)`}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(op.timestamp).toLocaleString("fr-FR")}
+                    </TableCell>
+                    <TableCell className="text-xs text-destructive max-w-[200px] truncate">
+                      {op.error_message || "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default DiagnosticOffline;
