@@ -14,16 +14,49 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // System prompt adapté selon le mode (CRM admin ou portail souscripteur)
+    // Optionally fetch live stats for admin mode
+    let liveContext = "";
+    if (mode === "admin") {
+      try {
+        const supabase = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        const [
+          { count: totalSouscripteurs },
+          { count: totalPlantations },
+          { count: totalPaiements },
+          { data: recentPaiements },
+        ] = await Promise.all([
+          supabase.from("souscripteurs").select("*", { count: "exact", head: true }),
+          supabase.from("plantations").select("*", { count: "exact", head: true }),
+          supabase.from("paiements").select("*", { count: "exact", head: true }),
+          supabase.from("paiements").select("montant_paye, statut, type_paiement").order("created_at", { ascending: false }).limit(100),
+        ]);
+
+        const totalEncaisse = (recentPaiements || [])
+          .filter((p: any) => p.statut === "valide")
+          .reduce((s: number, p: any) => s + (p.montant_paye || 0), 0);
+
+        liveContext = `\n\nDonnées temps réel de la base:
+- ${totalSouscripteurs || 0} souscripteurs au total
+- ${totalPlantations || 0} plantations enregistrées
+- ${totalPaiements || 0} paiements (dont ${new Intl.NumberFormat("fr-FR").format(totalEncaisse)} FCFA encaissés sur les 100 derniers)`;
+      } catch (e) {
+        console.warn("Could not fetch live stats:", e);
+      }
+    }
+
     let systemPrompt = "";
     
     if (mode === "subscriber") {
       systemPrompt = `Tu es l'assistant IA du Portail Souscripteur AgriCapital. Tu aides les souscripteurs (partenaires agricoles) avec leurs questions sur:
-- Leurs plantations (superficie, statut, localisation)
+- Leurs plantations (superficie, statut, localisation, villages)
 - Leurs paiements (Droit d'Accès, redevances mensuelles, arriérés)
 - Leur portefeuille et statistiques
 - Les offres AgriCapital (PalmElite, PalmInvest, TerraPalm - gratuit)
 - Les procédures et démarches
+- La hiérarchie géographique: District > Région > Département > Sous-Préfecture > Village
 
 Contexte du souscripteur connecté:
 ${context || "Aucun contexte disponible"}
@@ -33,20 +66,37 @@ Règles:
 - Sois concis, professionnel et chaleureux
 - Utilise le nom du souscripteur quand disponible
 - Pour les questions de paiement, oriente vers le bouton "Effectuer un paiement"
-- Pour les problèmes techniques, oriente vers le support: +225 05 64 55 17 17
+- Pour les problèmes techniques, oriente vers le support: +225 07 59 56 60 87
 - Ne donne jamais d'informations sur d'autres souscripteurs
-- L'offre TerraPalm est entièrement GRATUITE (DA et redevance à 0 FCFA)`;
+- L'offre TerraPalm est entièrement GRATUITE (DA et redevance à 0 FCFA)
+- Les paiements se font par Wave, Orange Money, MTN Money ou KKiaPay`;
     } else {
-      systemPrompt = `Tu es l'assistant IA avancé du CRM AgriCapital, une plateforme de gestion agro-industrielle en Côte d'Ivoire. Tu aides les administrateurs, commerciaux, comptables et responsables avec:
+      systemPrompt = `Tu es l'assistant IA avancé du CRM AgriCapital, une plateforme de gestion agro-industrielle de palmiers à huile en Côte d'Ivoire. Tu aides les administrateurs, commerciaux, comptables et responsables avec:
 
 - Analyse des données (souscripteurs, plantations, paiements, commissions)
 - Aide à la prise de décision (tendances, alertes, recommandations)
 - Guide d'utilisation des fonctionnalités du CRM
 - Rédaction de rapports et synthèses
 - Optimisation des processus métier
+- Gestion géographique: 14 Districts > 31 Régions > 107 Départements > S/Préfectures > Villages
+
+Hiérarchie des rôles:
+- Super Admin: accès complet
+- Directeur Technico-Commercial: gestion stratégique
+- Responsable Commercial de Zone (RCom): gestion régionale
+- Chef d'Équipe: encadrement terrain
+- Comptable: finances et paiements
+- Commercial: prospection et souscriptions
+- Service Client: support et tickets
+- Opérations: suivi technique des plantations
+
+Offres:
+- PalmElite: offre premium avec accompagnement complet
+- PalmInvest: offre investissement
+- TerraPalm: offre GRATUITE (DA et redevance à 0 FCFA)
 
 Contexte utilisateur:
-${context || "Aucun contexte disponible"}
+${context || "Aucun contexte disponible"}${liveContext}
 
 Règles:
 - Réponds toujours en français
@@ -54,9 +104,9 @@ Règles:
 - Fournis des données chiffrées quand possible
 - Propose des actions concrètes
 - Respecte la confidentialité des données
-- L'offre TerraPalm est entièrement GRATUITE
 - Le terme correct est "redevance mensuelle" (pas "redevance modulable")
-- Les souscripteurs sont des partenaires agricoles`;
+- Les souscripteurs sont des partenaires agricoles
+- Support technique: +225 07 59 56 60 87`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -78,21 +128,18 @@ Règles:
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Trop de requêtes. Veuillez réessayer dans quelques instants." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Crédit IA épuisé. Veuillez contacter l'administrateur." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "Erreur du service IA" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -102,8 +149,7 @@ Règles:
   } catch (e) {
     console.error("AI assistant error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
