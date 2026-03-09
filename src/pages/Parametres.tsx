@@ -1,7 +1,7 @@
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, MapPin, Settings2, List, Bell, Globe, Package, UsersRound, UserPlus, Database, Map, Building, Home, TreePine, HardDrive } from "lucide-react";
+import { Users, Shield, MapPin, Settings2, List, Bell, Globe, Package, UsersRound, UserPlus, Database, Map, Building, Home, TreePine, HardDrive, MapPinned } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { PERMISSIONS, hasPermission } from "@/lib/roles";
 import Utilisateurs from "@/pages/Utilisateurs";
@@ -20,6 +20,7 @@ import ConfigurationSysteme from "@/pages/parametres/ConfigurationSysteme";
 import GestionNotifications from "@/pages/parametres/GestionNotifications";
 import GestionBaseDonnees from "@/pages/parametres/GestionBaseDonnees";
 import DiagnosticOffline from "@/pages/parametres/DiagnosticOffline";
+import GestionZones from "@/pages/parametres/GestionZones";
 import { useSearchParams } from "react-router-dom";
 
 interface TabConfig {
@@ -40,6 +41,7 @@ const Parametres = () => {
     { value: 'utilisateurs', label: 'Utilisateurs', mobileLabel: 'Users', icon: Users, permission: PERMISSIONS.MANAGE_USERS, component: Utilisateurs },
     { value: 'equipes', label: 'Équipes', icon: UsersRound, permission: PERMISSIONS.MANAGE_TEAMS, component: Equipes },
     { value: 'demandes', label: 'Demandes', icon: UserPlus, permission: PERMISSIONS.MANAGE_USERS, component: AccountRequests },
+    { value: 'zones', label: 'Zones', icon: MapPinned, permission: PERMISSIONS.MANAGE_TEAMS, component: GestionZones },
     { value: 'offres', label: 'Offres', icon: Package, permission: PERMISSIONS.MANAGE_OFFERS, component: Offres },
     { value: 'roles', label: 'Rôles', icon: Shield, permission: PERMISSIONS.MANAGE_ROLES, component: GestionRoles },
     { value: 'districts', label: 'Districts', icon: Map, permission: PERMISSIONS.MANAGE_GEO, component: GestionDistricts },

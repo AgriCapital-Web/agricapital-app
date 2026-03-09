@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUploadVisual } from "@/components/ui/file-upload-visual";
 import { getCachedItems, STORES } from "@/lib/offlineDb";
+import { useUserZones } from "@/hooks/useUserZones";
 
 const InteractiveMap = lazy(() => import("@/components/maps/InteractiveMap"));
 const OfflineMap = lazy(() => import("@/components/maps/OfflineMap"));
@@ -23,7 +24,7 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
   const [departements, setDepartements] = useState<any[]>([]);
   const [sousPrefectures, setSousPrefectures] = useState<any[]>([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-
+  const { fetchFilteredDistricts, fetchFilteredRegions, fetchFilteredDepartements, fetchFilteredSousPrefectures } = useUserZones();
   useEffect(() => {
     const on = () => setIsOnline(true);
     const off = () => setIsOnline(false);
@@ -51,22 +52,20 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
 
   const fetchDistricts = async () => {
     if (navigator.onLine) {
-      const { data } = await (supabase as any).from("districts").select("*").eq("est_actif", true).order("nom");
-      setDistricts(data || []);
+      const data = await fetchFilteredDistricts();
+      setDistricts(data);
     } else {
-      const cached = await getCachedItems(STORES.REGIONS);
-      // Districts aren't cached separately, derive unique district_ids from regions or use empty
       try {
-        const res = await getCachedItems("souscripteurs"); // fallback
-        setDistricts([]);
+        const cached = await getCachedItems(STORES.DISTRICTS);
+        setDistricts(cached.filter((d: any) => d.est_actif !== false));
       } catch { setDistricts([]); }
     }
   };
 
   const fetchRegions = async (districtId: string) => {
     if (navigator.onLine) {
-      const { data } = await (supabase as any).from("regions").select("*").eq("district_id", districtId).eq("est_active", true).order("nom");
-      setRegions(data || []);
+      const data = await fetchFilteredRegions(districtId);
+      setRegions(data);
     } else {
       const cached = await getCachedItems(STORES.REGIONS);
       setRegions(cached.filter((r: any) => r.district_id === districtId && r.est_active !== false));
@@ -75,8 +74,8 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
 
   const fetchDepartements = async (regionId: string) => {
     if (navigator.onLine) {
-      const { data } = await (supabase as any).from("departements").select("*").eq("region_id", regionId).eq("est_actif", true).order("nom");
-      setDepartements(data || []);
+      const data = await fetchFilteredDepartements(regionId);
+      setDepartements(data);
     } else {
       const cached = await getCachedItems(STORES.DEPARTEMENTS);
       setDepartements(cached.filter((d: any) => d.region_id === regionId && d.est_actif !== false));
@@ -85,8 +84,8 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
 
   const fetchSousPrefectures = async (departementId: string) => {
     if (navigator.onLine) {
-      const { data } = await (supabase as any).from("sous_prefectures").select("*").eq("departement_id", departementId).eq("est_active", true).order("nom");
-      setSousPrefectures(data || []);
+      const data = await fetchFilteredSousPrefectures(departementId);
+      setSousPrefectures(data);
     } else {
       const cached = await getCachedItems(STORES.SOUS_PREFECTURES);
       setSousPrefectures(cached.filter((sp: any) => sp.departement_id === departementId && sp.est_active !== false));

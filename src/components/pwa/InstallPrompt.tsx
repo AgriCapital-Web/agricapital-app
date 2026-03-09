@@ -15,42 +15,52 @@ const InstallPrompt = () => {
   const [isPWAInstalled, setIsPWAInstalled] = useState(false);
 
   useEffect(() => {
-    // Vérifier si le PWA est déjà installé
+    // Check if PWA is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
       || (window.navigator as any).standalone === true;
     setIsPWAInstalled(isStandalone);
     if (isStandalone) return;
 
+    // Background detection: periodically check if app is not installed
+    const checkInterval = setInterval(() => {
+      const stillNotInstalled = !window.matchMedia('(display-mode: standalone)').matches 
+        && !(window.navigator as any).standalone;
+      if (!stillNotInstalled) {
+        setIsPWAInstalled(true);
+        setShowPrompt(false);
+        clearInterval(checkInterval);
+      }
+    }, 30000); // Check every 30s
+
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
     setIsIOS(isIOSDevice);
+
+    const shouldShowPrompt = () => {
+      const dismissed = localStorage.getItem('pwa-install-dismissed-crm');
+      const lastDismissed = dismissed ? parseInt(dismissed) : 0;
+      const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+      return !dismissed || lastDismissed < threeDaysAgo;
+    };
 
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Vérifier en arrière-plan si le PWA n'est pas installé
-      const dismissed = localStorage.getItem('pwa-install-dismissed-crm');
-      const lastDismissed = dismissed ? parseInt(dismissed) : 0;
-      const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
-      
-      if (!dismissed || lastDismissed < threeDaysAgo) {
+      if (shouldShowPrompt()) {
         setTimeout(() => setShowPrompt(true), 2000);
       }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
-    // iOS: proposer aussi l'installation
-    if (isIOSDevice && !isStandalone) {
-      const dismissed = localStorage.getItem('pwa-install-dismissed-crm');
-      const lastDismissed = dismissed ? parseInt(dismissed) : 0;
-      const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
-      
-      if (!dismissed || lastDismissed < threeDaysAgo) {
-        setTimeout(() => setShowPrompt(true), 3000);
-      }
+    // iOS: also prompt installation
+    if (isIOSDevice && !isStandalone && shouldShowPrompt()) {
+      setTimeout(() => setShowPrompt(true), 3000);
     }
 
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      clearInterval(checkInterval);
+    };
   }, []);
 
   const handleInstall = async () => {

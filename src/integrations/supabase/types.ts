@@ -1340,6 +1340,33 @@ export type Database = {
           },
         ]
       }
+      zone_assignments: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          user_id: string
+          zone_id: string
+          zone_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          user_id: string
+          zone_id: string
+          zone_type: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          user_id?: string
+          zone_id?: string
+          zone_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
