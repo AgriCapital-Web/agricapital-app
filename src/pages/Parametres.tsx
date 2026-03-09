@@ -20,6 +20,7 @@ import ConfigurationSysteme from "@/pages/parametres/ConfigurationSysteme";
 import GestionNotifications from "@/pages/parametres/GestionNotifications";
 import GestionBaseDonnees from "@/pages/parametres/GestionBaseDonnees";
 import DiagnosticOffline from "@/pages/parametres/DiagnosticOffline";
+import GestionZones from "@/pages/parametres/GestionZones";
 import { useSearchParams } from "react-router-dom";
 
 interface TabConfig {
