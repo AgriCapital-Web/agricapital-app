@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUploadVisual } from "@/components/ui/file-upload-visual";
 import { getCachedItems, STORES } from "@/lib/offlineDb";
+import { useUserZones } from "@/hooks/useUserZones";
 
 const InteractiveMap = lazy(() => import("@/components/maps/InteractiveMap"));
 const OfflineMap = lazy(() => import("@/components/maps/OfflineMap"));
