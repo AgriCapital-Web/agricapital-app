@@ -24,7 +24,7 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
   const [departements, setDepartements] = useState<any[]>([]);
   const [sousPrefectures, setSousPrefectures] = useState<any[]>([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-
+  const { fetchFilteredDistricts, fetchFilteredRegions, fetchFilteredDepartements, fetchFilteredSousPrefectures } = useUserZones();
   useEffect(() => {
     const on = () => setIsOnline(true);
     const off = () => setIsOnline(false);
