@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { 
   LayoutDashboard, Users, Sprout, CreditCard, LogOut, Menu, Receipt,
-  BarChart3, Ticket, Wallet, FileText, Settings, UserCircle, Wifi, WifiOff, RefreshCw, Signal
+  BarChart3, Ticket, Wallet, FileText, Settings, UserCircle, Wifi, WifiOff, RefreshCw, Signal,
+  LandPlot, Layers
 } from "lucide-react";
 
 interface MainLayoutProps { children: ReactNode; }
@@ -28,6 +29,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const menuItems = [
     { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", permission: PERMISSIONS.VIEW_DASHBOARD },
     { icon: Users, label: "Souscripteurs", path: "/souscriptions", permission: PERMISSIONS.VIEW_SOUSCRIPTIONS },
+    { icon: LandPlot, label: "Propriétaires", path: "/proprietaires-terres", permission: PERMISSIONS.VIEW_SOUSCRIPTIONS },
+    { icon: Layers, label: "Parcelles", path: "/parcelles", permission: PERMISSIONS.VIEW_PLANTATIONS },
     { icon: Sprout, label: "Plantations", path: "/plantations", permission: PERMISSIONS.VIEW_PLANTATIONS },
     { icon: CreditCard, label: "Gestion Paiements", path: "/paiements", permission: PERMISSIONS.VIEW_PAIEMENTS },
     { icon: Receipt, label: "Commissions", path: "/commissions", permission: PERMISSIONS.VIEW_COMMISSIONS },
