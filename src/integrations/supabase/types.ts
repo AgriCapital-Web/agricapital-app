@@ -422,6 +422,36 @@ export type Database = {
         }
         Relationships: []
       }
+      otp_codes: {
+        Row: {
+          attempts: number | null
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          telephone: string
+          verified: boolean | null
+        }
+        Insert: {
+          attempts?: number | null
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          telephone: string
+          verified?: boolean | null
+        }
+        Update: {
+          attempts?: number | null
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          telephone?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       paiements: {
         Row: {
           created_at: string | null
@@ -1372,6 +1402,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_otp: { Args: never; Returns: undefined }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       current_profile_id: { Args: never; Returns: string }
       generate_plantation_id: { Args: never; Returns: string }
