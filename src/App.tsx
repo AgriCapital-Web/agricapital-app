@@ -25,6 +25,8 @@ import HistoriqueComplet from "./pages/HistoriqueComplet";
 import AccountRequest from "./pages/AccountRequest";
 import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 import Tickets from "./pages/Tickets";
+import ProprietairesTerres from "./pages/ProprietairesTerres";
+import Parcelles from "./pages/Parcelles";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,8 @@ const DomainRouter = () => {
       <Route path="/planteur/:id" element={<PlanteurDetail />} />
       <Route path="/planteur/:id/historique" element={<HistoriqueComplet />} />
       <Route path="/plantations" element={<Plantations />} />
+      <Route path="/proprietaires-terres" element={<ProprietairesTerres />} />
+      <Route path="/parcelles" element={<Parcelles />} />
       <Route path="/nouvelle-souscription" element={<NouvelleSouscription />} />
       <Route path="/profil" element={<Profil />} />
       
@@ -59,7 +63,7 @@ const DomainRouter = () => {
       <Route path="/offres" element={<Navigate to="/parametres?tab=offres" replace />} />
       <Route path="/promotions" element={<Navigate to="/parametres?tab=offres" replace />} />
       <Route path="/portefeuille-clients" element={<Navigate to="/souscriptions" replace />} />
-      <Route path="/parcelles" element={<Navigate to="/plantations" replace />} />
+      
       <Route path="/account-requests" element={<Navigate to="/parametres?tab=demandes" replace />} />
       
       {/* Rapports */}
