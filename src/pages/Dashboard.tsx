@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
+import { RoleDashboard } from "@/components/dashboard/RoleDashboard";
 import { hasPermission, PERMISSIONS, ROLE_SHORT_LABELS } from "@/lib/roles";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useAuth } from "@/hooks/useAuth";
@@ -335,6 +336,9 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* KPIs par zone pour RCom/CE/Commercial */}
+          <RoleDashboard />
 
           {/* Carte Interactive des Plantations */}
           <PlantationsMap />
