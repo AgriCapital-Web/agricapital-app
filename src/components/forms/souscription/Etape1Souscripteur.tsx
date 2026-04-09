@@ -132,8 +132,107 @@ export const Etape1Souscripteur = ({ formData, updateFormData }: Etape1Props) =>
   }, [formData.departement_id]);
 
 
+  const [parcelles, setParcelles] = useState<any[]>([]);
+  const [parcelleSearch, setParcelleSearch] = useState("");
+  const [loadingParcelles, setLoadingParcelles] = useState(false);
+
+  // Load available parcelles for sans_terre
+  useEffect(() => {
+    if (formData.type_souscripteur === "sans_terre") {
+      const fetchParcelles = async () => {
+        setLoadingParcelles(true);
+        let query = (supabase as any)
+          .from("parcelles")
+          .select("id, id_unique, nom, surface_disponible_ha, village, regions(nom), departements(nom)")
+          .gt("surface_disponible_ha", 0)
+          .eq("statut", "disponible")
+          .order("id_unique")
+          .limit(50);
+        
+        if (parcelleSearch) {
+          query = query.or(`id_unique.ilike.%${parcelleSearch}%,nom.ilike.%${parcelleSearch}%,village.ilike.%${parcelleSearch}%`);
+        }
+        
+        const { data } = await query;
+        setParcelles(data || []);
+        setLoadingParcelles(false);
+      };
+      fetchParcelles();
+    }
+  }, [formData.type_souscripteur, parcelleSearch]);
+
   return (
     <div className="space-y-6">
+      {/* Type de souscripteur */}
+      <Card className="border-primary/30">
+        <CardHeader>
+          <CardTitle>Type de Souscripteur</CardTitle>
+          <CardDescription>Choisissez le profil du souscripteur</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => updateFormData({ type_souscripteur: "sans_terre", parcelle_id: null })}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                formData.type_souscripteur === "sans_terre" || !formData.type_souscripteur
+                  ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <div className="font-semibold">Sans terre</div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Offres PalmInvest / PalmInvest+ — AgriCapital fournit la terre
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => updateFormData({ type_souscripteur: "avec_terre", parcelle_id: null })}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                formData.type_souscripteur === "avec_terre"
+                  ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                  : "border-border hover:border-primary/50"
+              }`}
+            >
+              <div className="font-semibold">Avec terre</div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Offres TerraPalm / TerraPalm+ — Le souscripteur fournit sa propre terre
+              </p>
+            </button>
+          </div>
+
+          {/* Parcelle search for sans_terre */}
+          {(formData.type_souscripteur === "sans_terre" || !formData.type_souscripteur) && (
+            <div className="mt-4 space-y-3">
+              <Label>Parcelle disponible (recherche multicritère)</Label>
+              <Input
+                placeholder="Rechercher par ID, nom, village..."
+                value={parcelleSearch}
+                onChange={(e) => setParcelleSearch(e.target.value)}
+              />
+              <Select
+                value={formData.parcelle_id || ""}
+                onValueChange={(v) => updateFormData({ parcelle_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingParcelles ? "Chargement..." : "Sélectionner une parcelle"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {parcelles.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.id_unique} — {p.nom || p.village || "Sans nom"} ({p.surface_disponible_ha} ha dispo)
+                    </SelectItem>
+                  ))}
+                  {parcelles.length === 0 && !loadingParcelles && (
+                    <div className="p-2 text-sm text-muted-foreground text-center">Aucune parcelle disponible</div>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Identité du Souscripteur</CardTitle>
