@@ -390,6 +390,7 @@ export type Database = {
           montant_da_par_ha: number
           nom: string
           ordre: number | null
+          type_offre: string | null
           updated_at: string | null
         }
         Insert: {
@@ -404,6 +405,7 @@ export type Database = {
           montant_da_par_ha?: number
           nom: string
           ordre?: number | null
+          type_offre?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -418,6 +420,7 @@ export type Database = {
           montant_da_par_ha?: number
           nom?: string
           ordre?: number | null
+          type_offre?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1334,6 +1337,7 @@ export type Database = {
           id: string
           id_unique: string | null
           lieu_naissance: string | null
+          localite: string | null
           nom: string | null
           nom_complet: string | null
           nom_famille: string | null
@@ -1378,6 +1382,7 @@ export type Database = {
           id?: string
           id_unique?: string | null
           lieu_naissance?: string | null
+          localite?: string | null
           nom?: string | null
           nom_complet?: string | null
           nom_famille?: string | null
@@ -1422,6 +1427,7 @@ export type Database = {
           id?: string
           id_unique?: string | null
           lieu_naissance?: string | null
+          localite?: string | null
           nom?: string | null
           nom_complet?: string | null
           nom_famille?: string | null
