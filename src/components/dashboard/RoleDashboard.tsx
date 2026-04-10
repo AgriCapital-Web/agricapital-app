@@ -59,7 +59,7 @@ export const RoleDashboard = () => {
           paiementsEnAttente: pa?.filter((p: any) => p.statut === "en_attente").length || 0,
           plantationsEnProduction: pl?.filter((p: any) => p.statut_global === "en_production").length || 0,
           equipes: eq || 0,
-          zoneName: "Toutes les zones",
+          zoneName: "Vue globale — Toutes les zones",
         });
       } else if (isRCom || isChefEquipe || isCommercial) {
         // Get user's zone assignments
