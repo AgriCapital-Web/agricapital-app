@@ -262,6 +262,8 @@ export type Database = {
           nom: string
           region_id: string | null
           responsable_id: string | null
+          superviseur_id: string | null
+          type_equipe: string | null
           updated_at: string | null
         }
         Insert: {
@@ -271,6 +273,8 @@ export type Database = {
           nom: string
           region_id?: string | null
           responsable_id?: string | null
+          superviseur_id?: string | null
+          type_equipe?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -280,6 +284,8 @@ export type Database = {
           nom?: string
           region_id?: string | null
           responsable_id?: string | null
+          superviseur_id?: string | null
+          type_equipe?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -297,7 +303,53 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "equipes_superviseur_id_fkey"
+            columns: ["superviseur_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      grille_remuneration: {
+        Row: {
+          actif: boolean | null
+          annee_application: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          montant: number | null
+          role_cible: string
+          taux_pourcentage: number | null
+          type_remuneration: string
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          annee_application?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          montant?: number | null
+          role_cible: string
+          taux_pourcentage?: number | null
+          type_remuneration: string
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          annee_application?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          montant?: number | null
+          role_cible?: string
+          taux_pourcentage?: number | null
+          type_remuneration?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       historique_activites: {
         Row: {
