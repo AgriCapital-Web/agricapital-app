@@ -4,25 +4,27 @@ import { useRealtime } from "@/hooks/useRealtime";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { Search, Users, Plus, Edit, MoreHorizontal, CheckCircle, XCircle, UserPlus, UserMinus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Search, Users, Plus, Edit, MoreHorizontal, CheckCircle, XCircle, UserPlus, UserMinus, Briefcase, Wrench } from "lucide-react";
+
+const ROLE_SHORT: Record<string, string> = {
+  commercial: "Commercial",
+  technicien: "Technicien",
+  chef_equipe: "CE",
+  superviseur_tc: "STC",
+};
 
 const Equipes = () => {
   const [equipes, setEquipes] = useState<any[]>([]);
   const [regions, setRegions] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
-  const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -32,42 +34,28 @@ const Equipes = () => {
   const [members, setMembers] = useState<any[]>([]);
   const [availableMembers, setAvailableMembers] = useState<any[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [activeTab, setActiveTab] = useState("commercial");
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     nom: "",
     responsable_id: "",
     region_id: "",
+    type_equipe: "commercial" as "commercial" | "technique",
     actif: true,
   });
 
   const fetchData = async () => {
     try {
-      const { data: equipesData, error: equipesError } = await (supabase as any)
-        .from("equipes")
-        .select(`
-          *,
-          responsable:profiles!equipes_responsable_id_fkey(nom_complet, telephone),
-          region:regions(nom)
-        `)
-        .order("created_at", { ascending: false });
-
-      const { data: regionsData } = await (supabase as any)
-        .from("regions")
-        .select("*")
-        .order("nom");
-
-      const { data: profilesData } = await (supabase as any)
-        .from("profiles")
-        .select("id, nom_complet, user_id")
-        .order("nom_complet");
-
-      if (equipesError) throw equipesError;
-
+      const [{ data: equipesData, error }, { data: regionsData }, { data: profilesData }] = await Promise.all([
+        (supabase as any).from("equipes").select(`*, responsable:profiles!equipes_responsable_id_fkey(nom_complet, telephone), region:regions(nom)`).order("created_at", { ascending: false }),
+        (supabase as any).from("regions").select("*").order("nom"),
+        (supabase as any).from("profiles").select("id, nom_complet, user_id").order("nom_complet"),
+      ]);
+      if (error) throw error;
       setEquipes(equipesData || []);
       setRegions(regionsData || []);
       setProfiles(profilesData || []);
-      setAllProfiles(profilesData || []);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message });
     } finally {
@@ -80,64 +68,41 @@ const Equipes = () => {
 
   const fetchMembers = async (equipe: any) => {
     setMembersEquipe(equipe);
-    
-    // Get profiles assigned to this team
+    const targetRole = equipe.type_equipe === "technique" ? "technicien" : "commercial";
+
     const { data: teamMembers } = await (supabase as any)
-      .from("profiles")
-      .select("id, nom_complet, telephone, user_id")
-      .eq("equipe_id", equipe.id);
-    
-    // Get roles for these members
+      .from("profiles").select("id, nom_complet, telephone, user_id").eq("equipe_id", equipe.id);
+
     const membersList = await Promise.all(
       (teamMembers || []).map(async (m: any) => {
-        const { data: roles } = await (supabase as any)
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", m.user_id);
+        const { data: roles } = await (supabase as any).from("user_roles").select("role").eq("user_id", m.user_id);
         return { ...m, roles: roles?.map((r: any) => r.role) || [] };
       })
     );
-    
     setMembers(membersList);
-    
-    // Available = profiles not in any team + have commercial/chef_equipe role
+
     const { data: available } = await (supabase as any)
-      .from("profiles")
-      .select("id, nom_complet, user_id")
-      .is("equipe_id", null)
-      .neq("id", equipe.responsable_id || "");
-    
+      .from("profiles").select("id, nom_complet, user_id").is("equipe_id", null);
+
     const availableWithRoles = await Promise.all(
       (available || []).map(async (p: any) => {
-        const { data: roles } = await (supabase as any)
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", p.user_id);
-        const rolesList = roles?.map((r: any) => r.role) || [];
-        return { ...p, roles: rolesList };
+        const { data: roles } = await (supabase as any).from("user_roles").select("role").eq("user_id", p.user_id);
+        return { ...p, roles: roles?.map((r: any) => r.role) || [] };
       })
     );
-    
-    // Only show commercial and chef_equipe
+
     setAvailableMembers(
-      availableWithRoles.filter(p => 
-        p.roles.includes("commercial") || p.roles.includes("chef_equipe")
-      )
+      availableWithRoles.filter(p => p.roles.includes(targetRole) || p.roles.includes("chef_equipe"))
     );
-    
     setIsMembersOpen(true);
   };
 
   const addMember = async () => {
     if (!selectedMemberId || !membersEquipe) return;
     try {
-      const { error } = await (supabase as any)
-        .from("profiles")
-        .update({ equipe_id: membersEquipe.id })
-        .eq("id", selectedMemberId);
-      
+      const { error } = await (supabase as any).from("profiles").update({ equipe_id: membersEquipe.id }).eq("id", selectedMemberId);
       if (error) throw error;
-      toast({ title: "Membre ajouté", description: "Le commercial a été assigné à l'équipe" });
+      toast({ title: "Membre ajouté" });
       setSelectedMemberId("");
       fetchMembers(membersEquipe);
     } catch (error: any) {
@@ -147,13 +112,9 @@ const Equipes = () => {
 
   const removeMember = async (profileId: string) => {
     try {
-      const { error } = await (supabase as any)
-        .from("profiles")
-        .update({ equipe_id: null })
-        .eq("id", profileId);
-      
+      const { error } = await (supabase as any).from("profiles").update({ equipe_id: null }).eq("id", profileId);
       if (error) throw error;
-      toast({ title: "Membre retiré", description: "Le commercial a été retiré de l'équipe" });
+      toast({ title: "Membre retiré" });
       if (membersEquipe) fetchMembers(membersEquipe);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message });
@@ -166,15 +127,15 @@ const Equipes = () => {
       if (selectedEquipe) {
         const { error } = await (supabase as any).from("equipes").update(formData).eq("id", selectedEquipe.id);
         if (error) throw error;
-        toast({ title: "Succès", description: "Équipe modifiée" });
+        toast({ title: "Équipe modifiée" });
       } else {
         const { error } = await (supabase as any).from("equipes").insert([formData]);
         if (error) throw error;
-        toast({ title: "Succès", description: "Équipe créée" });
+        toast({ title: "Équipe créée" });
       }
       setIsFormOpen(false);
       setSelectedEquipe(null);
-      setFormData({ nom: "", responsable_id: "", region_id: "", actif: true });
+      setFormData({ nom: "", responsable_id: "", region_id: "", type_equipe: "commercial", actif: true });
       fetchData();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message });
@@ -187,6 +148,7 @@ const Equipes = () => {
       nom: equipe.nom,
       responsable_id: equipe.responsable_id || "",
       region_id: equipe.region_id || "",
+      type_equipe: equipe.type_equipe || "commercial",
       actif: equipe.actif ?? true,
     });
     setIsFormOpen(true);
@@ -196,23 +158,86 @@ const Equipes = () => {
     try {
       const { error } = await (supabase as any).from("equipes").update({ actif: newStatus }).eq("id", equipeId);
       if (error) throw error;
-      toast({ title: "Succès", description: `Équipe ${newStatus ? "activée" : "désactivée"}` });
+      toast({ title: `Équipe ${newStatus ? "activée" : "désactivée"}` });
       fetchData();
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message });
     }
   };
 
-  const ROLE_SHORT: Record<string, string> = {
-    commercial: "Commercial",
-    chef_equipe: "CE",
-    responsable_zone: "RCom",
-  };
+  const filteredEquipes = equipes.filter((e) => {
+    const matchesSearch = e.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.responsable?.nom_complet?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTab = (e.type_equipe || "commercial") === activeTab;
+    return matchesSearch && matchesTab;
+  });
 
-  const filteredEquipes = equipes.filter((e) =>
-    e.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.responsable?.nom_complet?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.region?.nom?.toLowerCase().includes(searchTerm.toLowerCase())
+  const commercialCount = equipes.filter(e => (e.type_equipe || "commercial") === "commercial").length;
+  const techniqueCount = equipes.filter(e => e.type_equipe === "technique").length;
+
+  const EquipeTable = () => (
+    <div className="border rounded-lg overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Équipe</TableHead>
+            <TableHead>Responsable</TableHead>
+            <TableHead className="hidden sm:table-cell">Région</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <TableRow><TableCell colSpan={5} className="text-center py-8">Chargement...</TableCell></TableRow>
+          ) : filteredEquipes.length === 0 ? (
+            <TableRow><TableCell colSpan={5} className="text-center py-8">Aucune équipe {activeTab === "technique" ? "technique" : "commerciale"}</TableCell></TableRow>
+          ) : (
+            filteredEquipes.map((equipe) => (
+              <TableRow key={equipe.id}>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {equipe.type_equipe === "technique" ? <Wrench className="h-4 w-4 text-teal-600" /> : <Briefcase className="h-4 w-4 text-green-600" />}
+                    {equipe.nom}
+                  </div>
+                </TableCell>
+                <TableCell>{equipe.responsable?.nom_complet || "Non assigné"}</TableCell>
+                <TableCell className="hidden sm:table-cell">{equipe.region?.nom || "-"}</TableCell>
+                <TableCell>
+                  <Badge className={equipe.actif ? "bg-green-500" : "bg-red-500"}>
+                    {equipe.actif ? "Active" : "Inactive"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => fetchMembers(equipe)}>
+                        <Users className="h-4 w-4 mr-2" />Gérer les membres
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEdit(equipe)}>
+                        <Edit className="h-4 w-4 mr-2" />Modifier
+                      </DropdownMenuItem>
+                      {equipe.actif ? (
+                        <DropdownMenuItem onClick={() => handleStatusChange(equipe.id, false)} className="text-orange-600">
+                          <XCircle className="h-4 w-4 mr-2" />Désactiver
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={() => handleStatusChange(equipe.id, true)} className="text-green-600">
+                          <CheckCircle className="h-4 w-4 mr-2" />Activer
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 
   return (
@@ -220,13 +245,13 @@ const Equipes = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Gestion des Équipes</h1>
-          <p className="text-muted-foreground mt-1">{equipes.length} équipe(s)</p>
+          <p className="text-muted-foreground mt-1">{equipes.length} équipe(s) — {commercialCount} commerciale(s), {techniqueCount} technique(s)</p>
         </div>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => {
               setSelectedEquipe(null);
-              setFormData({ nom: "", responsable_id: "", region_id: "", actif: true });
+              setFormData({ nom: "", responsable_id: "", region_id: "", type_equipe: activeTab as any, actif: true });
             }}>
               <Plus className="mr-2 h-4 w-4" />
               Nouvelle Équipe
@@ -237,6 +262,16 @@ const Equipes = () => {
               <DialogTitle>{selectedEquipe ? "Modifier l'équipe" : "Nouvelle équipe"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label>Type d'équipe</Label>
+                <Select value={formData.type_equipe} onValueChange={(v: any) => setFormData({ ...formData, type_equipe: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="commercial"><div className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-green-600" />Commerciale</div></SelectItem>
+                    <SelectItem value="technique"><div className="flex items-center gap-2"><Wrench className="h-4 w-4 text-teal-600" />Technique</div></SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>Nom de l'équipe</Label>
                 <Input value={formData.nom} onChange={(e) => setFormData({ ...formData, nom: e.target.value })} required />
@@ -273,13 +308,31 @@ const Equipes = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-3 bg-primary/10 rounded-lg"><Users className="h-5 w-5 text-primary" /></div>
             <div>
               <div className="text-2xl font-bold">{equipes.length}</div>
               <div className="text-sm text-muted-foreground">Total</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-3 bg-green-100 rounded-lg"><Briefcase className="h-5 w-5 text-green-600" /></div>
+            <div>
+              <div className="text-2xl font-bold">{commercialCount}</div>
+              <div className="text-sm text-muted-foreground">Commerciales</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-3 bg-teal-100 rounded-lg"><Wrench className="h-5 w-5 text-teal-600" /></div>
+            <div>
+              <div className="text-2xl font-bold">{techniqueCount}</div>
+              <div className="text-sm text-muted-foreground">Techniques</div>
             </div>
           </CardContent>
         </Card>
@@ -300,76 +353,36 @@ const Equipes = () => {
         <Input placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
       </div>
 
-      {/* Table */}
-      <div className="border rounded-lg overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Équipe</TableHead>
-              <TableHead>Chef d'équipe</TableHead>
-              <TableHead className="hidden sm:table-cell">Région</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8">Chargement...</TableCell></TableRow>
-            ) : filteredEquipes.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8">Aucune équipe</TableCell></TableRow>
-            ) : (
-              filteredEquipes.map((equipe) => (
-                <TableRow key={equipe.id}>
-                  <TableCell className="font-medium">{equipe.nom}</TableCell>
-                  <TableCell>{equipe.responsable?.nom_complet || "Non assigné"}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{equipe.region?.nom || "-"}</TableCell>
-                  <TableCell>
-                    <Badge className={equipe.actif ? "bg-green-500" : "bg-red-500"}>
-                      {equipe.actif ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => fetchMembers(equipe)}>
-                          <Users className="h-4 w-4 mr-2" />Gérer les membres
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(equipe)}>
-                          <Edit className="h-4 w-4 mr-2" />Modifier
-                        </DropdownMenuItem>
-                        {equipe.actif ? (
-                          <DropdownMenuItem onClick={() => handleStatusChange(equipe.id, false)} className="text-orange-600">
-                            <XCircle className="h-4 w-4 mr-2" />Désactiver
-                          </DropdownMenuItem>
-                        ) : (
-                          <DropdownMenuItem onClick={() => handleStatusChange(equipe.id, true)} className="text-green-600">
-                            <CheckCircle className="h-4 w-4 mr-2" />Activer
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="commercial" className="gap-2">
+            <Briefcase className="h-4 w-4" />Commerciale ({commercialCount})
+          </TabsTrigger>
+          <TabsTrigger value="technique" className="gap-2">
+            <Wrench className="h-4 w-4" />Technique ({techniqueCount})
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="commercial"><EquipeTable /></TabsContent>
+        <TabsContent value="technique"><EquipeTable /></TabsContent>
+      </Tabs>
 
       {/* Members Dialog */}
       <Dialog open={isMembersOpen} onOpenChange={setIsMembersOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Membres — {membersEquipe?.nom}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {membersEquipe?.type_equipe === "technique" ? <Wrench className="h-5 w-5 text-teal-600" /> : <Briefcase className="h-5 w-5 text-green-600" />}
+              Membres — {membersEquipe?.nom}
+              <Badge variant="outline" className="ml-2 text-xs">{membersEquipe?.type_equipe === "technique" ? "Technique" : "Commerciale"}</Badge>
+            </DialogTitle>
           </DialogHeader>
           
-          {/* Add member */}
           <div className="flex gap-2">
             <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
-              <SelectTrigger className="flex-1"><SelectValue placeholder="Ajouter un commercial..." /></SelectTrigger>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder={`Ajouter un ${membersEquipe?.type_equipe === "technique" ? "technicien" : "commercial"}...`} />
+              </SelectTrigger>
               <SelectContent>
                 {availableMembers.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
@@ -383,7 +396,6 @@ const Equipes = () => {
             </Button>
           </div>
 
-          {/* Members list */}
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {members.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Aucun membre dans cette équipe</p>
