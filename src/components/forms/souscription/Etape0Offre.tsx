@@ -42,13 +42,17 @@ const getCouleur = (code: string) => {
 export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
   const { data: promotionActive } = usePromotionActive();
   
+  // Determine type_offre filter based on type_souscripteur
+  const typeOffre = formData.type_souscripteur === "avec_terre" ? "avec_terre" : "sans_terre";
+  
   const { data: offres, isLoading } = useQuery({
-    queryKey: ['offres-souscription'],
+    queryKey: ['offres-souscription', typeOffre],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('offres')
         .select('*')
         .eq('actif', true)
+        .eq('type_offre', typeOffre)
         .order('ordre', { ascending: true });
       
       if (error) throw error;

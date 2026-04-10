@@ -138,14 +138,14 @@ export const Etape1Souscripteur = ({ formData, updateFormData }: Etape1Props) =>
 
   // Load available parcelles for sans_terre
   useEffect(() => {
-    if (formData.type_souscripteur === "sans_terre") {
+    if (formData.type_souscripteur === "sans_terre" || !formData.type_souscripteur) {
       const fetchParcelles = async () => {
         setLoadingParcelles(true);
         let query = (supabase as any)
           .from("parcelles")
-          .select("id, id_unique, nom, surface_disponible_ha, village, regions(nom), departements(nom)")
+          .select("id, id_unique, nom, surface_disponible_ha, village, region_id, departement_id")
           .gt("surface_disponible_ha", 0)
-          .eq("statut", "disponible")
+          .in("statut", ["disponible", "partiellement_attribuee"])
           .order("id_unique")
           .limit(50);
         
