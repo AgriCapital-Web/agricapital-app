@@ -59,7 +59,7 @@ export const RoleDashboard = () => {
           paiementsEnAttente: pa?.filter((p: any) => p.statut === "en_attente").length || 0,
           plantationsEnProduction: pl?.filter((p: any) => p.statut_global === "en_production").length || 0,
           equipes: eq || 0,
-          zoneName: "Toutes les zones",
+          zoneName: "Vue globale — Toutes les zones",
         });
       } else if (isRCom || isChefEquipe || isCommercial) {
         // Get user's zone assignments
@@ -126,11 +126,8 @@ export const RoleDashboard = () => {
 
   if (loading) return null;
 
-  // Only show for non-admin roles that have zone restrictions
-  if (isAdmin) return null;
-
-  const roleLabel = isRCom ? "RCom" : isChefEquipe ? "Chef d'Équipe" : "Commercial";
-  const zoneLevel = isRCom ? "Districts" : isChefEquipe ? "Départements" : "Sous-préfectures";
+  const roleLabel = isAdmin ? "Administrateur" : isRCom ? "RCom" : isChefEquipe ? "Chef d'Équipe" : "Commercial";
+  const zoneLevel = isAdmin ? "Global" : isRCom ? "Districts" : isChefEquipe ? "Départements" : "Sous-préfectures";
 
   return (
     <Card className="border-primary/20 bg-primary/5">
