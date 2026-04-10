@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Sprout, CreditCard, TrendingUp, MapPin, Briefcase, Target } from "lucide-react";
+import { Users, Sprout, CreditCard, TrendingUp, MapPin, Target, Wrench, DollarSign } from "lucide-react";
 
 interface ZoneStats {
   totalSouscripteurs: number;
@@ -19,21 +19,17 @@ interface ZoneStats {
 export const RoleDashboard = () => {
   const { userRoles, user } = useAuth();
   const [stats, setStats] = useState<ZoneStats>({
-    totalSouscripteurs: 0,
-    totalPlantations: 0,
-    totalHectares: 0,
-    totalPaiements: 0,
-    paiementsEnAttente: 0,
-    plantationsEnProduction: 0,
-    equipes: 0,
-    zoneName: "",
+    totalSouscripteurs: 0, totalPlantations: 0, totalHectares: 0,
+    totalPaiements: 0, paiementsEnAttente: 0, plantationsEnProduction: 0,
+    equipes: 0, zoneName: "",
   });
   const [loading, setLoading] = useState(true);
 
   const isAdmin = userRoles.some(r => ["super_admin", "directeur_tc"].includes(r));
-  const isRCom = userRoles.includes("responsable_zone");
+  const isSTC = userRoles.includes("superviseur_tc");
   const isChefEquipe = userRoles.includes("chef_equipe");
   const isCommercial = userRoles.includes("commercial");
+  const isTechnicien = userRoles.includes("technicien");
 
   useEffect(() => {
     if (!user) return;
@@ -43,7 +39,6 @@ export const RoleDashboard = () => {
   const fetchZoneStats = async () => {
     try {
       if (isAdmin) {
-        // Admin sees everything
         const [{ count: sc }, { data: pl }, { data: pa }, { count: eq }] = await Promise.all([
           (supabase as any).from("souscripteurs").select("*", { count: "exact", head: true }),
           (supabase as any).from("plantations").select("superficie_ha, statut_global"),
@@ -61,19 +56,14 @@ export const RoleDashboard = () => {
           equipes: eq || 0,
           zoneName: "Vue globale — Toutes les zones",
         });
-      } else if (isRCom || isChefEquipe || isCommercial) {
-        // Get user's zone assignments
+      } else if (isSTC || isChefEquipe || isCommercial || isTechnicien) {
         const { data: zones } = await (supabase as any)
-          .from("zone_assignments")
-          .select("zone_id, zone_type")
-          .eq("user_id", user!.id);
+          .from("zone_assignments").select("zone_id, zone_type").eq("user_id", user!.id);
 
         if (!zones || zones.length === 0) {
-          setStats({
-            totalSouscripteurs: 0, totalPlantations: 0, totalHectares: 0,
+          setStats({ totalSouscripteurs: 0, totalPlantations: 0, totalHectares: 0,
             totalPaiements: 0, paiementsEnAttente: 0, plantationsEnProduction: 0,
-            equipes: 0, zoneName: "Aucune zone assignée",
-          });
+            equipes: 0, zoneName: "Aucune zone assignée" });
           setLoading(false);
           return;
         }
@@ -81,7 +71,6 @@ export const RoleDashboard = () => {
         const zoneIds = zones.map((z: any) => z.zone_id);
         const zoneType = zones[0]?.zone_type;
 
-        // Get zone name
         let zoneName = "";
         const tableMap: Record<string, string> = { district: "districts", region: "regions", departement: "departements", sous_prefecture: "sous_prefectures" };
         const table = tableMap[zoneType];
@@ -90,18 +79,14 @@ export const RoleDashboard = () => {
           zoneName = zoneData?.map((z: any) => z.nom).join(", ") || "";
         }
 
-        // Filter by zone column
         const colMap: Record<string, string> = { district: "district_id", region: "region_id", departement: "departement_id", sous_prefecture: "sous_prefecture_id" };
         const col = colMap[zoneType] || "district_id";
 
         const [{ data: souscripteurs }, { data: plantations }, { data: paiements }] = await Promise.all([
           (supabase as any).from("souscripteurs").select("id").in(col, zoneIds),
           (supabase as any).from("plantations").select("superficie_ha, statut_global").in(col, zoneIds),
-          (supabase as any).from("paiements").select("montant, statut, plantation_id"),
+          (supabase as any).from("paiements").select("montant, statut"),
         ]);
-
-        // Filter paiements by plantations in zone
-        const plantationIds = plantations?.map((p: any) => p.id) || [];
 
         setStats({
           totalSouscripteurs: souscripteurs?.length || 0,
@@ -126,8 +111,11 @@ export const RoleDashboard = () => {
 
   if (loading) return null;
 
-  const roleLabel = isAdmin ? "Administrateur" : isRCom ? "RCom" : isChefEquipe ? "Chef d'Équipe" : "Commercial";
-  const zoneLevel = isAdmin ? "Global" : isRCom ? "Districts" : isChefEquipe ? "Départements" : "Sous-préfectures";
+  const roleLabel = isAdmin ? "Administrateur" : isSTC ? "Superviseur TC" : isChefEquipe ? "Chef d'Équipe" : isTechnicien ? "Technicien" : "Commercial";
+  const zoneLevel = isAdmin ? "Global" : isSTC ? "Districts" : isChefEquipe ? "Départements" : "Sous-préfectures";
+
+  const showCommercialKPIs = isCommercial || isSTC || isAdmin;
+  const showTechKPIs = isTechnicien || isSTC || isAdmin;
 
   return (
     <Card className="border-primary/20 bg-primary/5">
@@ -145,26 +133,48 @@ export const RoleDashboard = () => {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="text-center p-2 bg-background rounded-lg">
-            <Users className="h-4 w-4 mx-auto text-primary mb-1" />
-            <div className="text-lg font-bold">{stats.totalSouscripteurs}</div>
-            <div className="text-xs text-muted-foreground">Souscripteurs</div>
-          </div>
-          <div className="text-center p-2 bg-background rounded-lg">
-            <Sprout className="h-4 w-4 mx-auto text-green-600 mb-1" />
-            <div className="text-lg font-bold">{stats.totalPlantations}</div>
-            <div className="text-xs text-muted-foreground">Plantations</div>
-          </div>
-          <div className="text-center p-2 bg-background rounded-lg">
-            <TrendingUp className="h-4 w-4 mx-auto text-blue-600 mb-1" />
-            <div className="text-lg font-bold">{stats.totalHectares.toFixed(1)}</div>
-            <div className="text-xs text-muted-foreground">Hectares</div>
-          </div>
-          <div className="text-center p-2 bg-background rounded-lg">
-            <CreditCard className="h-4 w-4 mx-auto text-amber-600 mb-1" />
-            <div className="text-sm font-bold">{formatMontant(stats.totalPaiements)}</div>
-            <div className="text-xs text-muted-foreground">Encaissés</div>
-          </div>
+          {showCommercialKPIs && (
+            <>
+              <div className="text-center p-2 bg-background rounded-lg">
+                <Users className="h-4 w-4 mx-auto text-primary mb-1" />
+                <div className="text-lg font-bold">{stats.totalSouscripteurs}</div>
+                <div className="text-xs text-muted-foreground">Souscripteurs</div>
+              </div>
+              <div className="text-center p-2 bg-background rounded-lg">
+                <DollarSign className="h-4 w-4 mx-auto text-amber-600 mb-1" />
+                <div className="text-sm font-bold">{formatMontant(stats.totalPaiements)}</div>
+                <div className="text-xs text-muted-foreground">Encaissés</div>
+              </div>
+            </>
+          )}
+          {showTechKPIs && (
+            <>
+              <div className="text-center p-2 bg-background rounded-lg">
+                <Sprout className="h-4 w-4 mx-auto text-green-600 mb-1" />
+                <div className="text-lg font-bold">{stats.totalPlantations}</div>
+                <div className="text-xs text-muted-foreground">Plantations</div>
+              </div>
+              <div className="text-center p-2 bg-background rounded-lg">
+                <TrendingUp className="h-4 w-4 mx-auto text-blue-600 mb-1" />
+                <div className="text-lg font-bold">{stats.totalHectares.toFixed(1)}</div>
+                <div className="text-xs text-muted-foreground">Hectares</div>
+              </div>
+            </>
+          )}
+          {!showCommercialKPIs && !showTechKPIs && (
+            <>
+              <div className="text-center p-2 bg-background rounded-lg">
+                <Users className="h-4 w-4 mx-auto text-primary mb-1" />
+                <div className="text-lg font-bold">{stats.totalSouscripteurs}</div>
+                <div className="text-xs text-muted-foreground">Souscripteurs</div>
+              </div>
+              <div className="text-center p-2 bg-background rounded-lg">
+                <Sprout className="h-4 w-4 mx-auto text-green-600 mb-1" />
+                <div className="text-lg font-bold">{stats.totalPlantations}</div>
+                <div className="text-xs text-muted-foreground">Plantations</div>
+              </div>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
