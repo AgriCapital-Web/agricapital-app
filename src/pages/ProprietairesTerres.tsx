@@ -11,8 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Eye, Users, MapPin, Layers } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Plus, Users, MapPin, Layers, Upload, FileText } from "lucide-react";
 import { useUserZones } from "@/hooks/useUserZones";
 
 const ProprietairesTerres = () => {
@@ -24,14 +26,28 @@ const ProprietairesTerres = () => {
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
   const [sousPrefectures, setSousPrefectures] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
   const { fetchFilteredDistricts, fetchFilteredRegions, fetchFilteredDepartements, fetchFilteredSousPrefectures } = useUserZones();
 
   const [formData, setFormData] = useState({
+    type_proprietaire: "personne_physique",
     civilite: "", nom: "", prenoms: "", date_naissance: "", lieu_naissance: "",
-    telephone: "", whatsapp: "", email: "", type_piece: "", numero_piece: "",
-    date_delivrance_piece: "", domicile: "", district_id: "", region_id: "",
-    departement_id: "", sous_prefecture_id: "", village: "",
+    nom_pere: "", nom_mere: "",
+    denomination_sociale: "", numero_enregistrement: "",
+    nombre_membres: "", nom_representant: "",
+    telephone: "", whatsapp: "", email: "",
+    type_piece: "", numero_piece: "", date_delivrance_piece: "",
+    domicile: "",
+    district_id: "", region_id: "", departement_id: "", sous_prefecture_id: "", village: "",
+    statut_foncier: "coutumier", reference_cadastrale: "",
+    limites_nord: "", limites_sud: "", limites_est: "", limites_ouest: "",
+    servitudes: "", croquis_joint: false,
+    notes: "",
+  });
+
+  const [files, setFiles] = useState<{ [key: string]: File | null }>({
+    photo_profil: null, cni_recto: null, cni_verso: null,
   });
 
   const fetchData = async () => {
@@ -48,7 +64,6 @@ const ProprietairesTerres = () => {
   };
 
   useEffect(() => { fetchData(); loadDistricts(); }, []);
-
   const loadDistricts = async () => { setDistricts(await fetchFilteredDistricts()); };
 
   const handleDistrictChange = async (v: string) => {
@@ -66,24 +81,67 @@ const ProprietairesTerres = () => {
     setSousPrefectures(await fetchFilteredSousPrefectures(v));
   };
 
+  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from('pieces-identite').upload(path, file);
+    if (error) { console.error(error); return null; }
+    const { data: { publicUrl } } = supabase.storage.from('pieces-identite').getPublicUrl(path);
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploading(true);
     try {
       const { data: genId } = await (supabase as any).rpc("generate_proprietaire_id");
-      const nomComplet = `${formData.nom} ${formData.prenoms}`.trim();
+      
+      let photo_profil_url = null, fichier_piece_recto_url = null, fichier_piece_verso_url = null;
+      if (files.photo_profil) photo_profil_url = await uploadFile(files.photo_profil, 'proprietaires/photos');
+      if (files.cni_recto) fichier_piece_recto_url = await uploadFile(files.cni_recto, 'proprietaires/pieces');
+      if (files.cni_verso) fichier_piece_verso_url = await uploadFile(files.cni_verso, 'proprietaires/pieces');
+
+      const nomComplet = formData.type_proprietaire === 'personne_morale' 
+        ? formData.denomination_sociale 
+        : formData.type_proprietaire === 'famille_groupement'
+        ? formData.nom_representant
+        : `${formData.nom} ${formData.prenoms}`.trim();
+
       const { error } = await (supabase as any).from("proprietaires_terres").insert({
-        ...formData, id_unique: genId, nom_complet: nomComplet,
-        district_id: formData.district_id || null, region_id: formData.region_id || null,
-        departement_id: formData.departement_id || null, sous_prefecture_id: formData.sous_prefecture_id || null,
+        ...formData,
+        id_unique: genId,
+        nom_complet: nomComplet,
+        nom: formData.nom || nomComplet,
+        photo_profil_url, fichier_piece_recto_url, fichier_piece_verso_url,
+        district_id: formData.district_id || null,
+        region_id: formData.region_id || null,
+        departement_id: formData.departement_id || null,
+        sous_prefecture_id: formData.sous_prefecture_id || null,
+        nombre_membres: formData.nombre_membres ? parseInt(formData.nombre_membres) : null,
       });
       if (error) throw error;
       toast({ title: "Succès", description: `Propriétaire ${genId} enregistré` });
       setIsFormOpen(false);
-      setFormData({ civilite: "", nom: "", prenoms: "", date_naissance: "", lieu_naissance: "", telephone: "", whatsapp: "", email: "", type_piece: "", numero_piece: "", date_delivrance_piece: "", domicile: "", district_id: "", region_id: "", departement_id: "", sous_prefecture_id: "", village: "" });
+      resetForm();
       fetchData();
     } catch (e: any) {
       toast({ variant: "destructive", title: "Erreur", description: e.message });
-    }
+    } finally { setUploading(false); }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      type_proprietaire: "personne_physique", civilite: "", nom: "", prenoms: "",
+      date_naissance: "", lieu_naissance: "", nom_pere: "", nom_mere: "",
+      denomination_sociale: "", numero_enregistrement: "", nombre_membres: "", nom_representant: "",
+      telephone: "", whatsapp: "", email: "", type_piece: "", numero_piece: "",
+      date_delivrance_piece: "", domicile: "", district_id: "", region_id: "",
+      departement_id: "", sous_prefecture_id: "", village: "",
+      statut_foncier: "coutumier", reference_cadastrale: "",
+      limites_nord: "", limites_sud: "", limites_est: "", limites_ouest: "",
+      servitudes: "", croquis_joint: false, notes: "",
+    });
+    setFiles({ photo_profil: null, cni_recto: null, cni_verso: null });
   };
 
   const filtered = proprietaires.filter(p =>
@@ -91,6 +149,8 @@ const ProprietairesTerres = () => {
     p.id_unique?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.telephone?.includes(searchTerm)
   );
+
+  const update = (field: string, value: any) => setFormData(f => ({ ...f, [field]: value }));
 
   return (
     <ProtectedRoute requiredPermission={PERMISSIONS.VIEW_SOUSCRIPTIONS}>
@@ -105,97 +165,291 @@ const ProprietairesTerres = () => {
               <DialogTrigger asChild>
                 <Button><Plus className="mr-2 h-4 w-4" />Nouveau Propriétaire</Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Enregistrer un Propriétaire de Terre</DialogTitle></DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Civilité *</Label>
-                      <Select value={formData.civilite} onValueChange={v => setFormData(f => ({ ...f, civilite: v }))}>
-                        <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="M">M.</SelectItem>
-                          <SelectItem value="Mme">Mme</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Nom *</Label>
-                      <Input value={formData.nom} onChange={e => setFormData(f => ({ ...f, nom: e.target.value }))} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Prénoms</Label>
-                      <Input value={formData.prenoms} onChange={e => setFormData(f => ({ ...f, prenoms: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Téléphone *</Label>
-                      <Input value={formData.telephone} onChange={e => setFormData(f => ({ ...f, telephone: e.target.value }))} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>WhatsApp</Label>
-                      <Input value={formData.whatsapp} onChange={e => setFormData(f => ({ ...f, whatsapp: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Type pièce</Label>
-                      <Select value={formData.type_piece} onValueChange={v => setFormData(f => ({ ...f, type_piece: v }))}>
-                        <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cni">CNI</SelectItem>
-                          <SelectItem value="passeport">Passeport</SelectItem>
-                          <SelectItem value="attestation">Attestation</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>N° Pièce</Label>
-                      <Input value={formData.numero_piece} onChange={e => setFormData(f => ({ ...f, numero_piece: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Date délivrance</Label>
-                      <Input type="date" value={formData.date_delivrance_piece} onChange={e => setFormData(f => ({ ...f, date_delivrance_piece: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>District</Label>
-                      <Select value={formData.district_id} onValueChange={handleDistrictChange}>
-                        <SelectTrigger><SelectValue placeholder="District" /></SelectTrigger>
-                        <SelectContent>{districts.map(d => <SelectItem key={d.id} value={d.id}>{d.nom}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Région</Label>
-                      <Select value={formData.region_id} onValueChange={handleRegionChange} disabled={!formData.district_id}>
-                        <SelectTrigger><SelectValue placeholder="Région" /></SelectTrigger>
-                        <SelectContent>{regions.map(r => <SelectItem key={r.id} value={r.id}>{r.nom}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Département</Label>
-                      <Select value={formData.departement_id} onValueChange={handleDeptChange} disabled={!formData.region_id}>
-                        <SelectTrigger><SelectValue placeholder="Département" /></SelectTrigger>
-                        <SelectContent>{departements.map(d => <SelectItem key={d.id} value={d.id}>{d.nom}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Sous-préfecture</Label>
-                      <Select value={formData.sous_prefecture_id} onValueChange={v => setFormData(f => ({ ...f, sous_prefecture_id: v }))} disabled={!formData.departement_id}>
-                        <SelectTrigger><SelectValue placeholder="S/Préfecture" /></SelectTrigger>
-                        <SelectContent>{sousPrefectures.map(sp => <SelectItem key={sp.id} value={sp.id}>{sp.nom}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Village</Label>
-                    <Input value={formData.village} onChange={e => setFormData(f => ({ ...f, village: e.target.value }))} />
-                  </div>
-                  <div className="flex gap-2 justify-end">
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Convention Planté-Partagé — Identification du Propriétaire</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <Tabs defaultValue="identite" className="space-y-4">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="identite">Identité</TabsTrigger>
+                      <TabsTrigger value="localisation">Localisation</TabsTrigger>
+                      <TabsTrigger value="parcelle">Parcelle</TabsTrigger>
+                      <TabsTrigger value="documents">Documents</TabsTrigger>
+                    </TabsList>
+
+                    {/* TAB 1: IDENTITÉ */}
+                    <TabsContent value="identite" className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="font-semibold">Type de propriétaire *</Label>
+                        <Select value={formData.type_proprietaire} onValueChange={v => update('type_proprietaire', v)}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="personne_physique">☐ Personne physique</SelectItem>
+                            <SelectItem value="personne_morale">☐ Personne morale</SelectItem>
+                            <SelectItem value="famille_groupement">☐ Famille / Groupement</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {formData.type_proprietaire === 'personne_physique' && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label>Civilité *</Label>
+                              <Select value={formData.civilite} onValueChange={v => update('civilite', v)}>
+                                <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="M">M.</SelectItem>
+                                  <SelectItem value="Mme">Mme</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Nom *</Label>
+                              <Input value={formData.nom} onChange={e => update('nom', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Prénom(s)</Label>
+                              <Input value={formData.prenoms} onChange={e => update('prenoms', e.target.value)} />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Nom & Prénom(s) du père</Label>
+                              <Input value={formData.nom_pere} onChange={e => update('nom_pere', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Nom & Prénom(s) de la mère</Label>
+                              <Input value={formData.nom_mere} onChange={e => update('nom_mere', e.target.value)} />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Né(e) le</Label>
+                              <Input type="date" value={formData.date_naissance} onChange={e => update('date_naissance', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Lieu de naissance</Label>
+                              <Input value={formData.lieu_naissance} onChange={e => update('lieu_naissance', e.target.value)} />
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {formData.type_proprietaire === 'personne_morale' && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Dénomination sociale *</Label>
+                              <Input value={formData.denomination_sociale} onChange={e => update('denomination_sociale', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>N° d'enregistrement</Label>
+                              <Input value={formData.numero_enregistrement} onChange={e => update('numero_enregistrement', e.target.value)} />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Nom & Prénom(s) du représentant *</Label>
+                              <Input value={formData.nom_representant} onChange={e => update('nom_representant', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Né(e) le</Label>
+                              <Input type="date" value={formData.date_naissance} onChange={e => update('date_naissance', e.target.value)} />
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {formData.type_proprietaire === 'famille_groupement' && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Nom référentiel *</Label>
+                              <Input value={formData.nom} onChange={e => update('nom', e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Nombre de membres</Label>
+                              <Input type="number" value={formData.nombre_membres} onChange={e => update('nombre_membres', e.target.value)} />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Nom & Prénom(s) du représentant *</Label>
+                            <Input value={formData.nom_representant} onChange={e => update('nom_representant', e.target.value)} required />
+                          </div>
+                        </>
+                      )}
+
+                      {/* Common fields: contact + pièce d'identité */}
+                      <div className="border-t pt-4">
+                        <h4 className="font-semibold mb-3">Contact & Pièce d'identité</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Téléphone *</Label>
+                            <Input value={formData.telephone} onChange={e => update('telephone', e.target.value)} required placeholder="07 XX XX XX XX" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>WhatsApp</Label>
+                            <Input value={formData.whatsapp} onChange={e => update('whatsapp', e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input type="email" value={formData.email} onChange={e => update('email', e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Adresse / Domicile</Label>
+                            <Input value={formData.domicile} onChange={e => update('domicile', e.target.value)} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                          <div className="space-y-2">
+                            <Label>Nature pièce d'identité</Label>
+                            <Select value={formData.type_piece} onValueChange={v => update('type_piece', v)}>
+                              <SelectTrigger><SelectValue placeholder="..." /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cni">CNI</SelectItem>
+                                <SelectItem value="passeport">Passeport</SelectItem>
+                                <SelectItem value="attestation">Attestation d'identité</SelectItem>
+                                <SelectItem value="carte_consulaire">Carte consulaire</SelectItem>
+                                <SelectItem value="permis">Permis de conduire</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>N° Pièce d'identité</Label>
+                            <Input value={formData.numero_piece} onChange={e => update('numero_piece', e.target.value)} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Date délivrance</Label>
+                            <Input type="date" value={formData.date_delivrance_piece} onChange={e => update('date_delivrance_piece', e.target.value)} />
+                          </div>
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    {/* TAB 2: LOCALISATION */}
+                    <TabsContent value="localisation" className="space-y-4">
+                      <h4 className="font-semibold">Localisation géographique</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>District</Label>
+                          <Select value={formData.district_id} onValueChange={handleDistrictChange}>
+                            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                            <SelectContent>{districts.map(d => <SelectItem key={d.id} value={d.id}>{d.nom}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Région</Label>
+                          <Select value={formData.region_id} onValueChange={handleRegionChange} disabled={!formData.district_id}>
+                            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                            <SelectContent>{regions.map(r => <SelectItem key={r.id} value={r.id}>{r.nom}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Département</Label>
+                          <Select value={formData.departement_id} onValueChange={handleDeptChange} disabled={!formData.region_id}>
+                            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                            <SelectContent>{departements.map(d => <SelectItem key={d.id} value={d.id}>{d.nom}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Sous-préfecture</Label>
+                          <Select value={formData.sous_prefecture_id} onValueChange={v => update('sous_prefecture_id', v)} disabled={!formData.departement_id}>
+                            <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                            <SelectContent>{sousPrefectures.map(sp => <SelectItem key={sp.id} value={sp.id}>{sp.nom}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Village / Lieu-dit</Label>
+                        <Input value={formData.village} onChange={e => update('village', e.target.value)} />
+                      </div>
+                    </TabsContent>
+
+                    {/* TAB 3: PARCELLE */}
+                    <TabsContent value="parcelle" className="space-y-4">
+                      <h4 className="font-semibold">Description de la parcelle (Section II Convention)</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Statut foncier</Label>
+                          <Select value={formData.statut_foncier} onValueChange={v => update('statut_foncier', v)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="certifie">Certifié</SelectItem>
+                              <SelectItem value="titre">Titré</SelectItem>
+                              <SelectItem value="coutumier">Coutumier</SelectItem>
+                              <SelectItem value="autre">Autre</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Réf. cadastrale / IDUFCI</Label>
+                          <Input value={formData.reference_cadastrale} onChange={e => update('reference_cadastrale', e.target.value)} />
+                        </div>
+                      </div>
+                      <h4 className="font-semibold mt-4">Limites de la parcelle</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Limites Nord</Label>
+                          <Input value={formData.limites_nord} onChange={e => update('limites_nord', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Limites Sud</Label>
+                          <Input value={formData.limites_sud} onChange={e => update('limites_sud', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Limites Est</Label>
+                          <Input value={formData.limites_est} onChange={e => update('limites_est', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Limites Ouest</Label>
+                          <Input value={formData.limites_ouest} onChange={e => update('limites_ouest', e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Servitudes ou restrictions éventuelles</Label>
+                        <Textarea value={formData.servitudes} onChange={e => update('servitudes', e.target.value)} rows={2} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Notes</Label>
+                        <Textarea value={formData.notes} onChange={e => update('notes', e.target.value)} rows={2} />
+                      </div>
+                    </TabsContent>
+
+                    {/* TAB 4: DOCUMENTS (Annexes Convention) */}
+                    <TabsContent value="documents" className="space-y-4">
+                      <h4 className="font-semibold">Documents d'identité</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2"><Upload className="h-4 w-4" /> Photo de profil</Label>
+                          <Input type="file" accept="image/*" onChange={e => setFiles(f => ({ ...f, photo_profil: e.target.files?.[0] || null }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2"><Upload className="h-4 w-4" /> CNI / Pièce (Recto)</Label>
+                          <Input type="file" accept="image/*,.pdf" onChange={e => setFiles(f => ({ ...f, cni_recto: e.target.files?.[0] || null }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-2"><Upload className="h-4 w-4" /> CNI / Pièce (Verso)</Label>
+                          <Input type="file" accept="image/*,.pdf" onChange={e => setFiles(f => ({ ...f, cni_verso: e.target.files?.[0] || null }))} />
+                        </div>
+                      </div>
+
+                      <h4 className="font-semibold mt-4 flex items-center gap-2"><FileText className="h-4 w-4" /> Annexes de la Convention</h4>
+                      <p className="text-sm text-muted-foreground">Les documents ci-dessous seront à fournir après l'enregistrement initial :</p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 1</Badge> PV de délimitation et plan de bornage GPS</div>
+                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 2</Badge> Acte de reconnaissance des parts</div>
+                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 3</Badge> PV de consentement familial</div>
+                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 4</Badge> Acte de remise de plantation (à la production)</div>
+                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 5</Badge> Procuration co-titulaire/mandataire (si applicable)</div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="flex gap-2 justify-end border-t pt-4">
                     <Button variant="outline" type="button" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                    <Button type="submit">Enregistrer</Button>
+                    <Button type="submit" disabled={uploading}>{uploading ? "Enregistrement..." : "Enregistrer le Propriétaire"}</Button>
                   </div>
                 </form>
               </DialogContent>
@@ -225,7 +479,7 @@ const ProprietairesTerres = () => {
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Rechercher..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+            <Input placeholder="Rechercher par nom, ID ou téléphone..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
           </div>
 
           <div className="border rounded-lg overflow-x-auto">
@@ -233,6 +487,7 @@ const ProprietairesTerres = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Nom Complet</TableHead>
                   <TableHead>Téléphone</TableHead>
                   <TableHead>Localisation</TableHead>
@@ -243,12 +498,17 @@ const ProprietairesTerres = () => {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8">Chargement...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-8">Chargement...</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8">Aucun propriétaire</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-8">Aucun propriétaire</TableCell></TableRow>
                 ) : filtered.map(p => (
                   <TableRow key={p.id}>
                     <TableCell className="font-mono text-xs">{p.id_unique}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">
+                        {p.type_proprietaire === 'personne_morale' ? 'Morale' : p.type_proprietaire === 'famille_groupement' ? 'Famille' : 'Physique'}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="font-medium">{p.nom_complet}</TableCell>
                     <TableCell>{p.telephone}</TableCell>
                     <TableCell className="text-xs">{[p.districts?.nom, p.regions?.nom, p.departements?.nom].filter(Boolean).join(" > ") || "-"}</TableCell>

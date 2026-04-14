@@ -46,6 +46,10 @@ const Profil = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Use user_id for RLS compatibility, fallback to id
+      const filterField = profile.user_id ? 'user_id' : 'id';
+      const filterValue = profile.user_id || profile.id;
+      
       const { error } = await (supabase as any)
         .from('profiles')
         .update({
@@ -63,7 +67,7 @@ const Profil = () => {
           contact_urgence_telephone1: profile.contact_urgence_telephone1,
           contact_urgence_telephone2: profile.contact_urgence_telephone2,
         })
-        .eq('id', profile.id);
+        .eq(filterField, filterValue);
 
       if (error) throw error;
       toast({ title: "Profil mis à jour", description: "Vos informations ont été enregistrées." });
