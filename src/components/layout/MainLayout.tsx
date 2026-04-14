@@ -67,8 +67,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
   const SidebarContent = ({ expanded = false }: { expanded?: boolean }) => (
     <div className="flex flex-col h-full bg-primary">
-      <div className="p-3 sm:p-4 border-b border-white/10 flex justify-center">
-        <img src={logoWhite} alt="AgriCapital" className="h-10 sm:h-12 lg:h-16 w-auto object-contain" />
+      <div className="p-4 sm:p-5 border-b border-white/10 flex justify-center">
+        <img src={logoWhite} alt="AgriCapital" className="h-14 sm:h-16 lg:h-20 w-auto object-contain" />
       </div>
       
       <nav className="flex-1 p-2 sm:p-4 space-y-1 overflow-y-auto">
