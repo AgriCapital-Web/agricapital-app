@@ -22,27 +22,46 @@ const Portefeuilles = () => {
 
   const fetchData = async () => {
     try {
-      const { data: portData, error: portError } = await (supabase as any)
-        .from("portefeuilles")
-        .select(`
-          *,
-          user:profiles!portefeuilles_user_id_fkey(nom_complet, telephone, email)
-        `)
-        .order("created_at", { ascending: false });
+      const [portefeuilleRes, retraitRes, profilesRes] = await Promise.all([
+        (supabase as any)
+          .from("portefeuilles")
+          .select("*")
+          .order("created_at", { ascending: false }),
+        (supabase as any)
+          .from("retraits_portefeuille")
+          .select("*")
+          .order("date_demande", { ascending: false }),
+        (supabase as any)
+          .from("profiles")
+          .select("id, user_id, nom_complet, telephone, email")
+      ]);
 
-      const { data: retraitData, error: retraitError } = await (supabase as any)
-        .from("retraits_portefeuille")
-        .select(`
-          *,
-          user:profiles!retraits_portefeuille_user_id_fkey(nom_complet)
-        `)
-        .order("date_demande", { ascending: false });
+      const { data: portData, error: portError } = portefeuilleRes;
+      const { data: retraitData, error: retraitError } = retraitRes;
+      const { data: profilesData, error: profilesError } = profilesRes;
 
       if (portError) throw portError;
       if (retraitError) throw retraitError;
+      if (profilesError) throw profilesError;
 
-      setPortefeuilles(portData || []);
-      setRetraits(retraitData || []);
+      const resolveProfile = (userRef?: string | null) =>
+        (profilesData || []).find((profile: any) => profile.user_id === userRef || profile.id === userRef) || null;
+
+      const mappedPortefeuilles = (portData || []).map((portefeuille: any) => ({
+        ...portefeuille,
+        user: resolveProfile(portefeuille.user_id),
+      }));
+
+      const mappedRetraits = (retraitData || []).map((retrait: any) => {
+        const portefeuille = (portData || []).find((item: any) => item.id === retrait.portefeuille_id);
+        return {
+          ...retrait,
+          user: resolveProfile(retrait.user_id || portefeuille?.user_id),
+        };
+      });
+
+      setPortefeuilles(mappedPortefeuilles);
+      setRetraits(mappedRetraits);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -65,6 +84,7 @@ const Portefeuilles = () => {
     try {
       const { data: profileId, error: profileErr } = await (supabase as any).rpc("current_profile_id");
       if (profileErr) throw profileErr;
+      if (!profileId) throw new Error("Aucun profil staff trouvé pour valider ce retrait");
 
       const { error: retraitError } = await (supabase as any)
         .from("retraits_portefeuille")
@@ -79,6 +99,7 @@ const Portefeuilles = () => {
 
       // Mettre à jour le portefeuille
       const portefeuille = portefeuilles.find(p => p.id === portefeuilleId);
+      if (!portefeuille) throw new Error("Portefeuille introuvable");
       const { error: portError } = await (supabase as any)
         .from("portefeuilles")
         .update({

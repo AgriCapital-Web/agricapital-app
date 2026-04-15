@@ -25,6 +25,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const loadProfileAndRoles = useCallback(async (userId: string) => {
+    try {
+      let { data: profileData } = await (supabase as any)
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!profileData) {
+        const fallback = await (supabase as any)
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        profileData = fallback.data;
+      }
+
+      setProfile(profileData || null);
+
+      const { data: rolesData } = await (supabase as any)
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      setUserRoles(rolesData?.map((r: any) => r.role) || []);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  }, []);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -33,26 +63,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch profile and roles
           setTimeout(async () => {
-            try {
-              const { data: profileData } = await (supabase as any)
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .maybeSingle();
-              
-              setProfile(profileData);
-
-              const { data: rolesData } = await (supabase as any)
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', session.user.id);
-              
-              setUserRoles(rolesData?.map((r: any) => r.role) || []);
-            } catch (error) {
-              console.error('Error fetching user data:', error);
-            }
+            await loadProfileAndRoles(session.user.id);
           }, 0);
         } else {
           setProfile(null);
@@ -68,24 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (session?.user) {
         setTimeout(async () => {
-          try {
-            const { data: profileData } = await (supabase as any)
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-            
-            setProfile(profileData);
-
-            const { data: rolesData } = await (supabase as any)
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id);
-            
-            setUserRoles(rolesData?.map((r: any) => r.role) || []);
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-          }
+          await loadProfileAndRoles(session.user.id);
           setLoading(false);
         }, 0);
       } else {
@@ -94,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [loadProfileAndRoles]);
 
   const signIn = async (usernameOrEmail: string, password: string) => {
     try {

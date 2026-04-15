@@ -46,9 +46,9 @@ const Profil = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Use user_id for RLS compatibility, fallback to id
       const filterField = profile.user_id ? 'user_id' : 'id';
       const filterValue = profile.user_id || profile.id;
+      if (!filterValue) throw new Error("Profil introuvable");
       
       const { error } = await (supabase as any)
         .from('profiles')
@@ -88,8 +88,12 @@ const Profil = () => {
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('photos-profils').getPublicUrl(path);
-      
-      await (supabase as any).from('profiles').update({ [field]: publicUrl }).eq('id', profile.id);
+
+      const filterField = profile.user_id ? 'user_id' : 'id';
+      const filterValue = profile.user_id || profile.id;
+      if (!filterValue) throw new Error("Profil introuvable");
+
+      await (supabase as any).from('profiles').update({ [field]: publicUrl }).eq(filterField, filterValue);
       setProfile({ ...profile, [field]: publicUrl });
       toast({ title: "Photo mise à jour" });
     } catch (error: any) {
