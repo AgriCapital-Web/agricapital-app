@@ -42,42 +42,48 @@ const AccountRequest = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch regions on mount
-  useEffect(() => {
-    const fetchRegions = async () => {
-      const { data } = await (supabase as any).from('regions').select('*').order('nom');
-      setRegions(data || []);
-    };
-    fetchRegions();
-  }, []);
-
-  // Fetch districts when region changes
+  // Fetch districts on mount
   useEffect(() => {
     const fetchDistricts = async () => {
-      if (formData.region) {
-        const { data } = await (supabase as any)
-          .from('districts')
-          .select('*')
-          .eq('region_id', formData.region)
-          .order('nom');
-        setDistricts(data || []);
-        setFormData(prev => ({ ...prev, district: "", departement: "" }));
-        setDepartements([]);
-      } else {
-        setDistricts([]);
-      }
+      const { data } = await (supabase as any)
+        .from('districts')
+        .select('*')
+        .eq('est_actif', true)
+        .order('nom');
+      setDistricts(data || []);
     };
     fetchDistricts();
-  }, [formData.region]);
+  }, []);
 
-  // Fetch departements when district changes
+  // Fetch regions when district changes
+  useEffect(() => {
+    const fetchRegions = async () => {
+      if (formData.district) {
+        const { data } = await (supabase as any)
+          .from('regions')
+          .select('*')
+          .eq('district_id', formData.district)
+          .eq('est_active', true)
+          .order('nom');
+        setRegions(data || []);
+        setFormData(prev => ({ ...prev, region: "", departement: "" }));
+        setDepartements([]);
+      } else {
+        setRegions([]);
+      }
+    };
+    fetchRegions();
+  }, [formData.district]);
+
+  // Fetch departements when region changes
   useEffect(() => {
     const fetchDepartements = async () => {
-      if (formData.district) {
+      if (formData.region) {
         const { data } = await (supabase as any)
           .from('departements')
           .select('*')
-          .eq('district_id', formData.district)
+          .eq('region_id', formData.region)
+          .eq('est_actif', true)
           .order('nom');
         setDepartements(data || []);
         setFormData(prev => ({ ...prev, departement: "" }));
@@ -86,7 +92,7 @@ const AccountRequest = () => {
       }
     };
     fetchDepartements();
-  }, [formData.district]);
+  }, [formData.region]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -149,7 +155,6 @@ const AccountRequest = () => {
       // Get region/department/district names for storage
       const regionName = regions.find(r => r.id === formData.region)?.nom || "";
       const deptName = departements.find(d => d.id === formData.departement)?.nom || "";
-      const districtName = districts.find(d => d.id === formData.district)?.nom || "";
 
       // Create account request
       const { error } = await (supabase as any)
@@ -158,14 +163,16 @@ const AccountRequest = () => {
           nom_complet: formData.nom_complet,
           email: formData.email,
           telephone: formData.telephone,
-          poste: formData.poste,
-          region: regionName,
-          departement: deptName,
-          district: districtName,
-          message: formData.message,
+          poste_souhaite: ROLES.find((role) => role.value === formData.poste)?.label || formData.poste,
+          role_souhaite: formData.poste,
+          region_id: formData.region || null,
+          departement_geo_id: formData.departement || null,
+          district_id: formData.district || null,
+          departement: deptName || null,
+          justification: formData.message || null,
           photo_url: photoUrl,
           cv_url: cvUrl,
-          status: 'en_attente'
+          statut: 'en_attente'
         });
 
       if (error) throw error;
@@ -319,8 +326,25 @@ const AccountRequest = () => {
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Select
+                  value={formData.district}
+                  onValueChange={(value) => setFormData({...formData, district: value})}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="District" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {districts.map(dist => (
+                      <SelectItem key={dist.id} value={dist.id}>
+                        {dist.nom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
                   value={formData.region}
                   onValueChange={(value) => setFormData({...formData, region: value})}
+                  disabled={!formData.district}
                 >
                   <SelectTrigger className="h-10">
                     <SelectValue placeholder="Région" />
@@ -346,23 +370,6 @@ const AccountRequest = () => {
                     {departements.map(dept => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={formData.district}
-                  onValueChange={(value) => setFormData({...formData, district: value})}
-                  disabled={!formData.departement}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder="District" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map(dist => (
-                      <SelectItem key={dist.id} value={dist.id}>
-                        {dist.nom}
                       </SelectItem>
                     ))}
                   </SelectContent>

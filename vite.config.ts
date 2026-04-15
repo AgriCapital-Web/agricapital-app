@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "icons/*.png", "logo-agricapital.png"],
+        includeAssets: ["favicon.ico", "favicon.png", "apple-touch-icon.png", "icons/*.png", "logo-agricapital.png"],
       manifest: false, // Désactiver le manifest généré - on utilise des manifests dynamiques
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],

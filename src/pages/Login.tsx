@@ -72,8 +72,8 @@ const Login = () => {
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 bg-background min-h-screen lg:min-h-0">
         {/* Logo mobile */}
         <div className="lg:hidden mb-8 text-center">
-          <div className="bg-primary rounded-2xl p-6 inline-block shadow-lg mb-4">
-            <img src={logoWhite} alt="AgriCapital" className="h-16 w-auto" />
+          <div className="bg-card rounded-2xl p-5 inline-block shadow-lg mb-4 border border-border">
+            <img src={logoGreen} alt="AgriCapital" className="h-20 w-auto" />
           </div>
           <h1 className="text-xl font-bold text-primary">AgriCapital CRM</h1>
           <p className="text-muted-foreground text-sm mt-1">Gestion des Planteurs & Plantations</p>
