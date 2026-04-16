@@ -7,32 +7,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2, CheckCircle, XCircle, Percent } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Tables } from "@/integrations/supabase/types";
-
-type Promotion = Tables<'promotions'>;
 
 const Promotions = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPromo, setEditingPromo] = useState<Promotion | null>(null);
+  const [editingPromo, setEditingPromo] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     nom: "",
-    pourcentage_reduction: "30", // 30% par défaut
+    pourcentage_reduction: "30",
     date_debut: "",
     date_fin: "",
     description: "",
     applique_toutes_offres: true,
+    type_promotion: "depot_initial" as string,
   });
 
-  // Fetch promotions
   const { data: promotions, isLoading } = useQuery({
     queryKey: ['promotions'],
     queryFn: async () => {
@@ -40,13 +38,11 @@ const Promotions = () => {
         .from('promotions')
         .select('*')
         .order('created_at', { ascending: false });
-      
       if (error) throw error;
       return data;
     }
   });
 
-  // Create/Update promotion
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const promoData = {
@@ -57,16 +53,17 @@ const Promotions = () => {
         description: data.description,
         active: true,
         applique_toutes_offres: data.applique_toutes_offres,
+        type_promotion: data.type_promotion,
       };
 
       if (editingPromo) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('promotions')
           .update(promoData)
           .eq('id', editingPromo.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('promotions')
           .insert([promoData]);
         if (error) throw error;
@@ -74,71 +71,51 @@ const Promotions = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['promotions'] });
-      toast({
-        title: "Succès",
-        description: editingPromo ? "Promotion modifiée" : "Promotion créée",
-      });
+      toast({ title: "Succès", description: editingPromo ? "Promotion modifiée" : "Promotion créée" });
       resetForm();
       setIsDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Erreur", description: error.message });
     }
   });
 
-  // Toggle status
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ id, newStatus }: { id: string; newStatus: boolean }) => {
-      const { error } = await supabase
-        .from('promotions')
-        .update({ active: newStatus })
-        .eq('id', id);
+      const { error } = await supabase.from('promotions').update({ active: newStatus }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['promotions'] });
-      toast({
-        title: "Succès",
-        description: "Statut modifié",
-      });
+      toast({ title: "Succès", description: "Statut modifié" });
     }
   });
 
-  // Delete promotion
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('promotions')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('promotions').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['promotions'] });
-      toast({
-        title: "Succès",
-        description: "Promotion supprimée",
-      });
+      toast({ title: "Succès", description: "Promotion supprimée" });
     }
   });
 
   const resetForm = () => {
     setFormData({
       nom: "",
-      pourcentage_reduction: "30", // 30% par défaut
+      pourcentage_reduction: "30",
       date_debut: "",
       date_fin: "",
       description: "",
       applique_toutes_offres: true,
+      type_promotion: "depot_initial",
     });
     setEditingPromo(null);
   };
 
-  const handleEdit = (promo: Promotion) => {
+  const handleEdit = (promo: any) => {
     setEditingPromo(promo);
     setFormData({
       nom: promo.nom,
@@ -147,6 +124,7 @@ const Promotions = () => {
       date_fin: format(new Date(promo.date_fin), 'yyyy-MM-dd'),
       description: promo.description || "",
       applique_toutes_offres: promo.applique_toutes_offres ?? true,
+      type_promotion: promo.type_promotion || "depot_initial",
     });
     setIsDialogOpen(true);
   };
@@ -157,10 +135,15 @@ const Promotions = () => {
   };
 
   const getStatusBadge = (active: boolean | null) => {
-    if (active) {
-      return <Badge variant="default" className="bg-primary">ACTIF</Badge>;
-    }
-    return <Badge variant="secondary">INACTIF</Badge>;
+    return active 
+      ? <Badge variant="default" className="bg-primary">ACTIF</Badge>
+      : <Badge variant="secondary">INACTIF</Badge>;
+  };
+
+  const getTypeBadge = (type: string) => {
+    return type === "cout_global"
+      ? <Badge className="bg-amber-500">Coût Global</Badge>
+      : <Badge className="bg-blue-500">Dépôt Initial</Badge>;
   };
 
   const calculateReducedAmount = (percentage: number) => {
@@ -174,27 +157,19 @@ const Promotions = () => {
         <div>
           <h1 className="text-3xl font-bold">Gestion des Promotions</h1>
           <p className="text-muted-foreground">
-            Configuration des réductions sur le Droit d'Accès (30 000 F/ha de base)
+            Réductions sur le Dépôt Initial (DA) ou le Coût Global de souscription
           </p>
         </div>
           
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle Promotion
-            </Button>
+            <Button><Plus className="mr-2 h-4 w-4" />Nouvelle Promotion</Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>
-                {editingPromo ? "Modifier la promotion" : "Créer une promotion"}
-              </DialogTitle>
+              <DialogTitle>{editingPromo ? "Modifier la promotion" : "Créer une promotion"}</DialogTitle>
               <DialogDescription>
-                Le montant normal du DA est fixé à 30 000 F/ha. La réduction sera calculée automatiquement.
+                Choisissez le type de promotion : sur le dépôt initial (DA) ou sur le coût global.
               </DialogDescription>
             </DialogHeader>
             
@@ -210,6 +185,32 @@ const Promotions = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>Type de promotion *</Label>
+                <Select
+                  value={formData.type_promotion}
+                  onValueChange={(v) => setFormData({...formData, type_promotion: v})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="depot_initial">
+                      Réduction sur le Dépôt Initial (DA)
+                    </SelectItem>
+                    <SelectItem value="cout_global">
+                      Réduction sur le Coût Global de souscription
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {formData.type_promotion === "cout_global" 
+                    ? "La réduction s'applique sur le prix total de souscription (DA + contributions mensuelles)"
+                    : "La réduction s'applique uniquement sur le Droit d'Accès (30 000 F/ha de base)"
+                  }
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="pourcentage">Pourcentage de réduction (%) *</Label>
@@ -219,22 +220,25 @@ const Promotions = () => {
                       type="number"
                       value={formData.pourcentage_reduction}
                       onChange={(e) => setFormData({...formData, pourcentage_reduction: e.target.value})}
-                      min="1"
-                      max="99"
-                      required
+                      min="1" max="99" required
                     />
                     <Percent className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Montant réduit: {calculateReducedAmount(parseInt(formData.pourcentage_reduction || "0")).toLocaleString()} F/ha
-                  </p>
+                  {formData.type_promotion === "depot_initial" && (
+                    <p className="text-xs text-muted-foreground">
+                      DA réduit: {calculateReducedAmount(parseInt(formData.pourcentage_reduction || "0")).toLocaleString()} F/ha
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Montant normal</Label>
-                  <Input value="30 000 F/ha" disabled />
+                  <Label>Référence</Label>
+                  <Input value={formData.type_promotion === "depot_initial" ? "30 000 F/ha (DA)" : "Coût total"} disabled />
                   <p className="text-xs text-primary font-medium">
-                    Économie: {(30000 * parseInt(formData.pourcentage_reduction || "0") / 100).toLocaleString()} F/ha
+                    Économie: {formData.type_promotion === "depot_initial" 
+                      ? `${(30000 * parseInt(formData.pourcentage_reduction || "0") / 100).toLocaleString()} F/ha`
+                      : `${formData.pourcentage_reduction}% sur le total`
+                    }
                   </p>
                 </div>
               </div>
@@ -242,42 +246,21 @@ const Promotions = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="debut">Date début *</Label>
-                  <Input
-                    id="debut"
-                    type="date"
-                    value={formData.date_debut}
-                    onChange={(e) => setFormData({...formData, date_debut: e.target.value})}
-                    required
-                  />
+                  <Input id="debut" type="date" value={formData.date_debut} onChange={(e) => setFormData({...formData, date_debut: e.target.value})} required />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="fin">Date fin *</Label>
-                  <Input
-                    id="fin"
-                    type="date"
-                    value={formData.date_fin}
-                    onChange={(e) => setFormData({...formData, date_fin: e.target.value})}
-                    required
-                  />
+                  <Input id="fin" type="date" value={formData.date_fin} onChange={(e) => setFormData({...formData, date_fin: e.target.value})} required />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="desc">Description</Label>
-                <Textarea
-                  id="desc"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Informations complémentaires..."
-                  rows={3}
-                />
+                <Textarea id="desc" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={3} />
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Annuler
-                </Button>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
                 <Button type="submit" disabled={saveMutation.isPending}>
                   {saveMutation.isPending ? "Enregistrement..." : "Enregistrer"}
                 </Button>
@@ -290,9 +273,7 @@ const Promotions = () => {
       <Card>
         <CardHeader>
           <CardTitle>Liste des promotions</CardTitle>
-          <CardDescription>
-            Gérez les promotions actives et inactives. Une promotion à 30% applique un DA de 21 000 F/ha.
-          </CardDescription>
+          <CardDescription>Gérez les promotions sur le DA (dépôt initial) et sur le coût global.</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -302,67 +283,31 @@ const Promotions = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nom</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Réduction</TableHead>
-                  <TableHead>Montant réduit</TableHead>
                   <TableHead>Période</TableHead>
-                  <TableHead>Application</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {promotions.map((promo) => (
+                {promotions.map((promo: any) => (
                   <TableRow key={promo.id}>
                     <TableCell className="font-medium">{promo.nom}</TableCell>
+                    <TableCell>{getTypeBadge(promo.type_promotion || 'depot_initial')}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-primary font-bold">
-                        {promo.pourcentage_reduction}%
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {calculateReducedAmount(promo.pourcentage_reduction).toLocaleString()} F/ha
+                      <Badge variant="outline" className="text-primary font-bold">{promo.pourcentage_reduction}%</Badge>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {format(new Date(promo.date_debut), 'dd/MM/yyyy', { locale: fr })} - {' '}
-                      {format(new Date(promo.date_fin), 'dd/MM/yyyy', { locale: fr })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={promo.applique_toutes_offres ? "default" : "secondary"}>
-                        {promo.applique_toutes_offres ? "Toutes offres" : "Sélectionnées"}
-                      </Badge>
+                      {format(new Date(promo.date_debut), 'dd/MM/yyyy', { locale: fr })} - {format(new Date(promo.date_fin), 'dd/MM/yyyy', { locale: fr })}
                     </TableCell>
                     <TableCell>{getStatusBadge(promo.active)}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEdit(promo)}
-                      >
-                        <Edit className="h-4 w-4" />
+                      <Button size="sm" variant="ghost" onClick={() => handleEdit(promo)}><Edit className="h-4 w-4" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => toggleStatusMutation.mutate({ id: promo.id, newStatus: !promo.active })}>
+                        {promo.active ? <XCircle className="h-4 w-4 text-destructive" /> : <CheckCircle className="h-4 w-4 text-primary" />}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => toggleStatusMutation.mutate({
-                          id: promo.id,
-                          newStatus: !promo.active
-                        })}
-                      >
-                        {promo.active ? (
-                          <XCircle className="h-4 w-4 text-destructive" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4 text-primary" />
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          if (confirm('Supprimer cette promotion ?')) {
-                            deleteMutation.mutate(promo.id);
-                          }
-                        }}
-                      >
+                      <Button size="sm" variant="ghost" onClick={() => { if (confirm('Supprimer cette promotion ?')) deleteMutation.mutate(promo.id); }}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -371,9 +316,7 @@ const Promotions = () => {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-center py-8 text-muted-foreground">
-              Aucune promotion configurée. Créez-en une pour commencer.
-            </p>
+            <p className="text-center py-8 text-muted-foreground">Aucune promotion configurée.</p>
           )}
         </CardContent>
       </Card>
