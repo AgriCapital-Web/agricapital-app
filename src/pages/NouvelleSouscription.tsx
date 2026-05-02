@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Etape1Souscripteur } from "@/components/forms/souscription/Etape1Souscripteur";
@@ -222,8 +223,9 @@ const NouvelleSouscription = () => {
   const isLastStep = safeEtape === etapes.length - 1;
 
   return (
-    <MainLayout>
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <ProtectedRoute>
+      <MainLayout>
+      <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Nouvelle Souscription</h1>
           <p className="text-muted-foreground">
@@ -276,7 +278,8 @@ const NouvelleSouscription = () => {
           )}
         </div>
       </div>
-    </MainLayout>
+      </MainLayout>
+    </ProtectedRoute>
   );
 };
 

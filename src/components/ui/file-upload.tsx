@@ -28,11 +28,12 @@ const FileUpload = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setError("");
+    const maxSizeBytes = maxSize <= 100 ? maxSize * 1024 * 1024 : maxSize;
 
     if (!file) return;
 
-    if (file.size > maxSize) {
-      setError(`Le fichier est trop volumineux (max: ${maxSize / 1024 / 1024}MB)`);
+    if (file.size > maxSizeBytes) {
+      setError(`Le fichier est trop volumineux (max: ${Math.round(maxSizeBytes / 1024 / 1024)}MB)`);
       return;
     }
 

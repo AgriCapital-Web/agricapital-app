@@ -8,7 +8,9 @@ export const uploadFile = async (
   try {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-    const filePath = path ? `${path}/${fileName}` : fileName;
+    const { data: { user } } = await supabase.auth.getUser();
+    const defaultFolder = user?.id || 'public';
+    const filePath = path ? `${path}/${fileName}` : `${defaultFolder}/${fileName}`;
 
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -22,9 +24,10 @@ export const uploadFile = async (
       throw error;
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(data.path);
+    const { data: bucketInfo } = await supabase.storage.getBucket(bucket);
+    const publicUrl = bucketInfo?.public
+      ? supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl
+      : (await supabase.storage.from(bucket).createSignedUrl(data.path, 60 * 60 * 24 * 365)).data?.signedUrl || data.path;
 
     return { url: publicUrl, path: data.path };
   } catch (error) {
