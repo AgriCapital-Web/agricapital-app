@@ -69,7 +69,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               key={item.path}
               variant="ghost"
               className={cn(
-                "h-10 w-full justify-start gap-3 rounded-md px-3 text-primary-foreground/78 hover:bg-primary-foreground/10 hover:text-primary-foreground",
+                "h-10 w-full justify-start gap-3 rounded-md px-3 text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground",
                 active && "bg-primary-foreground text-primary shadow-sm hover:bg-primary-foreground hover:text-primary"
               )}
               onClick={() => { navigate(item.path); setOpen(false); }}
@@ -83,15 +83,15 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       </nav>
 
       <div className="border-t border-primary-foreground/10 p-3">
-        <div className="mb-2 rounded-md bg-primary-foreground/8 px-3 py-2">
+        <div className="mb-2 rounded-md bg-primary-foreground/10 px-3 py-2">
           <div className="flex items-center justify-between gap-2"><NetworkIndicator />{pendingCount > 0 && <Badge className="bg-accent text-accent-foreground">{pendingCount}</Badge>}</div>
         </div>
         <div className="space-y-1">
           <NotificationCenter />
-          <Button variant="ghost" className={cn("h-10 w-full justify-start gap-3 rounded-md text-primary-foreground/78 hover:bg-primary-foreground/10 hover:text-primary-foreground", location.pathname === "/profil" && "bg-primary-foreground/15 text-primary-foreground")} onClick={() => { navigate("/profil"); setOpen(false); }}>
+          <Button variant="ghost" className={cn("h-10 w-full justify-start gap-3 rounded-md text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground", location.pathname === "/profil" && "bg-primary-foreground/15 text-primary-foreground")} onClick={() => { navigate("/profil"); setOpen(false); }}>
             <UserCircle className="h-4 w-4" /><span className="text-sm font-medium">Profil</span>
           </Button>
-          <Button variant="ghost" className="h-10 w-full justify-start gap-3 rounded-md text-primary-foreground/78 hover:bg-destructive hover:text-destructive-foreground" onClick={handleLogout}>
+          <Button variant="ghost" className="h-10 w-full justify-start gap-3 rounded-md text-primary-foreground/80 hover:bg-destructive hover:text-destructive-foreground" onClick={handleLogout}>
             <LogOut className="h-4 w-4" /><span className="text-sm font-medium">Déconnexion</span>
           </Button>
         </div>
@@ -115,7 +115,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       </Sheet>
 
       <main className="min-w-0 flex-1 pt-14 md:pt-0">
-        <header className="sticky top-0 z-30 hidden h-16 items-center gap-4 border-b bg-background/92 px-6 backdrop-blur md:flex">
+        <header className="sticky top-0 z-30 hidden h-16 items-center gap-4 border-b bg-background/95 px-6 backdrop-blur md:flex">
           <div className="flex h-10 min-w-[320px] items-center gap-2 rounded-md border bg-muted/50 px-3 text-muted-foreground">
             <Search className="h-4 w-4" /><span className="text-sm">Recherche opérationnelle</span>
           </div>
