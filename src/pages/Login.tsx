@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import logoWhite from "@/assets/logo-white.png";
 import logoGreen from "@/assets/logo-green.png";
 import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -18,9 +19,31 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username.trim() || !password) {
+      toast.error("Veuillez renseigner identifiant et mot de passe");
+      return;
+    }
     setIsLoading(true);
-    const { error } = await signIn(username, password);
-    if (!error) navigate('/dashboard');
+    const { error } = await signIn(username.trim(), password);
+    if (error) {
+      setIsLoading(false);
+      return;
+    }
+    // Redirection selon rôle
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: roles } = await (supabase as any)
+          .from("user_roles").select("role").eq("user_id", user.id);
+        const list = (roles || []).map((r: any) => r.role);
+        const isStaff = list.some((r: string) => r !== "user");
+        navigate(isStaff ? "/dashboard" : "/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch {
+      navigate("/dashboard");
+    }
     setIsLoading(false);
   };
 

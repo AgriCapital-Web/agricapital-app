@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +23,11 @@ import {
   TrendingDown,
   Bell,
   Award,
-  DollarSign
+  DollarSign,
+  FileText,
+  Plus,
+  FileCheck,
+  Wallet
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -62,6 +68,8 @@ const Dashboard = () => {
   const [evolutionMensuelle, setEvolutionMensuelle] = useState<any[]>([]);
   const [alertes, setAlertes] = useState<any[]>([]);
   const [topPlanteurs, setTopPlanteurs] = useState<any[]>([]);
+  const [docsEnAttente, setDocsEnAttente] = useState(0);
+  const [souscriptionsEnAttente, setSouscriptionsEnAttente] = useState(0);
 
   const fetchStats = async () => {
     try {
@@ -198,6 +206,20 @@ const Dashboard = () => {
 
       setTopPlanteurs(topPlanteursData || []);
 
+      // Documents en attente
+      const { count: docsCount } = await (supabase as any)
+        .from("documents_souscription")
+        .select("*", { count: "exact", head: true })
+        .eq("statut", "en_attente");
+      setDocsEnAttente(docsCount || 0);
+
+      // Souscriptions en attente
+      const { count: subsCount } = await (supabase as any)
+        .from("souscripteurs")
+        .select("*", { count: "exact", head: true })
+        .eq("statut", "en_attente");
+      setSouscriptionsEnAttente(subsCount || 0);
+
       setStats({
         totalPlanteurs: planteursCount || 0,
         totalPlantations: plantations?.length || 0,
@@ -266,6 +288,86 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Actions rapides */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Button asChild variant="default" className="h-auto py-4 flex-col gap-2">
+              <Link to="/nouvelle-souscription">
+                <Plus className="h-5 w-5" />
+                <span className="text-xs sm:text-sm">Nouvelle souscription</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Link to="/paiements">
+                <CreditCard className="h-5 w-5" />
+                <span className="text-xs sm:text-sm">Saisir un paiement</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Link to="/documents">
+                <FileCheck className="h-5 w-5" />
+                <span className="text-xs sm:text-sm">Valider documents</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Link to="/plantations">
+                <Sprout className="h-5 w-5" />
+                <span className="text-xs sm:text-sm">Plantations</span>
+              </Link>
+            </Button>
+          </div>
+
+          {/* Cartes d'état */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-l-4 border-l-primary">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" /> Souscriptions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div className="text-2xl font-bold">{stats.totalPlanteurs}</div>
+                    <p className="text-xs text-muted-foreground">{souscriptionsEnAttente} en attente</p>
+                  </div>
+                  <Link to="/souscriptions" className="text-xs text-primary hover:underline">Voir →</Link>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-amber-500">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-amber-600" /> Paiements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div className="text-2xl font-bold">{formatMontant(stats.totalPaiements)}</div>
+                    <p className="text-xs text-muted-foreground">{stats.paiementsEnAttente} à valider</p>
+                  </div>
+                  <Link to="/paiements" className="text-xs text-primary hover:underline">Voir →</Link>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-emerald-600">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileCheck className="h-4 w-4 text-emerald-600" /> Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div className="text-2xl font-bold">{docsEnAttente}</div>
+                    <p className="text-xs text-muted-foreground">à vérifier</p>
+                  </div>
+                  <Link to="/documents" className="text-xs text-primary hover:underline">Voir →</Link>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* KPIs adaptés au rôle */}
