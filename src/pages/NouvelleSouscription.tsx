@@ -8,7 +8,6 @@ import { Etape1Souscripteur } from "@/components/forms/souscription/Etape1Souscr
 import { Etape2Cotitulaire } from "@/components/forms/souscription/Etape2Cotitulaire";
 import { Etape0Offre } from "@/components/forms/souscription/Etape0Offre";
 import { Etape3Parcelle } from "@/components/forms/souscription/Etape3Parcelle";
-import { Etape4Enquete } from "@/components/forms/souscription/Etape4Enquete";
 import { Etape5Documents } from "@/components/forms/souscription/Etape5Documents";
 import { Etape6Confirmation } from "@/components/forms/souscription/Etape6Confirmation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -31,13 +30,12 @@ const NouvelleSouscription = () => {
       { num: 3, titre: "Offre", component: Etape0Offre },
     ];
 
-    // Only show parcelle step for "avec_terre"
+    // Étape Parcelle uniquement si l'offre est "avec terre"
     if (formData.type_souscripteur === "avec_terre") {
       base.push({ num: 4, titre: "Parcelle", component: Etape3Parcelle });
     }
 
     base.push(
-      { num: base.length + 1, titre: "Enquête", component: Etape4Enquete },
       { num: base.length + 2, titre: "Documents", component: Etape5Documents },
       { num: base.length + 3, titre: "Confirmation", component: Etape6Confirmation },
     );
