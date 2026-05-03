@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +23,11 @@ import {
   TrendingDown,
   Bell,
   Award,
-  DollarSign
+  DollarSign,
+  FileText,
+  Plus,
+  FileCheck,
+  Wallet
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -62,6 +68,8 @@ const Dashboard = () => {
   const [evolutionMensuelle, setEvolutionMensuelle] = useState<any[]>([]);
   const [alertes, setAlertes] = useState<any[]>([]);
   const [topPlanteurs, setTopPlanteurs] = useState<any[]>([]);
+  const [docsEnAttente, setDocsEnAttente] = useState(0);
+  const [souscriptionsEnAttente, setSouscriptionsEnAttente] = useState(0);
 
   const fetchStats = async () => {
     try {
@@ -197,6 +205,20 @@ const Dashboard = () => {
         .limit(5);
 
       setTopPlanteurs(topPlanteursData || []);
+
+      // Documents en attente
+      const { count: docsCount } = await (supabase as any)
+        .from("documents_souscription")
+        .select("*", { count: "exact", head: true })
+        .eq("statut", "en_attente");
+      setDocsEnAttente(docsCount || 0);
+
+      // Souscriptions en attente
+      const { count: subsCount } = await (supabase as any)
+        .from("souscripteurs")
+        .select("*", { count: "exact", head: true })
+        .eq("statut", "en_attente");
+      setSouscriptionsEnAttente(subsCount || 0);
 
       setStats({
         totalPlanteurs: planteursCount || 0,
