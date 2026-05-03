@@ -27,6 +27,7 @@ import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 import Tickets from "./pages/Tickets";
 import ProprietairesTerres from "./pages/ProprietairesTerres";
 import Parcelles from "./pages/Parcelles";
+import Documents from "./pages/Documents";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const DomainRouter = () => {
       <Route path="/plantations" element={<Plantations />} />
       <Route path="/proprietaires-terres" element={<ProprietairesTerres />} />
       <Route path="/parcelles" element={<Parcelles />} />
+      <Route path="/documents" element={<Documents />} />
       <Route path="/nouvelle-souscription" element={<NouvelleSouscription />} />
       <Route path="/profil" element={<Profil />} />
       
