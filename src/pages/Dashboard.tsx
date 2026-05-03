@@ -290,6 +290,86 @@ const Dashboard = () => {
             </div>
           </div>
 
+          {/* Actions rapides */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Button asChild variant="default" className="h-auto py-4 flex-col gap-2">
+              <Link to="/nouvelle-souscription">
+                <Plus className="h-5 w-5" />
+                <span className="text-xs sm:text-sm">Nouvelle souscription</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Link to="/paiements">
+                <CreditCard className="h-5 w-5" />
+                <span className="text-xs sm:text-sm">Saisir un paiement</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Link to="/documents">
+                <FileCheck className="h-5 w-5" />
+                <span className="text-xs sm:text-sm">Valider documents</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Link to="/plantations">
+                <Sprout className="h-5 w-5" />
+                <span className="text-xs sm:text-sm">Plantations</span>
+              </Link>
+            </Button>
+          </div>
+
+          {/* Cartes d'état */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-l-4 border-l-primary">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" /> Souscriptions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div className="text-2xl font-bold">{stats.totalPlanteurs}</div>
+                    <p className="text-xs text-muted-foreground">{souscriptionsEnAttente} en attente</p>
+                  </div>
+                  <Link to="/souscriptions" className="text-xs text-primary hover:underline">Voir →</Link>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-amber-500">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-amber-600" /> Paiements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div className="text-2xl font-bold">{formatMontant(stats.totalPaiements)}</div>
+                    <p className="text-xs text-muted-foreground">{stats.paiementsEnAttente} à valider</p>
+                  </div>
+                  <Link to="/paiements" className="text-xs text-primary hover:underline">Voir →</Link>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-emerald-600">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <FileCheck className="h-4 w-4 text-emerald-600" /> Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <div className="text-2xl font-bold">{docsEnAttente}</div>
+                    <p className="text-xs text-muted-foreground">à vérifier</p>
+                  </div>
+                  <Link to="/documents" className="text-xs text-primary hover:underline">Voir →</Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* KPIs adaptés au rôle */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             <Card className="hover-scale cursor-pointer transition-all hover:shadow-lg">
