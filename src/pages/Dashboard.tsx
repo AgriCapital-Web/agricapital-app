@@ -303,30 +303,38 @@ const Dashboard = () => {
 
           {/* Actions rapides */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Button asChild variant="default" className="h-auto py-4 flex-col gap-2">
-              <Link to="/nouvelle-souscription">
-                <Plus className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Nouvelle souscription</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
-              <Link to="/paiements">
-                <CreditCard className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Saisir un paiement</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
-              <Link to="/documents">
-                <FileCheck className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Valider documents</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
-              <Link to="/plantations">
-                <Sprout className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Plantations</span>
-              </Link>
-            </Button>
+            {canCreateSouscription && (
+              <Button asChild variant="default" className="h-auto py-4 flex-col gap-2">
+                <Link to="/nouvelle-souscription">
+                  <Plus className="h-5 w-5" />
+                  <span className="text-xs sm:text-sm">Nouvelle souscription</span>
+                </Link>
+              </Button>
+            )}
+            {canViewPaiements && (
+              <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+                <Link to="/paiements">
+                  <CreditCard className="h-5 w-5" />
+                  <span className="text-xs sm:text-sm">Saisir un paiement</span>
+                </Link>
+              </Button>
+            )}
+            {canValidateDocuments && (
+              <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+                <Link to="/documents">
+                  <FileCheck className="h-5 w-5" />
+                  <span className="text-xs sm:text-sm">Valider documents</span>
+                </Link>
+              </Button>
+            )}
+            {canViewPlantations && (
+              <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+                <Link to="/plantations">
+                  <Sprout className="h-5 w-5" />
+                  <span className="text-xs sm:text-sm">Plantations</span>
+                </Link>
+              </Button>
+            )}
           </div>
 
           {/* Cartes d'état */}
