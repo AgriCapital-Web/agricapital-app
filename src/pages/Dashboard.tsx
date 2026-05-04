@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -49,6 +49,17 @@ import {
 
 const Dashboard = () => {
   const { profile, userRoles } = useAuth();
+
+  // Souscripteur (user) : redirection vers son espace personnel
+  const isSouscripteurOnly =
+    userRoles.length > 0 && userRoles.every((r) => r === "user");
+
+  // Définition des actions rapides selon les permissions
+  const canCreateSouscription = hasPermission(userRoles, PERMISSIONS.CREATE_SOUSCRIPTION);
+  const canViewPaiements = hasPermission(userRoles, PERMISSIONS.VIEW_PAIEMENTS);
+  const canViewPlantations = hasPermission(userRoles, PERMISSIONS.VIEW_PLANTATIONS);
+  const canValidateDocuments = hasPermission(userRoles, PERMISSIONS.VALIDATE_PAYMENTS);
+
   const [connectionTime] = useState(new Date().toLocaleTimeString("fr-FR"));
   const [stats, setStats] = useState({
     totalPlanteurs: 0,
@@ -292,30 +303,38 @@ const Dashboard = () => {
 
           {/* Actions rapides */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Button asChild variant="default" className="h-auto py-4 flex-col gap-2">
-              <Link to="/nouvelle-souscription">
-                <Plus className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Nouvelle souscription</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
-              <Link to="/paiements">
-                <CreditCard className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Saisir un paiement</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
-              <Link to="/documents">
-                <FileCheck className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Valider documents</span>
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
-              <Link to="/plantations">
-                <Sprout className="h-5 w-5" />
-                <span className="text-xs sm:text-sm">Plantations</span>
-              </Link>
-            </Button>
+            {canCreateSouscription && (
+              <Button asChild variant="default" className="h-auto py-4 flex-col gap-2">
+                <Link to="/nouvelle-souscription">
+                  <Plus className="h-5 w-5" />
+                  <span className="text-xs sm:text-sm">Nouvelle souscription</span>
+                </Link>
+              </Button>
+            )}
+            {canViewPaiements && (
+              <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+                <Link to="/paiements">
+                  <CreditCard className="h-5 w-5" />
+                  <span className="text-xs sm:text-sm">Saisir un paiement</span>
+                </Link>
+              </Button>
+            )}
+            {canValidateDocuments && (
+              <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+                <Link to="/documents">
+                  <FileCheck className="h-5 w-5" />
+                  <span className="text-xs sm:text-sm">Valider documents</span>
+                </Link>
+              </Button>
+            )}
+            {canViewPlantations && (
+              <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+                <Link to="/plantations">
+                  <Sprout className="h-5 w-5" />
+                  <span className="text-xs sm:text-sm">Plantations</span>
+                </Link>
+              </Button>
+            )}
           </div>
 
           {/* Cartes d'état */}

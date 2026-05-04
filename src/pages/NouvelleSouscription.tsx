@@ -158,6 +158,7 @@ const NouvelleSouscription = () => {
           offre_id: formData.offre_id,
           parcelle_id: formData.parcelle_id || null,
           type_souscripteur: formData.type_souscripteur || "sans_terre",
+          type_souscripteur_foncier: formData.type_souscripteur_foncier || (formData.type_souscripteur === "avec_terre" ? "OWN" : "EXT"),
           nom: formData.nom_famille || "",
           prenoms: formData.prenoms || "",
           nom_complet: nomComplet,
@@ -193,6 +194,25 @@ const NouvelleSouscription = () => {
 
       if (errorSous) throw errorSous;
 
+      // Attribution du lot hectare V3 (si lot sélectionné)
+      if (formData.lot_id) {
+        await (supabase as any).from("souscription_lots").insert({
+          souscripteur_id: souscripteur.id,
+          lot_id: formData.lot_id,
+          surface_ha: formData.superficie_ha || 1,
+          created_by: user.id,
+        });
+        // Marquer le lot comme attribué
+        await (supabase as any)
+          .from("lots_hectares")
+          .update({
+            statut: "attribue",
+            souscripteur_id: souscripteur.id,
+            date_attribution: new Date().toISOString().split("T")[0],
+          })
+          .eq("id", formData.lot_id);
+      }
+
       // Supprimer le brouillon
       if (brouillonId) {
         await (supabase as any).from("souscriptions_brouillon").delete().eq("id", brouillonId);
@@ -200,7 +220,7 @@ const NouvelleSouscription = () => {
 
       toast({
         title: "✅ Souscription enregistrée",
-        description: `Référence: ${souscripteur.id_unique || souscripteur.id}`,
+        description: `N° Contrat: ${souscripteur.numero_contrat || souscripteur.id_unique || souscripteur.id}`,
       });
 
       navigate("/souscriptions");

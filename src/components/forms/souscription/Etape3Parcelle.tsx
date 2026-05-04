@@ -23,6 +23,8 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
   const [sousPrefectures, setSousPrefectures] = useState<any[]>([]);
+  const [conventions, setConventions] = useState<any[]>([]);
+  const [lotsDispo, setLotsDispo] = useState<any[]>([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { fetchFilteredDistricts, fetchFilteredRegions, fetchFilteredDepartements, fetchFilteredSousPrefectures } = useUserZones();
   useEffect(() => {
@@ -36,6 +38,7 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
 
   useEffect(() => {
     fetchDistricts();
+    fetchConventions();
   }, []);
 
   useEffect(() => {
@@ -49,6 +52,29 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
   useEffect(() => {
     if (formData.departement_id) fetchSousPrefectures(formData.departement_id);
   }, [formData.departement_id]);
+
+  useEffect(() => {
+    if (formData.convention_id) fetchLotsDisponibles(formData.convention_id);
+  }, [formData.convention_id]);
+
+  const fetchConventions = async () => {
+    const { data } = await (supabase as any)
+      .from("conventions_foncieres")
+      .select("id, reference, surface_totale_ha, statut, proprietaires_terres:proprietaire_id(nom_complet, nom)")
+      .eq("statut", "active")
+      .order("created_at", { ascending: false });
+    setConventions(data || []);
+  };
+
+  const fetchLotsDisponibles = async (conventionId: string) => {
+    const { data } = await (supabase as any)
+      .from("lots_hectares")
+      .select("id, reference, numero_h, surface_ha, statut")
+      .eq("convention_id", conventionId)
+      .eq("statut", "disponible")
+      .order("numero_h");
+    setLotsDispo(data || []);
+  };
 
   const fetchDistricts = async () => {
     if (navigator.onLine) {
@@ -101,9 +127,101 @@ export const Etape3Parcelle = ({ formData, updateFormData }: Etape3Props) => {
 
 
   const nombrePlants = formData.superficie_ha ? Math.round(formData.superficie_ha * 143) : 0;
+  const typeFoncier = formData.type_souscripteur_foncier || "EXT";
 
   return (
     <div className="space-y-6">
+      {/* Article 3 — Identification de la plantation souscrite (Contrat V3) */}
+      <Card className="border-primary/40">
+        <CardHeader>
+          <CardTitle>Article 3 — Identification de la plantation</CardTitle>
+          <CardDescription>
+            Référencement officiel selon le Contrat V3 — Convention foncière, lot hectare et type foncier
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Type foncier du souscripteur *</Label>
+            <Select
+              value={typeFoncier}
+              onValueChange={(v) => updateFormData({ type_souscripteur_foncier: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="EXT">EXT — Hectares sur parcelle d'un propriétaire tiers</SelectItem>
+                <SelectItem value="OWN">OWN — Souscripteur sur sa propre terre</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Convention foncière (Planté-Partagé) *</Label>
+            <Select
+              value={formData.convention_id || ""}
+              onValueChange={(v) => updateFormData({ convention_id: v, lot_id: null })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Référence AC-PP-SPxxx-DOMxxx-PARCxxx" />
+              </SelectTrigger>
+              <SelectContent>
+                {conventions.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.reference} — {c.proprietaires_terres?.nom_complet || c.proprietaires_terres?.nom || "Propriétaire"} ({c.surface_totale_ha} ha)
+                  </SelectItem>
+                ))}
+                {conventions.length === 0 && (
+                  <div className="p-2 text-xs text-muted-foreground">
+                    Aucune convention active. Créez d'abord une convention foncière.
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {formData.convention_id && (
+            <div className="space-y-2">
+              <Label>Lot hectare attribué (géomètre) *</Label>
+              <Select
+                value={formData.lot_id || ""}
+                onValueChange={(v) => updateFormData({ lot_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un lot disponible" />
+                </SelectTrigger>
+                <SelectContent>
+                  {lotsDispo.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.reference} — {l.surface_ha} ha
+                    </SelectItem>
+                  ))}
+                  {lotsDispo.length === 0 && (
+                    <div className="p-2 text-xs text-muted-foreground">
+                      Aucun lot disponible sur cette convention.
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Référence finale plantation : <code>…-Hxx</code> (ex. AC-PP-SP001-DOM002-PARC005-H03)
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="culture_principale">Culture principale *</Label>
+            <Input
+              id="culture_principale"
+              value={formData.culture_principale || "Palmier à huile"}
+              onChange={(e) => updateFormData({ culture_principale: e.target.value })}
+              placeholder="Ex: Palmier à huile"
+              required
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Localisation de la parcelle</CardTitle>
