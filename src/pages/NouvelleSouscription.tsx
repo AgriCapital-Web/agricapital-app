@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Etape1Souscripteur } from "@/components/forms/souscription/Etape1Souscripteur";
 import { Etape2Cotitulaire } from "@/components/forms/souscription/Etape2Cotitulaire";
 import { Etape0Offre } from "@/components/forms/souscription/Etape0Offre";
-import { Etape3Parcelle } from "@/components/forms/souscription/Etape3Parcelle";
 import { Etape5Documents } from "@/components/forms/souscription/Etape5Documents";
 import { Etape6Confirmation } from "@/components/forms/souscription/Etape6Confirmation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -22,26 +21,17 @@ const NouvelleSouscription = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Build steps dynamically based on type_souscripteur
+  // Étapes du contrat V3 — Souscription uniquement (sans parcelle, sans enquête)
+  // La conversion en plantation se fait depuis la page Plantations.
   const etapes = useMemo(() => {
-    const base = [
+    return [
       { num: 1, titre: "Souscripteur", component: Etape1Souscripteur },
       { num: 2, titre: "Co-titulaire", component: Etape2Cotitulaire },
       { num: 3, titre: "Offre", component: Etape0Offre },
+      { num: 4, titre: "Documents", component: Etape5Documents },
+      { num: 5, titre: "Confirmation", component: Etape6Confirmation },
     ];
-
-    // Étape Parcelle uniquement si l'offre est "avec terre"
-    if (formData.type_souscripteur === "avec_terre") {
-      base.push({ num: 4, titre: "Parcelle", component: Etape3Parcelle });
-    }
-
-    base.push(
-      { num: base.length + 2, titre: "Documents", component: Etape5Documents },
-      { num: base.length + 3, titre: "Confirmation", component: Etape6Confirmation },
-    );
-
-    return base.map((e, i) => ({ ...e, num: i + 1 }));
-  }, [formData.type_souscripteur]);
+  }, []);
 
   // Charger le brouillon existant au montage
   useEffect(() => {
@@ -193,25 +183,6 @@ const NouvelleSouscription = () => {
         .single();
 
       if (errorSous) throw errorSous;
-
-      // Attribution du lot hectare V3 (si lot sélectionné)
-      if (formData.lot_id) {
-        await (supabase as any).from("souscription_lots").insert({
-          souscripteur_id: souscripteur.id,
-          lot_id: formData.lot_id,
-          surface_ha: formData.superficie_ha || 1,
-          created_by: user.id,
-        });
-        // Marquer le lot comme attribué
-        await (supabase as any)
-          .from("lots_hectares")
-          .update({
-            statut: "attribue",
-            souscripteur_id: souscripteur.id,
-            date_attribution: new Date().toISOString().split("T")[0],
-          })
-          .eq("id", formData.lot_id);
-      }
 
       // Supprimer le brouillon
       if (brouillonId) {

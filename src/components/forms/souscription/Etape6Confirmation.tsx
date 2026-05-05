@@ -50,22 +50,12 @@ export const Etape6Confirmation = ({ formData, updateFormData }: Etape6Props) =>
             </div>
 
             <div className="space-y-2">
-              <h4 className="font-semibold text-sm">Parcelle</h4>
+              <h4 className="font-semibold text-sm">Offre</h4>
               <p className="text-sm">
-                {formData.superficie_ha} hectares
+                {formData.superficie_prevue || 0} ha prévu(s)
               </p>
               <p className="text-xs text-muted-foreground">
-                {Math.round(formData.superficie_ha * 143)} plants • {formData.village}, {formData.departement}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm">Enquête</h4>
-              <p className="text-sm">
-                Chef: {formData.chef_nom} {formData.chef_prenoms}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                2 témoins + Attestation absence litiges
+                La parcelle et la plantation seront associées ultérieurement
               </p>
             </div>
           </div>
@@ -78,7 +68,6 @@ export const Etape6Confirmation = ({ formData, updateFormData }: Etape6Props) =>
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">Contrat signé</Badge>
               <Badge variant="outline">Document foncier</Badge>
-              <Badge variant="outline">Photos parcelle (3)</Badge>
               <Badge variant="outline">Photos identité (multiples)</Badge>
             </div>
           </div>
