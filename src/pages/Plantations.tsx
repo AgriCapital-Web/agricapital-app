@@ -213,13 +213,13 @@ const Plantations = () => {
               <DialogTrigger asChild>
                 <Button onClick={() => setSelectedPlantation(null)}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Nouvelle Plantation
+                  Convertir en plantation
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
-                    {selectedPlantation ? "Modifier" : "Nouvelle"} Plantation
+                    {selectedPlantation ? "Modifier la plantation" : "Convertir un souscripteur en plantation"}
                   </DialogTitle>
                 </DialogHeader>
                 <PlantationForm

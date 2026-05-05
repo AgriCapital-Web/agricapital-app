@@ -1,21 +1,17 @@
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { X } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Search, UserCheck, Sprout } from "lucide-react";
 
 interface PlantationFormProps {
   plantation?: any;
@@ -23,406 +19,276 @@ interface PlantationFormProps {
   onCancel: () => void;
 }
 
+/**
+ * Conversion d'un Souscripteur (déjà associé à une parcelle) en Plantation.
+ * — Recherche & sélection du souscripteur (auto-remplissage)
+ * — Champs manuels uniquement pour : nom plantation, date plantation, variété, notes
+ */
 const PlantationForm = ({ plantation, onSuccess, onCancel }: PlantationFormProps) => {
-  const { register, handleSubmit, setValue, watch } = useForm({
-    defaultValues: plantation || {},
-  });
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  // Recherche souscripteur
+  const [search, setSearch] = useState("");
   const [souscripteurs, setSouscripteurs] = useState<any[]>([]);
-  const [districts, setDistricts] = useState<any[]>([]);
-  const [regions, setRegions] = useState<any[]>([]);
-  const [departements, setDepartements] = useState<any[]>([]);
-  const [sousPrefectures, setSousPrefectures] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any>(null);
 
+  // Champs manuels
+  const [nomPlantation, setNomPlantation] = useState(plantation?.nom_plantation || "");
+  const [datePlantation, setDatePlantation] = useState(plantation?.date_plantation || "");
+  const [typeCulture, setTypeCulture] = useState(plantation?.type_culture || "Palmier à huile");
+  const [variete, setVariete] = useState(plantation?.variete || "Tenera");
+  const [notes, setNotes] = useState(plantation?.notes_internes || "");
+
+  // Préchargement en mode édition
   useEffect(() => {
-    fetchSouscripteurs();
-    fetchDistricts();
-    
-    // Si modification, charger les données dépendantes
-    if (plantation?.district_id) {
-      fetchRegions(plantation.district_id);
+    if (plantation?.souscripteur_id) {
+      (async () => {
+        const { data } = await (supabase as any)
+          .from("souscripteurs")
+          .select("*, offres(nom, code), parcelles:parcelle_id(id, id_unique, nom, village, surface_disponible_ha, district_id, region_id, departement_id, sous_prefecture_id)")
+          .eq("id", plantation.souscripteur_id)
+          .single();
+        if (data) setSelected(data);
+      })();
     }
-    if (plantation?.region_id) {
-      fetchDepartements(plantation.region_id);
+  }, [plantation?.souscripteur_id]);
+
+  // Recherche debouncée
+  useEffect(() => {
+    if (selected) return;
+    const t = setTimeout(async () => {
+      let query = (supabase as any)
+        .from("souscripteurs")
+        .select("id, id_unique, nom, prenoms, nom_complet, telephone, parcelle_id, offre_id, district_id, region_id, departement_id, sous_prefecture_id")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (search.trim()) {
+        query = query.or(
+          `id_unique.ilike.%${search}%,nom.ilike.%${search}%,prenoms.ilike.%${search}%,nom_complet.ilike.%${search}%,telephone.ilike.%${search}%`
+        );
+      }
+      const { data } = await query;
+      setSouscripteurs(data || []);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [search, selected]);
+
+  const handleSelect = async (s: any) => {
+    // Charger les détails de la parcelle associée si présente
+    let parcelle: any = null;
+    if (s.parcelle_id) {
+      const { data } = await (supabase as any)
+        .from("parcelles")
+        .select("id, id_unique, nom, village, surface_disponible_ha, surface_agricapital_ha, district_id, region_id, departement_id, sous_prefecture_id, localisation_gps_lat, localisation_gps_lng")
+        .eq("id", s.parcelle_id)
+        .single();
+      parcelle = data;
     }
-    if (plantation?.departement_id) {
-      fetchSousPrefectures(plantation.departement_id);
-    }
-  }, [plantation]);
-
-  const fetchSouscripteurs = async () => {
-    const { data } = await supabase
-      .from("souscripteurs")
-      .select("id, nom, prenoms")
-      .order("nom");
-    setSouscripteurs(data || []);
+    setSelected({ ...s, parcelles: parcelle });
+    setNomPlantation(`Plantation ${s.nom_complet || s.nom}`);
   };
 
-  const fetchDistricts = async () => {
-    const { data } = await supabase
-      .from("districts")
-      .select("id, nom")
-      .eq("est_actif", true)
-      .order("nom");
-    setDistricts(data || []);
-  };
+  const autofilled = useMemo(() => {
+    if (!selected) return null;
+    const p = selected.parcelles;
+    return {
+      souscripteur_id: selected.id,
+      parcelle_id: selected.parcelle_id || null,
+      district_id: p?.district_id || selected.district_id || null,
+      region_id: p?.region_id || selected.region_id || null,
+      departement_id: p?.departement_id || selected.departement_id || null,
+      sous_prefecture_id: p?.sous_prefecture_id || selected.sous_prefecture_id || null,
+      village_nom: p?.village || null,
+      latitude: p?.localisation_gps_lat || null,
+      longitude: p?.localisation_gps_lng || null,
+      superficie_ha: p?.surface_disponible_ha || 1,
+    };
+  }, [selected]);
 
-  const fetchRegions = async (districtId: string) => {
-    const { data } = await supabase
-      .from("regions")
-      .select("id, nom, code")
-      .eq("district_id", districtId)
-      .eq("est_active", true)
-      .order("nom");
-    setRegions(data || []);
-  };
-
-  const fetchDepartements = async (regionId: string) => {
-    const { data } = await supabase
-      .from("departements")
-      .select("id, nom, code")
-      .eq("region_id", regionId)
-      .eq("est_actif", true)
-      .order("nom");
-    setDepartements(data || []);
-  };
-
-  const fetchSousPrefectures = async (departementId: string) => {
-    const { data } = await supabase
-      .from("sous_prefectures")
-      .select("id, nom, code")
-      .eq("departement_id", departementId)
-      .eq("est_active", true)
-      .order("nom");
-    setSousPrefectures(data || []);
-  };
-
-  const onSubmit = async (data: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user) return;
+    if (!selected) {
+      toast({ variant: "destructive", title: "Souscripteur requis", description: "Recherchez et sélectionnez un souscripteur avant de convertir." });
+      return;
+    }
     setLoading(true);
-
     try {
       const payload = {
-        souscripteur_id: data.souscripteur_id,
-        nom: data.nom_plantation || data.nom,
-        nom_plantation: data.nom_plantation || data.nom,
-        superficie_ha: Number(data.superficie_ha),
-        nombre_plants: data.nombre_plants ? Number(data.nombre_plants) : null,
-        densite_plants: data.densite_plants ? Number(data.densite_plants) : null,
-        district_id: data.district_id || null,
-        region_id: data.region_id || null,
-        departement_id: data.departement_id || null,
-        sous_prefecture_id: data.sous_prefecture_id || null,
-        village_nom: data.village_nom || null,
-        localite: data.localite || data.village_nom || null,
-        latitude: data.latitude ? Number(data.latitude) : null,
-        longitude: data.longitude ? Number(data.longitude) : null,
-        altitude: data.altitude ? Number(data.altitude) : null,
-        document_foncier_type: data.document_foncier_type || null,
-        document_foncier_numero: data.document_foncier_numero || null,
-        document_foncier_date_delivrance: data.document_foncier_date_delivrance || null,
-        date_signature_contrat: data.date_signature_contrat || null,
-        chef_village_nom: data.chef_village_nom || null,
-        chef_village_telephone: data.chef_village_telephone || null,
-        notes_internes: data.notes_internes || null,
-        type_culture: data.type_culture || 'Palmier à huile',
-        variete: data.variete || null,
+        ...autofilled,
+        nom: nomPlantation,
+        nom_plantation: nomPlantation,
+        date_plantation: datePlantation || null,
+        type_culture: typeCulture,
+        variete: variete || null,
+        notes_internes: notes || null,
       };
 
       if (plantation) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("plantations")
           .update(payload)
           .eq("id", plantation.id);
-        
         if (error) throw error;
-        
-        toast({
-          title: "Succès",
-          description: "Plantation modifiée avec succès",
-        });
+        toast({ title: "Plantation modifiée" });
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("plantations")
           .insert({
             ...payload,
             created_by: user.id,
-            statut: 'actif',
-            statut_global: 'en_attente_da',
+            statut: "actif",
+            statut_global: "en_attente_da",
           });
-        
         if (error) throw error;
-        
-        toast({
-          title: "Succès",
-          description: "Plantation créée avec succès",
-        });
+        toast({ title: "✅ Souscripteur converti en plantation", description: nomPlantation });
       }
-
       onSuccess();
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: error.message,
-      });
+      toast({ variant: "destructive", title: "Erreur", description: error.message });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="col-span-3 space-y-2">
-          <Label>Nom de la Plantation *</Label>
-          <Input 
-            {...register("nom_plantation")} 
-            defaultValue={plantation?.nom_plantation || plantation?.nom}
-          />
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* 1. Sélection du souscripteur */}
+      <Card className="border-primary/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <UserCheck className="h-5 w-5 text-primary" /> 1. Sélectionner le souscripteur à convertir
+          </CardTitle>
+          <CardDescription>
+            Recherchez par ID, nom, téléphone. Les informations de la parcelle associée seront auto-remplies.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!selected ? (
+            <>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Rechercher un souscripteur..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="border rounded-lg max-h-72 overflow-y-auto divide-y">
+                {souscripteurs.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    Aucun souscripteur trouvé
+                  </div>
+                ) : souscripteurs.map((s) => (
+                  <button
+                    type="button"
+                    key={s.id}
+                    onClick={() => handleSelect(s)}
+                    className="w-full text-left p-3 hover:bg-accent/50 transition-colors flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">
+                        {s.nom_complet || `${s.nom} ${s.prenoms || ""}`}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {s.id_unique} · {s.telephone || "—"}
+                      </div>
+                    </div>
+                    {s.parcelle_id ? (
+                      <Badge variant="outline" className="shrink-0">Parcelle ✓</Badge>
+                    ) : (
+                      <Badge variant="secondary" className="shrink-0">Sans parcelle</Badge>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="rounded-lg border bg-primary/5 p-3 flex items-start justify-between gap-3">
+              <div className="text-sm space-y-0.5">
+                <div className="font-semibold">{selected.nom_complet || `${selected.nom} ${selected.prenoms || ""}`}</div>
+                <div className="text-xs text-muted-foreground">
+                  {selected.id_unique} · {selected.telephone}
+                </div>
+                {selected.parcelles && (
+                  <div className="text-xs mt-1">
+                    Parcelle : <span className="font-mono">{selected.parcelles.id_unique}</span>
+                    {selected.parcelles.village ? ` · ${selected.parcelles.village}` : ""}
+                    {selected.parcelles.surface_disponible_ha ? ` · ${selected.parcelles.surface_disponible_ha} ha dispo` : ""}
+                  </div>
+                )}
+              </div>
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setSelected(null); setNomPlantation(""); }}>
+                Changer
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <div className="space-y-2">
-          <Label>Planteur *</Label>
-          <Select
-            defaultValue={plantation?.souscripteur_id}
-            onValueChange={(value) => setValue("souscripteur_id", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner un planteur" />
-            </SelectTrigger>
-            <SelectContent>
-              {souscripteurs.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.nom} {s.prenoms}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* 2. Informations spécifiques à la plantation */}
+      {selected && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sprout className="h-5 w-5 text-primary" /> 2. Informations de la plantation
+            </CardTitle>
+            <CardDescription>Seuls les champs propres à la plantation restent à saisir.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nom de la plantation *</Label>
+                <Input value={nomPlantation} onChange={(e) => setNomPlantation(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Date de plantation</Label>
+                <Input type="date" value={datePlantation} onChange={(e) => setDatePlantation(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Type de culture</Label>
+                <Select value={typeCulture} onValueChange={setTypeCulture}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Palmier à huile">Palmier à huile</SelectItem>
+                    <SelectItem value="Hévéa">Hévéa</SelectItem>
+                    <SelectItem value="Cacao">Cacao</SelectItem>
+                    <SelectItem value="Café">Café</SelectItem>
+                    <SelectItem value="Autre">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Variété</Label>
+                <Input value={variete} onChange={(e) => setVariete(e.target.value)} placeholder="Ex: Tenera" />
+              </div>
+            </div>
 
-        <div className="space-y-2">
-          <Label>Superficie (ha) *</Label>
-          <Input
-            type="number"
-            step="0.01"
-            {...register("superficie_ha", { required: true })}
-          />
-        </div>
+            <div className="space-y-2">
+              <Label>Notes internes</Label>
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+            </div>
 
-        <div className="space-y-2">
-          <Label>Nombre de Plants</Label>
-          <Input
-            type="number"
-            {...register("nombre_plants")}
-          />
-        </div>
+            {autofilled && (
+              <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
+                <div className="font-semibold mb-1">Auto-rempli depuis le souscripteur :</div>
+                <div>Superficie : {autofilled.superficie_ha} ha</div>
+                {autofilled.village_nom && <div>Village : {autofilled.village_nom}</div>}
+                {autofilled.latitude && <div>GPS : {autofilled.latitude}, {autofilled.longitude}</div>}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-        <div className="space-y-2">
-          <Label>District</Label>
-          <Select
-            defaultValue={plantation?.district_id}
-            onValueChange={(value) => {
-              setValue("district_id", value);
-              fetchRegions(value);
-              setRegions([]);
-              setDepartements([]);
-              setSousPrefectures([]);
-              setValue("region_id", "");
-              setValue("departement_id", "");
-              setValue("sous_prefecture_id", "");
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner un district" />
-            </SelectTrigger>
-            <SelectContent>
-              {districts.map((d) => (
-                <SelectItem key={d.id} value={d.id}>
-                  {d.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Région</Label>
-          <Select
-            defaultValue={plantation?.region_id}
-            onValueChange={(value) => {
-              setValue("region_id", value);
-              fetchDepartements(value);
-              setDepartements([]);
-              setSousPrefectures([]);
-              setValue("departement_id", "");
-              setValue("sous_prefecture_id", "");
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner une région" />
-            </SelectTrigger>
-            <SelectContent>
-              {regions.map((r) => (
-                <SelectItem key={r.id} value={r.id}>
-                  {r.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Département</Label>
-          <Select
-            defaultValue={plantation?.departement_id}
-            onValueChange={(value) => {
-              setValue("departement_id", value);
-              fetchSousPrefectures(value);
-              setSousPrefectures([]);
-              setValue("sous_prefecture_id", "");
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner un département" />
-            </SelectTrigger>
-            <SelectContent>
-              {departements.map((d) => (
-                <SelectItem key={d.id} value={d.id}>
-                  {d.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Sous-Préfecture</Label>
-          <Select
-            defaultValue={plantation?.sous_prefecture_id}
-            onValueChange={(value) => setValue("sous_prefecture_id", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner une sous-préfecture" />
-            </SelectTrigger>
-            <SelectContent>
-              {sousPrefectures.map((sp) => (
-                <SelectItem key={sp.id} value={sp.id}>
-                  {sp.nom}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Village / Localité</Label>
-          <Input {...register("village_nom")} />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Type de culture</Label>
-          <Select
-            defaultValue={plantation?.type_culture || "Palmier à huile"}
-            onValueChange={(value) => setValue("type_culture", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Palmier à huile">Palmier à huile</SelectItem>
-              <SelectItem value="Hévéa">Hévéa</SelectItem>
-              <SelectItem value="Cacao">Cacao</SelectItem>
-              <SelectItem value="Café">Café</SelectItem>
-              <SelectItem value="Autre">Autre</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Variété</Label>
-          <Input {...register("variete")} placeholder="Ex: Tenera" />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Latitude</Label>
-          <Input type="number" step="0.000001" {...register("latitude")} />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Longitude</Label>
-          <Input type="number" step="0.000001" {...register("longitude")} />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Altitude (m)</Label>
-          <Input type="number" {...register("altitude")} />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Type de Document Foncier</Label>
-          <Select
-            defaultValue={plantation?.document_foncier_type}
-            onValueChange={(value) => setValue("document_foncier_type", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="titre_foncier">Titre Foncier</SelectItem>
-              <SelectItem value="certificat_foncier">Certificat Foncier</SelectItem>
-              <SelectItem value="contrat_metayage">Contrat Métayage</SelectItem>
-              <SelectItem value="autorisation">Autorisation d'exploiter</SelectItem>
-              <SelectItem value="attestation_villageoise">Attestation Villageoise</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Numéro du Document</Label>
-          <Input {...register("document_foncier_numero")} />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Date de Délivrance</Label>
-          <Input
-            type="date"
-            {...register("document_foncier_date_delivrance")}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Date de Signature Contrat</Label>
-          <Input
-            type="date"
-            {...register("date_signature_contrat")}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Chef de Village</Label>
-          <Input {...register("chef_village_nom")} />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Téléphone Chef Village</Label>
-          <Input {...register("chef_village_telephone")} />
-        </div>
-
-        <div className="col-span-3 space-y-2">
-          <Label>Notes Internes</Label>
-          <Textarea {...register("notes_internes")} rows={3} />
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Annuler
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Enregistrement..." : plantation ? "Modifier" : "Créer"}
+      <div className="flex justify-end gap-3">
+        <Button type="button" variant="outline" onClick={onCancel}>Annuler</Button>
+        <Button type="submit" disabled={loading || !selected}>
+          {loading ? "Conversion..." : plantation ? "Modifier" : "Convertir en plantation"}
         </Button>
       </div>
     </form>
