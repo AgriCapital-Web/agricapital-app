@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Etape1Souscripteur } from "@/components/forms/souscription/Etape1Souscripteur";
 import { Etape2Cotitulaire } from "@/components/forms/souscription/Etape2Cotitulaire";
 import { Etape0Offre } from "@/components/forms/souscription/Etape0Offre";
+import { Etape3Foncier } from "@/components/forms/souscription/Etape3Foncier";
 import { Etape5Documents } from "@/components/forms/souscription/Etape5Documents";
 import { Etape6Confirmation } from "@/components/forms/souscription/Etape6Confirmation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -28,8 +29,9 @@ const NouvelleSouscription = () => {
       { num: 1, titre: "Souscripteur", component: Etape1Souscripteur },
       { num: 2, titre: "Co-titulaire", component: Etape2Cotitulaire },
       { num: 3, titre: "Offre", component: Etape0Offre },
-      { num: 4, titre: "Documents", component: Etape5Documents },
-      { num: 5, titre: "Confirmation", component: Etape6Confirmation },
+      { num: 4, titre: "Foncier", component: Etape3Foncier },
+      { num: 5, titre: "Documents", component: Etape5Documents },
+      { num: 6, titre: "Confirmation", component: Etape6Confirmation },
     ];
   }, []);
 
@@ -134,6 +136,27 @@ const NouvelleSouscription = () => {
         throw new Error("Veuillez remplir tous les champs obligatoires (identité, coordonnées et offre)");
       }
 
+      // Validation V3 — type_souscripteur_foncier (EXT/OWN) + cohérence convention/lot
+      const typeFoncier = formData.type_souscripteur_foncier || (formData.type_souscripteur === "avec_terre" ? "OWN" : "EXT");
+      if (typeFoncier === "EXT") {
+        if (!formData.convention_id || !formData.lot_id) {
+          throw new Error("Souscripteur EXT : convention Planter-Partager et lot Hxx obligatoires");
+        }
+        // Vérifier que le lot appartient bien à la convention sélectionnée et est disponible
+        const { data: lot, error: lotErr } = await (supabase as any)
+          .from("lots_hectares")
+          .select("id, convention_id, statut")
+          .eq("id", formData.lot_id)
+          .single();
+        if (lotErr || !lot) throw new Error("Lot Hxx introuvable");
+        if (lot.convention_id !== formData.convention_id) {
+          throw new Error("Le lot sélectionné n'appartient pas à la convention");
+        }
+        if (lot.statut !== "disponible") {
+          throw new Error("Ce lot Hxx n'est plus disponible");
+        }
+      }
+
       // Générer l'ID unique
       const { data: genId, error: genErr } = await (supabase as any).rpc('generate_souscripteur_id');
       if (genErr) throw genErr;
@@ -148,7 +171,7 @@ const NouvelleSouscription = () => {
           offre_id: formData.offre_id,
           parcelle_id: formData.parcelle_id || null,
           type_souscripteur: formData.type_souscripteur || "sans_terre",
-          type_souscripteur_foncier: formData.type_souscripteur_foncier || (formData.type_souscripteur === "avec_terre" ? "OWN" : "EXT"),
+          type_souscripteur_foncier: typeFoncier,
           nom: formData.nom_famille || "",
           prenoms: formData.prenoms || "",
           nom_complet: nomComplet,
@@ -183,6 +206,18 @@ const NouvelleSouscription = () => {
         .single();
 
       if (errorSous) throw errorSous;
+
+      // Attribution du lot Hxx au souscripteur (EXT)
+      if (typeFoncier === "EXT" && formData.lot_id) {
+        await (supabase as any)
+          .from("lots_hectares")
+          .update({
+            souscripteur_id: souscripteur.id,
+            statut: "attribue",
+            date_attribution: new Date().toISOString().slice(0, 10),
+          })
+          .eq("id", formData.lot_id);
+      }
 
       // Supprimer le brouillon
       if (brouillonId) {
