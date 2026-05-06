@@ -303,6 +303,36 @@ const Dashboard = () => {
 
           {/* Actions rapides */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {isSouscripteurOnly && (
+              <>
+                <Button asChild variant="default" className="h-auto py-4 flex-col gap-2">
+                  <Link to="/profil">
+                    <Users className="h-5 w-5" />
+                    <span className="text-xs sm:text-sm">Mon profil</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+                  <Link to="/paiements">
+                    <CreditCard className="h-5 w-5" />
+                    <span className="text-xs sm:text-sm">Mes paiements</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+                  <Link to="/plantations">
+                    <Sprout className="h-5 w-5" />
+                    <span className="text-xs sm:text-sm">Ma plantation</span>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="h-auto py-4 flex-col gap-2">
+                  <Link to="/documents">
+                    <FileCheck className="h-5 w-5" />
+                    <span className="text-xs sm:text-sm">Mes documents</span>
+                  </Link>
+                </Button>
+              </>
+            )}
+            {!isSouscripteurOnly && (
+            <>
             {canCreateSouscription && (
               <Button asChild variant="default" className="h-auto py-4 flex-col gap-2">
                 <Link to="/nouvelle-souscription">
@@ -334,6 +364,8 @@ const Dashboard = () => {
                   <span className="text-xs sm:text-sm">Plantations</span>
                 </Link>
               </Button>
+            )}
+            </>
             )}
           </div>
 
