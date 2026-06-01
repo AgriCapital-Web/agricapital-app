@@ -118,6 +118,11 @@ const ProprietairesTerres = () => {
         departement_id: formData.departement_id || null,
         sous_prefecture_id: formData.sous_prefecture_id || null,
         nombre_membres: formData.nombre_membres ? parseInt(formData.nombre_membres) : null,
+        date_naissance: formData.date_naissance || null,
+        date_delivrance_piece: formData.date_delivrance_piece || null,
+        civilite: formData.civilite || null,
+        type_piece: formData.type_piece || null,
+        email: formData.email || null,
       });
       if (error) throw error;
       toast({ title: "Succès", description: `Propriétaire ${genId} enregistré` });

@@ -149,14 +149,9 @@ const UtilisateurFormNew = ({ utilisateur, onSuccess, onCancel }: UtilisateurFor
           .update({
             nom_complet: data.nom_complet,
             email: data.email,
-            telephone: data.telephone,
-            whatsapp: data.whatsapp,
-            departement: data.departement,
-            equipe_id: data.equipe_id,
-            relation_rh: data.relation_rh,
-            taux_commission: data.taux_commission,
-            region_id: data.region_id,
-            photo_url: photoUrl,
+            telephone: data.telephone || null,
+            equipe_id: data.equipe_id || null,
+            photo_url: photoUrl || null,
           })
           .eq("id", utilisateur.id);
 
