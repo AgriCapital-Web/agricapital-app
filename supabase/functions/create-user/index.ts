@@ -30,7 +30,8 @@ serve(async (req) => {
       telephone,
       equipe_id,
       photo_url,
-      roles 
+      roles,
+      username
     } = await req.json();
 
     // Input validation
@@ -108,6 +109,7 @@ serve(async (req) => {
         telephone: telephone || null,
         equipe_id: equipe_id || null,
         photo_url: photo_url || null,
+        username: username || email.split('@')[0],
         actif: true,
       });
 
