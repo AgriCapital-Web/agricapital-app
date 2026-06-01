@@ -274,6 +274,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conventions_foncieres_parcelle_id_fkey"
+            columns: ["parcelle_id"]
+            isOneToOne: false
+            referencedRelation: "parcelles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conventions_foncieres_proprietaire_id_fkey"
+            columns: ["proprietaire_id"]
+            isOneToOne: false
+            referencedRelation: "proprietaires_terres"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conventions_foncieres_sous_prefecture_id_fkey"
             columns: ["sous_prefecture_id"]
             isOneToOne: false
@@ -824,6 +838,20 @@ export type Database = {
             columns: ["convention_id"]
             isOneToOne: false
             referencedRelation: "conventions_foncieres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lots_hectares_parcelle_id_fkey"
+            columns: ["parcelle_id"]
+            isOneToOne: false
+            referencedRelation: "parcelles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lots_hectares_souscripteur_id_fkey"
+            columns: ["souscripteur_id"]
+            isOneToOne: false
+            referencedRelation: "souscripteurs"
             referencedColumns: ["id"]
           },
         ]
