@@ -165,38 +165,6 @@ const AccountRequest = () => {
 
         <CardContent className="px-4 sm:px-6">
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {/* Photo de profil - En premier et obligatoire */}
-            <div className="flex flex-col items-center space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Camera className="h-4 w-4" />
-                Photo de profil *
-              </Label>
-              <div className="relative">
-                {photoPreview ? (
-                  <img
-                    src={photoPreview}
-                    alt="Aperçu"
-                    className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-full border-4 border-primary"
-                  />
-                ) : (
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted">
-                    <User className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50" />
-                  </div>
-                )}
-                <label htmlFor="photo" className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-2 rounded-full cursor-pointer hover:bg-primary/90">
-                  <Camera className="h-4 w-4" />
-                </label>
-                <input
-                  id="photo"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoChange}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Cliquez sur l'icône pour ajouter votre photo</p>
-            </div>
-
             {/* Informations personnelles */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1.5">
@@ -337,24 +305,6 @@ const AccountRequest = () => {
                 placeholder="Expliquez pourquoi vous souhaitez rejoindre AgriCapital..."
               />
             </div>
-
-            {/* CV Upload */}
-            <div className="space-y-1.5">
-              <Label htmlFor="cv" className="text-sm flex items-center gap-2">
-                <Upload className="h-3.5 w-3.5" /> CV (optionnel)
-              </Label>
-              <Input
-                id="cv"
-                type="file"
-                accept=".pdf,.doc,.docx"
-                className="h-10 text-sm"
-                onChange={(e) => setCvFile(e.target.files?.[0] || null)}
-              />
-              {cvFile && (
-                <p className="text-xs text-muted-foreground">Fichier sélectionné: {cvFile.name}</p>
-              )}
-            </div>
-
             {/* Boutons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button
