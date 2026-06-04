@@ -23,7 +23,6 @@ import Parametres from "./pages/Parametres";
 import Profil from "./pages/Profil";
 import HistoriqueComplet from "./pages/HistoriqueComplet";
 import AccountRequest from "./pages/AccountRequest";
-import CreateSuperAdmin from "./pages/CreateSuperAdmin";
 import Tickets from "./pages/Tickets";
 import ProprietairesTerres from "./pages/ProprietairesTerres";
 import Parcelles from "./pages/Parcelles";
@@ -41,8 +40,7 @@ const DomainRouter = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/account-request" element={<AccountRequest />} />
-      <Route path="/create-super-admin" element={<CreateSuperAdmin />} />
-      
+
       {/* Protected routes */}
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/souscriptions" element={<Souscriptions />} />
