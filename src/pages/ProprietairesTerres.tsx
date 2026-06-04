@@ -525,6 +525,14 @@ const ProprietairesTerres = () => {
                       <h4 className="font-semibold">Description de la parcelle (Section II Convention)</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
+                          <Label>Superficie totale (ha) *</Label>
+                          <Input type="number" min="2" step="0.1" value={formData.surface_totale_declaree_ha} onChange={e => update('surface_totale_declaree_ha', e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Date de signature convention</Label>
+                          <Input type="date" value={formData.date_signature_convention} onChange={e => update('date_signature_convention', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
                           <Label>Statut foncier</Label>
                           <Select value={formData.statut_foncier} onValueChange={v => update('statut_foncier', v)}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -540,7 +548,18 @@ const ProprietairesTerres = () => {
                           <Label>Réf. cadastrale / IDUFCI</Label>
                           <Input value={formData.reference_cadastrale} onChange={e => update('reference_cadastrale', e.target.value)} />
                         </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Coordonnées GPS (si disponibles)</Label>
+                          <Input value={formData.coordonnees_gps} onChange={e => update('coordonnees_gps', e.target.value)} placeholder="Ex: 6.8891, -6.4502 ou polygone GPS" />
+                        </div>
                       </div>
+                      {formData.surface_totale_declaree_ha && parseFloat(formData.surface_totale_declaree_ha) >= 2 && (
+                        <div className="p-3 rounded-md bg-primary/10 text-sm space-y-1">
+                          <p>Part propriétaire : <strong>{(parseFloat(formData.surface_totale_declaree_ha) / 2).toFixed(2)} ha</strong> (50%)</p>
+                          <p>Part AgriCapital : <strong>{(parseFloat(formData.surface_totale_declaree_ha) / 2).toFixed(2)} ha</strong> (50%)</p>
+                          <p>Caution foncière : <strong>{((parseFloat(formData.surface_totale_declaree_ha) / 2) * 50000).toLocaleString('fr-FR')} FCFA</strong></p>
+                        </div>
+                      )}
                       <h4 className="font-semibold mt-4">Limites de la parcelle</h4>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -567,6 +586,23 @@ const ProprietairesTerres = () => {
                       <div className="space-y-2">
                         <Label>Notes</Label>
                         <Textarea value={formData.notes} onChange={e => update('notes', e.target.value)} rows={2} />
+                      </div>
+                      <h4 className="font-semibold mt-4">Co-titulaire / mandataire et signatures</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>Nom co-titulaire / mandataire</Label><Input value={formData.co_titulaire_nom} onChange={e => update('co_titulaire_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Lien avec le propriétaire</Label><Input value={formData.co_titulaire_lien} onChange={e => update('co_titulaire_lien', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Type & N° pièce</Label><Input value={formData.co_titulaire_piece} onChange={e => update('co_titulaire_piece', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Téléphone / WhatsApp</Label><Input value={formData.co_titulaire_telephone} onChange={e => update('co_titulaire_telephone', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Témoin propriétaire — Nom</Label><Input value={formData.temoin_proprietaire_nom} onChange={e => update('temoin_proprietaire_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Témoin propriétaire — Qualité</Label><Input value={formData.temoin_proprietaire_qualite} onChange={e => update('temoin_proprietaire_qualite', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Représentant AgriCapital — Nom</Label><Input value={formData.representant_agricapital_nom} onChange={e => update('representant_agricapital_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Représentant AgriCapital — Qualité</Label><Input value={formData.representant_agricapital_qualite} onChange={e => update('representant_agricapital_qualite', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Leader communautaire — Nom</Label><Input value={formData.leader_communautaire_nom} onChange={e => update('leader_communautaire_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Leader communautaire — Qualité</Label><Input value={formData.leader_communautaire_qualite} onChange={e => update('leader_communautaire_qualite', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Voisin riverain n°1 — Nom</Label><Input value={formData.voisin_1_nom} onChange={e => update('voisin_1_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Côté</Label><Input value={formData.voisin_1_cote} onChange={e => update('voisin_1_cote', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Voisin riverain n°2 — Nom</Label><Input value={formData.voisin_2_nom} onChange={e => update('voisin_2_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Côté</Label><Input value={formData.voisin_2_cote} onChange={e => update('voisin_2_cote', e.target.value)} /></div>
                       </div>
                     </TabsContent>
 
