@@ -30,7 +30,11 @@ const ANNEXES_CONVENTION = [
   { field: "annexe_8_guide_villageois_attestation", label: "Annexe 8 — Guide villageois / attestation foncière du chef" },
 ];
 
-const initialAnnexStatuses = ANNEXES_CONVENTION.reduce((acc, a) => ({ ...acc, [a.field]: "a_fournir" }), {} as Record<string, "joint" | "a_fournir">);
+const createInitialAnnexStatuses = (): Record<string, "joint" | "a_fournir"> =>
+  ANNEXES_CONVENTION.reduce<Record<string, "joint" | "a_fournir">>((acc, a) => {
+    acc[a.field] = "a_fournir";
+    return acc;
+  }, {});
 
 const ProprietairesTerres = () => {
   const [proprietaires, setProprietaires] = useState<any[]>([]);
@@ -68,7 +72,7 @@ const ProprietairesTerres = () => {
   const [files, setFiles] = useState<{ [key: string]: File | null }>({
     photo_profil: null, cni_recto: null, cni_verso: null,
   });
-  const [annexStatuses, setAnnexStatuses] = useState<Record<string, "joint" | "a_fournir">>(initialAnnexStatuses);
+  const [annexStatuses, setAnnexStatuses] = useState<Record<string, "joint" | "a_fournir">>(createInitialAnnexStatuses);
 
   const fetchData = async () => {
     try {
@@ -162,11 +166,17 @@ const ProprietairesTerres = () => {
       telephone: "", whatsapp: "", email: "", type_piece: "", numero_piece: "",
       date_delivrance_piece: "", domicile: "", district_id: "", region_id: "",
       departement_id: "", sous_prefecture_id: "", village: "",
+      surface_totale_declaree_ha: "", coordonnees_gps: "", date_signature_convention: "",
       statut_foncier: "coutumier", reference_cadastrale: "",
       limites_nord: "", limites_sud: "", limites_est: "", limites_ouest: "",
-      servitudes: "", croquis_joint: false, notes: "",
+      servitudes: "", croquis_joint: false,
+      co_titulaire_nom: "", co_titulaire_lien: "", co_titulaire_piece: "", co_titulaire_telephone: "",
+      temoin_proprietaire_nom: "", temoin_proprietaire_qualite: "", representant_agricapital_nom: "", representant_agricapital_qualite: "",
+      leader_communautaire_nom: "", leader_communautaire_qualite: "", voisin_1_nom: "", voisin_1_cote: "", voisin_2_nom: "", voisin_2_cote: "",
+      notes: "",
     });
     setFiles({ photo_profil: null, cni_recto: null, cni_verso: null });
+    setAnnexStatuses(createInitialAnnexStatuses());
   };
 
   const filtered = proprietaires.filter(p =>
