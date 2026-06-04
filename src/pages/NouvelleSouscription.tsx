@@ -8,11 +8,12 @@ import { Etape1Souscripteur } from "@/components/forms/souscription/Etape1Souscr
 import { Etape2Cotitulaire } from "@/components/forms/souscription/Etape2Cotitulaire";
 import { Etape0Offre } from "@/components/forms/souscription/Etape0Offre";
 import { Etape3Foncier } from "@/components/forms/souscription/Etape3Foncier";
-import { Etape5Documents } from "@/components/forms/souscription/Etape5Documents";
+import { ANNEXES_SOUSCRIPTION, Etape5Documents } from "@/components/forms/souscription/Etape5Documents";
 import { Etape6Confirmation } from "@/components/forms/souscription/Etape6Confirmation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { uploadFile } from "@/utils/storage";
 
 const NouvelleSouscription = () => {
   const [etapeActuelle, setEtapeActuelle] = useState(0);
@@ -157,17 +158,12 @@ const NouvelleSouscription = () => {
         }
       }
 
-      // Générer l'ID unique
-      const { data: genId, error: genErr } = await (supabase as any).rpc('generate_souscripteur_id');
-      if (genErr) throw genErr;
-
       // Créer le souscripteur
       const nomComplet = `${formData.nom_famille || ''} ${formData.prenoms || ''}`.trim();
       
       const { data: souscripteur, error: errorSous } = await (supabase as any)
         .from("souscripteurs")
         .insert({
-          id_unique: genId,
           offre_id: formData.offre_id,
           parcelle_id: formData.parcelle_id || null,
           type_souscripteur: formData.type_souscripteur || "sans_terre",
@@ -206,6 +202,27 @@ const NouvelleSouscription = () => {
         .single();
 
       if (errorSous) throw errorSous;
+
+      const requiredMissing = ANNEXES_SOUSCRIPTION.find((a) => a.required && !formData[`${a.field}_file`]);
+      if (requiredMissing) throw new Error(`${requiredMissing.label}: fichier obligatoire`);
+
+      const documentsPayload: any[] = [];
+      if (formData.contrat_file) {
+        const uploaded = await uploadFile("documents", formData.contrat_file, `${user.id}/souscriptions/${souscripteur.id}`);
+        if (!uploaded) throw new Error("Upload impossible du contrat signé");
+        documentsPayload.push({ souscripteur_id: souscripteur.id, type_document: "contrat_souscription_signe", fichier_url: uploaded.url, statut: "soumis", uploaded_by: user.id });
+      }
+      for (const annexe of ANNEXES_SOUSCRIPTION) {
+        const file = formData[`${annexe.field}_file`];
+        if (!file) continue;
+        const uploaded = await uploadFile("documents", file, `${user.id}/souscriptions/${souscripteur.id}/annexes`);
+        if (!uploaded) throw new Error(`Upload impossible: ${annexe.label}`);
+        documentsPayload.push({ souscripteur_id: souscripteur.id, type_document: annexe.field, fichier_url: uploaded.url, statut: "soumis", uploaded_by: user.id });
+      }
+      if (documentsPayload.length > 0) {
+        const { error: docsError } = await (supabase as any).from("documents_souscription").insert(documentsPayload);
+        if (docsError) throw docsError;
+      }
 
       // Attribution du lot Hxx au souscripteur (EXT)
       if (typeFoncier === "EXT" && formData.lot_id) {

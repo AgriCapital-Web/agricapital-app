@@ -14,8 +14,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, Users, MapPin, Layers, Upload, FileText } from "lucide-react";
 import { useUserZones } from "@/hooks/useUserZones";
+import { uploadFile as uploadToStorage } from "@/utils/storage";
+
+const ANNEXES_CONVENTION = [
+  { field: "annexe_1_pv_delimitation_croquis", label: "Annexe 1 — Procès-verbal de délimitation / croquis parcellaire" },
+  { field: "annexe_2_pv_consentement_familial", label: "Annexe 2 — Procès-verbal de consentement familial signé" },
+  { field: "annexe_3_acte_reconnaissance_parts", label: "Annexe 3 — Acte de délimitation et reconnaissance des parts" },
+  { field: "annexe_4_acte_remise_jouissance", label: "Annexe 4 — Acte de Remise en Jouissance (36 mois)" },
+  { field: "annexe_5_procuration_mandataire", label: "Annexe 5 — Procuration co-titulaire / mandataire" },
+  { field: "annexe_6_copies_cni_signataires", label: "Annexe 6 — Copies CNI d’au moins six signataires" },
+  { field: "annexe_7_acte_mariage", label: "Annexe 7 — Acte de mariage (si applicable)" },
+  { field: "annexe_8_guide_villageois_attestation", label: "Annexe 8 — Guide villageois / attestation foncière du chef" },
+];
+
+const createInitialAnnexStatuses = (): Record<string, "joint" | "a_fournir"> =>
+  ANNEXES_CONVENTION.reduce<Record<string, "joint" | "a_fournir">>((acc, a) => {
+    acc[a.field] = "a_fournir";
+    return acc;
+  }, {});
 
 const ProprietairesTerres = () => {
   const [proprietaires, setProprietaires] = useState<any[]>([]);
@@ -40,15 +59,20 @@ const ProprietairesTerres = () => {
     type_piece: "", numero_piece: "", date_delivrance_piece: "",
     domicile: "",
     district_id: "", region_id: "", departement_id: "", sous_prefecture_id: "", village: "",
+    surface_totale_declaree_ha: "", coordonnees_gps: "", date_signature_convention: "",
     statut_foncier: "coutumier", reference_cadastrale: "",
     limites_nord: "", limites_sud: "", limites_est: "", limites_ouest: "",
     servitudes: "", croquis_joint: false,
+    co_titulaire_nom: "", co_titulaire_lien: "", co_titulaire_piece: "", co_titulaire_telephone: "",
+    temoin_proprietaire_nom: "", temoin_proprietaire_qualite: "", representant_agricapital_nom: "", representant_agricapital_qualite: "",
+    leader_communautaire_nom: "", leader_communautaire_qualite: "", voisin_1_nom: "", voisin_1_cote: "", voisin_2_nom: "", voisin_2_cote: "",
     notes: "",
   });
 
   const [files, setFiles] = useState<{ [key: string]: File | null }>({
     photo_profil: null, cni_recto: null, cni_verso: null,
   });
+  const [annexStatuses, setAnnexStatuses] = useState<Record<string, "joint" | "a_fournir">>(createInitialAnnexStatuses);
 
   const fetchData = async () => {
     try {
@@ -81,25 +105,31 @@ const ProprietairesTerres = () => {
     setSousPrefectures(await fetchFilteredSousPrefectures(v));
   };
 
-  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
-    const ext = file.name.split('.').pop();
-    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from('pieces-identite').upload(path, file);
-    if (error) { console.error(error); return null; }
-    const { data: { publicUrl } } = supabase.storage.from('pieces-identite').getPublicUrl(path);
-    return publicUrl;
+  const uploadFile = async (bucket: string, file: File, folder: string): Promise<string | null> => {
+    const result = await uploadToStorage(bucket, file, folder);
+    if (!result?.url) throw new Error(`Upload impossible: ${file.name}`);
+    return result.url;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploading(true);
     try {
-      const { data: genId } = await (supabase as any).rpc("generate_proprietaire_id");
-      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+      const missingAnnex = ANNEXES_CONVENTION.find((a) => annexStatuses[a.field] === "joint" && !files[a.field]);
+      if (missingAnnex) throw new Error(`${missingAnnex.label}: fichier obligatoire si “Joint” est coché`);
+
       let photo_profil_url = null, fichier_piece_recto_url = null, fichier_piece_verso_url = null;
-      if (files.photo_profil) photo_profil_url = await uploadFile(files.photo_profil, 'proprietaires/photos');
-      if (files.cni_recto) fichier_piece_recto_url = await uploadFile(files.cni_recto, 'proprietaires/pieces');
-      if (files.cni_verso) fichier_piece_verso_url = await uploadFile(files.cni_verso, 'proprietaires/pieces');
+      if (files.photo_profil) photo_profil_url = await uploadFile('photos-profils', files.photo_profil, user.id);
+      if (files.cni_recto) fichier_piece_recto_url = await uploadFile('pieces-identite', files.cni_recto, `proprietaires/${user.id}/pieces`);
+      if (files.cni_verso) fichier_piece_verso_url = await uploadFile('pieces-identite', files.cni_verso, `proprietaires/${user.id}/pieces`);
+
+      const annexUploads: Record<string, string | null> = {};
+      for (const annexe of ANNEXES_CONVENTION) {
+        const file = files[annexe.field];
+        annexUploads[annexe.field] = file ? await uploadFile('documents-fonciers', file, `conventions/${user.id}/annexes`) : null;
+      }
 
       const nomComplet = formData.type_proprietaire === 'personne_morale' 
         ? formData.denomination_sociale 
@@ -107,25 +137,132 @@ const ProprietairesTerres = () => {
         ? formData.nom_representant
         : `${formData.nom} ${formData.prenoms}`.trim();
 
-      const { error } = await (supabase as any).from("proprietaires_terres").insert({
-        ...formData,
-        id_unique: genId,
+      const surfaceTotale = formData.surface_totale_declaree_ha ? parseFloat(formData.surface_totale_declaree_ha) : null;
+      const partProprietaireHa = surfaceTotale ? surfaceTotale / 2 : null;
+      const partAgriHa = surfaceTotale ? surfaceTotale / 2 : null;
+      const cautionTotale = partAgriHa ? partAgriHa * 50000 : null;
+
+      const { data: proprietaire, error } = await (supabase as any).from("proprietaires_terres").insert({
         nom_complet: nomComplet,
         nom: formData.nom || nomComplet,
+        type_proprietaire: formData.type_proprietaire,
+        civilite: formData.civilite || null,
+        prenoms: formData.prenoms || null,
+        lieu_naissance: formData.lieu_naissance || null,
+        nom_pere: formData.nom_pere || null,
+        nom_mere: formData.nom_mere || null,
+        denomination_sociale: formData.denomination_sociale || null,
+        numero_enregistrement: formData.numero_enregistrement || null,
+        nom_representant: formData.nom_representant || null,
+        telephone: formData.telephone,
+        whatsapp: formData.whatsapp || null,
+        domicile: formData.domicile || null,
+        numero_piece: formData.numero_piece || null,
         photo_profil_url, fichier_piece_recto_url, fichier_piece_verso_url,
         district_id: formData.district_id || null,
         region_id: formData.region_id || null,
         departement_id: formData.departement_id || null,
         sous_prefecture_id: formData.sous_prefecture_id || null,
+        village: formData.village || null,
         nombre_membres: formData.nombre_membres ? parseInt(formData.nombre_membres) : null,
         date_naissance: formData.date_naissance || null,
         date_delivrance_piece: formData.date_delivrance_piece || null,
-        civilite: formData.civilite || null,
         type_piece: formData.type_piece || null,
         email: formData.email || null,
-      });
+        statut_foncier: formData.statut_foncier || "coutumier",
+        reference_cadastrale: formData.reference_cadastrale || null,
+        coordonnees_gps: formData.coordonnees_gps || null,
+        surface_totale_declaree_ha: surfaceTotale,
+        part_proprietaire_pct: 50,
+        part_agricapital_pct: 50,
+        part_proprietaire_ha: partProprietaireHa,
+        part_agricapital_ha: partAgriHa,
+        caution_par_ha: 50000,
+        caution_totale: cautionTotale,
+        limites_nord: formData.limites_nord || null,
+        limites_sud: formData.limites_sud || null,
+        limites_est: formData.limites_est || null,
+        limites_ouest: formData.limites_ouest || null,
+        servitudes: formData.servitudes || null,
+        croquis_joint: formData.croquis_joint,
+        co_titulaire_nom: formData.co_titulaire_nom || null,
+        co_titulaire_lien: formData.co_titulaire_lien || null,
+        co_titulaire_piece: formData.co_titulaire_piece || null,
+        co_titulaire_telephone: formData.co_titulaire_telephone || null,
+        temoin_proprietaire_nom: formData.temoin_proprietaire_nom || null,
+        temoin_proprietaire_qualite: formData.temoin_proprietaire_qualite || null,
+        representant_agricapital_nom: formData.representant_agricapital_nom || null,
+        representant_agricapital_qualite: formData.representant_agricapital_qualite || null,
+        leader_communautaire_nom: formData.leader_communautaire_nom || null,
+        leader_communautaire_qualite: formData.leader_communautaire_qualite || null,
+        voisin_1_nom: formData.voisin_1_nom || null,
+        voisin_1_cote: formData.voisin_1_cote || null,
+        voisin_2_nom: formData.voisin_2_nom || null,
+        voisin_2_cote: formData.voisin_2_cote || null,
+        notes: formData.notes || null,
+        created_by: user.id,
+        updated_by: user.id,
+        statut: "actif",
+      }).select().single();
       if (error) throw error;
-      toast({ title: "Succès", description: `Propriétaire ${genId} enregistré` });
+
+      let parcelleId: string | null = null;
+      if (surfaceTotale) {
+        const { data: parcelle, error: parcelleError } = await (supabase as any).from("parcelles").insert({
+          proprietaire_id: proprietaire.id,
+          nom: `${nomComplet} — ${formData.village || "Parcelle PP"}`,
+          surface_totale_ha: surfaceTotale,
+          district_id: formData.district_id || null,
+          region_id: formData.region_id || null,
+          departement_id: formData.departement_id || null,
+          sous_prefecture_id: formData.sous_prefecture_id || null,
+          village: formData.village || null,
+          localisation_gps_lat: null,
+          localisation_gps_lng: null,
+          duree_convention: 30,
+          date_convention: formData.date_signature_convention || null,
+          notes: formData.notes || null,
+          created_by: user.id,
+          updated_by: user.id,
+        }).select().single();
+        if (parcelleError) throw parcelleError;
+        parcelleId = parcelle.id;
+      }
+
+      const { data: convention, error: conventionError } = await (supabase as any).from("conventions_foncieres").insert({
+        proprietaire_id: proprietaire.id,
+        parcelle_id: parcelleId,
+        sous_prefecture_id: formData.sous_prefecture_id || null,
+        type_convention: "PP",
+        duree_ans: 30,
+        date_signature: formData.date_signature_convention || null,
+        date_debut: formData.date_signature_convention || null,
+        surface_totale_ha: surfaceTotale || 0,
+        part_proprietaire_pct: 50,
+        part_agricapital_pct: 50,
+        part_proprietaire_ha: partProprietaireHa,
+        part_agricapital_ha: partAgriHa,
+        caution_par_ha: 50000,
+        caution_totale: cautionTotale,
+        statut: "active",
+        notes: formData.notes || null,
+        created_by: user.id,
+      }).select().single();
+      if (conventionError) throw conventionError;
+
+      const documents = ANNEXES_CONVENTION.map((a) => ({
+        proprietaire_id: proprietaire.id,
+        parcelle_id: parcelleId,
+        type_document: a.field,
+        designation: a.label,
+        statut: annexStatuses[a.field],
+        fichier_url: annexUploads[a.field],
+        uploaded_by: annexUploads[a.field] ? user.id : null,
+        notes: convention?.id ? `Convention ${convention.reference || convention.id}` : null,
+      }));
+      const { error: docsError } = await (supabase as any).from("documents_convention").insert(documents);
+      if (docsError) throw docsError;
+      toast({ title: "Succès", description: `Propriétaire ${proprietaire.id_unique || proprietaire.id} enregistré` });
       setIsFormOpen(false);
       resetForm();
       fetchData();
@@ -142,11 +279,17 @@ const ProprietairesTerres = () => {
       telephone: "", whatsapp: "", email: "", type_piece: "", numero_piece: "",
       date_delivrance_piece: "", domicile: "", district_id: "", region_id: "",
       departement_id: "", sous_prefecture_id: "", village: "",
+      surface_totale_declaree_ha: "", coordonnees_gps: "", date_signature_convention: "",
       statut_foncier: "coutumier", reference_cadastrale: "",
       limites_nord: "", limites_sud: "", limites_est: "", limites_ouest: "",
-      servitudes: "", croquis_joint: false, notes: "",
+      servitudes: "", croquis_joint: false,
+      co_titulaire_nom: "", co_titulaire_lien: "", co_titulaire_piece: "", co_titulaire_telephone: "",
+      temoin_proprietaire_nom: "", temoin_proprietaire_qualite: "", representant_agricapital_nom: "", representant_agricapital_qualite: "",
+      leader_communautaire_nom: "", leader_communautaire_qualite: "", voisin_1_nom: "", voisin_1_cote: "", voisin_2_nom: "", voisin_2_cote: "",
+      notes: "",
     });
     setFiles({ photo_profil: null, cni_recto: null, cni_verso: null });
+    setAnnexStatuses(createInitialAnnexStatuses());
   };
 
   const filtered = proprietaires.filter(p =>
@@ -377,6 +520,14 @@ const ProprietairesTerres = () => {
                       <h4 className="font-semibold">Description de la parcelle (Section II Convention)</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
+                          <Label>Superficie totale (ha) *</Label>
+                          <Input type="number" min="2" step="0.1" value={formData.surface_totale_declaree_ha} onChange={e => update('surface_totale_declaree_ha', e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Date de signature convention</Label>
+                          <Input type="date" value={formData.date_signature_convention} onChange={e => update('date_signature_convention', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
                           <Label>Statut foncier</Label>
                           <Select value={formData.statut_foncier} onValueChange={v => update('statut_foncier', v)}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -392,7 +543,18 @@ const ProprietairesTerres = () => {
                           <Label>Réf. cadastrale / IDUFCI</Label>
                           <Input value={formData.reference_cadastrale} onChange={e => update('reference_cadastrale', e.target.value)} />
                         </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label>Coordonnées GPS (si disponibles)</Label>
+                          <Input value={formData.coordonnees_gps} onChange={e => update('coordonnees_gps', e.target.value)} placeholder="Ex: 6.8891, -6.4502 ou polygone GPS" />
+                        </div>
                       </div>
+                      {formData.surface_totale_declaree_ha && parseFloat(formData.surface_totale_declaree_ha) >= 2 && (
+                        <div className="p-3 rounded-md bg-primary/10 text-sm space-y-1">
+                          <p>Part propriétaire : <strong>{(parseFloat(formData.surface_totale_declaree_ha) / 2).toFixed(2)} ha</strong> (50%)</p>
+                          <p>Part AgriCapital : <strong>{(parseFloat(formData.surface_totale_declaree_ha) / 2).toFixed(2)} ha</strong> (50%)</p>
+                          <p>Caution foncière : <strong>{((parseFloat(formData.surface_totale_declaree_ha) / 2) * 50000).toLocaleString('fr-FR')} FCFA</strong></p>
+                        </div>
+                      )}
                       <h4 className="font-semibold mt-4">Limites de la parcelle</h4>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -420,6 +582,23 @@ const ProprietairesTerres = () => {
                         <Label>Notes</Label>
                         <Textarea value={formData.notes} onChange={e => update('notes', e.target.value)} rows={2} />
                       </div>
+                      <h4 className="font-semibold mt-4">Co-titulaire / mandataire et signatures</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2"><Label>Nom co-titulaire / mandataire</Label><Input value={formData.co_titulaire_nom} onChange={e => update('co_titulaire_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Lien avec le propriétaire</Label><Input value={formData.co_titulaire_lien} onChange={e => update('co_titulaire_lien', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Type & N° pièce</Label><Input value={formData.co_titulaire_piece} onChange={e => update('co_titulaire_piece', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Téléphone / WhatsApp</Label><Input value={formData.co_titulaire_telephone} onChange={e => update('co_titulaire_telephone', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Témoin propriétaire — Nom</Label><Input value={formData.temoin_proprietaire_nom} onChange={e => update('temoin_proprietaire_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Témoin propriétaire — Qualité</Label><Input value={formData.temoin_proprietaire_qualite} onChange={e => update('temoin_proprietaire_qualite', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Représentant AgriCapital — Nom</Label><Input value={formData.representant_agricapital_nom} onChange={e => update('representant_agricapital_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Représentant AgriCapital — Qualité</Label><Input value={formData.representant_agricapital_qualite} onChange={e => update('representant_agricapital_qualite', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Leader communautaire — Nom</Label><Input value={formData.leader_communautaire_nom} onChange={e => update('leader_communautaire_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Leader communautaire — Qualité</Label><Input value={formData.leader_communautaire_qualite} onChange={e => update('leader_communautaire_qualite', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Voisin riverain n°1 — Nom</Label><Input value={formData.voisin_1_nom} onChange={e => update('voisin_1_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Côté</Label><Input value={formData.voisin_1_cote} onChange={e => update('voisin_1_cote', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Voisin riverain n°2 — Nom</Label><Input value={formData.voisin_2_nom} onChange={e => update('voisin_2_nom', e.target.value)} /></div>
+                        <div className="space-y-2"><Label>Côté</Label><Input value={formData.voisin_2_cote} onChange={e => update('voisin_2_cote', e.target.value)} /></div>
+                      </div>
                     </TabsContent>
 
                     {/* TAB 4: DOCUMENTS (Annexes Convention) */}
@@ -441,13 +620,40 @@ const ProprietairesTerres = () => {
                       </div>
 
                       <h4 className="font-semibold mt-4 flex items-center gap-2"><FileText className="h-4 w-4" /> Annexes de la Convention</h4>
-                      <p className="text-sm text-muted-foreground">Les documents ci-dessous seront à fournir après l'enregistrement initial :</p>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 1</Badge> PV de délimitation et plan de bornage GPS</div>
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 2</Badge> Acte de reconnaissance des parts</div>
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 3</Badge> PV de consentement familial</div>
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 4</Badge> Acte de remise de plantation (à la production)</div>
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 5</Badge> Procuration co-titulaire/mandataire (si applicable)</div>
+                      <p className="text-sm text-muted-foreground">Cochez “Joint” uniquement si le document est disponible : l’upload devient alors obligatoire.</p>
+                      <div className="space-y-3 text-sm">
+                        {ANNEXES_CONVENTION.map((annexe, index) => {
+                          const isJoint = annexStatuses[annexe.field] === "joint";
+                          return (
+                            <div key={annexe.field} className="rounded-md border p-3 space-y-3">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline">Annexe {index + 1}</Badge>
+                                  <span>{annexe.label.replace(/^Annexe \d+ — /, "")}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <Label className="flex items-center gap-2 text-xs font-normal">
+                                    <Checkbox checked={isJoint} onCheckedChange={(checked) => setAnnexStatuses(s => ({ ...s, [annexe.field]: checked ? "joint" : "a_fournir" }))} />
+                                    Joint
+                                  </Label>
+                                  <Label className="flex items-center gap-2 text-xs font-normal">
+                                    <Checkbox checked={!isJoint} onCheckedChange={(checked) => checked && setAnnexStatuses(s => ({ ...s, [annexe.field]: "a_fournir" }))} />
+                                    À fournir
+                                  </Label>
+                                </div>
+                              </div>
+                              {isJoint && (
+                                <Input
+                                  type="file"
+                                  accept="image/*,.pdf"
+                                  required
+                                  onChange={e => setFiles(f => ({ ...f, [annexe.field]: e.target.files?.[0] || null }))}
+                                />
+                              )}
+                              {files[annexe.field] && <p className="text-xs text-muted-foreground">Fichier sélectionné: {files[annexe.field]?.name}</p>}
+                            </div>
+                          );
+                        })}
                       </div>
                     </TabsContent>
                   </Tabs>

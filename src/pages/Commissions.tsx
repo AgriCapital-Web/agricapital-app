@@ -50,15 +50,22 @@ const Commissions = () => {
 
   const handleValider = async (commissionId: string) => {
     try {
-      const { data: profileId, error: profileErr } = await (supabase as any).rpc("current_profile_id");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+      const { data: profile, error: profileErr } = await (supabase as any)
+        .from("profiles")
+        .select("id")
+        .or(`user_id.eq.${user.id},id.eq.${user.id}`)
+        .maybeSingle();
       if (profileErr) throw profileErr;
+      if (!profile?.id) throw new Error("Aucun profil staff trouvé pour valider cette commission");
 
       const { error } = await (supabase as any)
         .from("commissions")
         .update({
           statut: "valide",
           date_validation: new Date().toISOString(),
-          valide_par: profileId,
+          valide_par: profile.id,
         })
         .eq("id", commissionId);
 

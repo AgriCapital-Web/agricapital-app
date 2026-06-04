@@ -82,16 +82,22 @@ const Portefeuilles = () => {
 
   const handleApprouverRetrait = async (retraitId: string, montant: number, portefeuilleId: string) => {
     try {
-      const { data: profileId, error: profileErr } = await (supabase as any).rpc("current_profile_id");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+      const { data: profile, error: profileErr } = await (supabase as any)
+        .from("profiles")
+        .select("id")
+        .or(`user_id.eq.${user.id},id.eq.${user.id}`)
+        .maybeSingle();
       if (profileErr) throw profileErr;
-      if (!profileId) throw new Error("Aucun profil staff trouvé pour valider ce retrait");
+      if (!profile?.id) throw new Error("Aucun profil staff trouvé pour valider ce retrait");
 
       const { error: retraitError } = await (supabase as any)
         .from("retraits_portefeuille")
         .update({
           statut: "approuve",
           date_traitement: new Date().toISOString(),
-          traite_par: profileId,
+          traite_par: profile.id,
         })
         .eq("id", retraitId);
 

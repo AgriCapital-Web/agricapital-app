@@ -9,15 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import logoGreen from "@/assets/logo-green.png";
-import { User, Mail, Phone, Briefcase, MapPin, FileText, Camera, Upload } from "lucide-react";
+import { User, Mail, Phone, Briefcase, MapPin, FileText } from "lucide-react";
 
 const ROLES = [
-  { value: "technico_commercial", label: "Technico-commercial" },
+  { value: "commercial", label: "Commercial / Technico-commercial" },
   { value: "chef_equipe", label: "Chef d'équipe" },
   { value: "responsable_zone", label: "Responsable de zone" },
-  { value: "agent_terrain", label: "Agent terrain" },
+  { value: "technicien", label: "Technicien / Agent terrain" },
   { value: "comptable", label: "Comptable" },
-  { value: "support", label: "Support" }
+  { value: "service_client", label: "Service client / Support" },
+  { value: "operations", label: "Opérations" }
 ];
 
 const AccountRequest = () => {
@@ -35,9 +36,6 @@ const AccountRequest = () => {
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string>("");
-  const [cvFile, setCvFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -94,64 +92,12 @@ const AccountRequest = () => {
     fetchDepartements();
   }, [formData.region]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!photoFile) {
-      toast({
-        variant: "destructive",
-        title: "Photo requise",
-        description: "Veuillez ajouter une photo de profil",
-      });
-      return;
-    }
 
     setIsSubmitting(true);
 
     try {
-      let photoUrl = null;
-      let cvUrl = null;
-
-      // Upload photo
-      const photoPath = `account-requests/${Date.now()}-photo-${photoFile.name}`;
-      const { error: photoError } = await supabase.storage
-        .from('documents')
-        .upload(photoPath, photoFile);
-
-      if (photoError) throw photoError;
-
-      const { data: photoData } = supabase.storage
-        .from('documents')
-        .getPublicUrl(photoPath);
-      photoUrl = photoData.publicUrl;
-
-      // Upload CV if provided
-      if (cvFile) {
-        const cvPath = `account-requests/${Date.now()}-cv-${cvFile.name}`;
-        const { error: cvError } = await supabase.storage
-          .from('documents')
-          .upload(cvPath, cvFile);
-
-        if (cvError) throw cvError;
-
-        const { data: cvData } = supabase.storage
-          .from('documents')
-          .getPublicUrl(cvPath);
-        cvUrl = cvData.publicUrl;
-      }
-
       // Get region/department/district names for storage
       const regionName = regions.find(r => r.id === formData.region)?.nom || "";
       const deptName = departements.find(d => d.id === formData.departement)?.nom || "";
@@ -170,8 +116,8 @@ const AccountRequest = () => {
           district_id: formData.district || null,
           departement: deptName || null,
           justification: formData.message || null,
-          photo_url: photoUrl,
-          cv_url: cvUrl,
+          photo_url: null,
+          cv_url: null,
           statut: 'en_attente'
         });
 
@@ -219,38 +165,6 @@ const AccountRequest = () => {
 
         <CardContent className="px-4 sm:px-6">
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {/* Photo de profil - En premier et obligatoire */}
-            <div className="flex flex-col items-center space-y-3">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <Camera className="h-4 w-4" />
-                Photo de profil *
-              </Label>
-              <div className="relative">
-                {photoPreview ? (
-                  <img
-                    src={photoPreview}
-                    alt="Aperçu"
-                    className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-full border-4 border-primary"
-                  />
-                ) : (
-                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted">
-                    <User className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50" />
-                  </div>
-                )}
-                <label htmlFor="photo" className="absolute bottom-0 right-0 bg-primary text-primary-foreground p-2 rounded-full cursor-pointer hover:bg-primary/90">
-                  <Camera className="h-4 w-4" />
-                </label>
-                <input
-                  id="photo"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoChange}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Cliquez sur l'icône pour ajouter votre photo</p>
-            </div>
-
             {/* Informations personnelles */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1.5">
@@ -391,24 +305,6 @@ const AccountRequest = () => {
                 placeholder="Expliquez pourquoi vous souhaitez rejoindre AgriCapital..."
               />
             </div>
-
-            {/* CV Upload */}
-            <div className="space-y-1.5">
-              <Label htmlFor="cv" className="text-sm flex items-center gap-2">
-                <Upload className="h-3.5 w-3.5" /> CV (optionnel)
-              </Label>
-              <Input
-                id="cv"
-                type="file"
-                accept=".pdf,.doc,.docx"
-                className="h-10 text-sm"
-                onChange={(e) => setCvFile(e.target.files?.[0] || null)}
-              />
-              {cvFile && (
-                <p className="text-xs text-muted-foreground">Fichier sélectionné: {cvFile.name}</p>
-              )}
-            </div>
-
             {/* Boutons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button

@@ -124,7 +124,11 @@ serve(async (req) => {
 
     // Create roles in user_roles table
     if (roles && roles.length > 0) {
-      const validRoles = ['super_admin', 'directeur_tc', 'responsable_zone', 'comptable', 'commercial', 'service_client', 'operations', 'user'];
+      const validRoles = [
+        'super_admin', 'directeur_tc', 'responsable_zone', 'superviseur_tc',
+        'chef_equipe', 'comptable', 'commercial', 'technicien', 'service_client',
+        'operations', 'agent_terrain', 'user'
+      ];
       const roleInserts = roles
         .filter((role: string) => validRoles.includes(role))
         .map((role: string) => ({

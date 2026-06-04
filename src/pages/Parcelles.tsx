@@ -71,9 +71,8 @@ const Parcelles = () => {
     try {
       const surfTotale = parseFloat(formData.surface_totale_ha);
       if (surfTotale < 2) throw new Error("La surface minimale est de 2 hectares");
-      const { data: genId } = await (supabase as any).rpc("generate_parcelle_id");
       const { error } = await (supabase as any).from("parcelles").insert({
-        id_unique: genId, nom: formData.nom || genId,
+        nom: formData.nom || "Parcelle PP",
         proprietaire_id: formData.proprietaire_id || null,
         surface_totale_ha: surfTotale,
         district_id: formData.district_id || null, region_id: formData.region_id || null,
@@ -81,7 +80,7 @@ const Parcelles = () => {
         village: formData.village, date_convention: formData.date_convention || null, notes: formData.notes,
       });
       if (error) throw error;
-      toast({ title: "Succès", description: `Parcelle ${genId} créée` });
+      toast({ title: "Succès", description: "Parcelle créée" });
       setIsFormOpen(false);
       setFormData({ proprietaire_id: "", nom: "", surface_totale_ha: "", district_id: "", region_id: "", departement_id: "", sous_prefecture_id: "", village: "", date_convention: "", notes: "" });
       fetchData();
