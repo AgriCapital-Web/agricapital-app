@@ -120,8 +120,6 @@ const ProprietairesTerres = () => {
       const missingAnnex = ANNEXES_CONVENTION.find((a) => annexStatuses[a.field] === "joint" && !files[a.field]);
       if (missingAnnex) throw new Error(`${missingAnnex.label}: fichier obligatoire si “Joint” est coché`);
 
-      const { data: genId } = await (supabase as any).rpc("generate_proprietaire_id");
-      
       let photo_profil_url = null, fichier_piece_recto_url = null, fichier_piece_verso_url = null;
       if (files.photo_profil) photo_profil_url = await uploadFile('photos-profils', files.photo_profil, user.id);
       if (files.cni_recto) fichier_piece_recto_url = await uploadFile('pieces-identite', files.cni_recto, `proprietaires/${user.id}/pieces`);
@@ -145,7 +143,6 @@ const ProprietairesTerres = () => {
       const cautionTotale = partAgriHa ? partAgriHa * 50000 : null;
 
       const { data: proprietaire, error } = await (supabase as any).from("proprietaires_terres").insert({
-        id_unique: genId,
         nom_complet: nomComplet,
         nom: formData.nom || nomComplet,
         type_proprietaire: formData.type_proprietaire,
@@ -211,9 +208,7 @@ const ProprietairesTerres = () => {
 
       let parcelleId: string | null = null;
       if (surfaceTotale) {
-        const { data: parcId } = await (supabase as any).rpc("generate_parcelle_id");
         const { data: parcelle, error: parcelleError } = await (supabase as any).from("parcelles").insert({
-          id_unique: parcId,
           proprietaire_id: proprietaire.id,
           nom: `${nomComplet} — ${formData.village || "Parcelle PP"}`,
           surface_totale_ha: surfaceTotale,
@@ -267,7 +262,7 @@ const ProprietairesTerres = () => {
       }));
       const { error: docsError } = await (supabase as any).from("documents_convention").insert(documents);
       if (docsError) throw docsError;
-      toast({ title: "Succès", description: `Propriétaire ${genId} enregistré` });
+      toast({ title: "Succès", description: `Propriétaire ${proprietaire.id_unique || proprietaire.id} enregistré` });
       setIsFormOpen(false);
       resetForm();
       fetchData();
