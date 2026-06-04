@@ -14,8 +14,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, Users, MapPin, Layers, Upload, FileText } from "lucide-react";
 import { useUserZones } from "@/hooks/useUserZones";
+import { uploadFile as uploadToStorage } from "@/utils/storage";
+
+const ANNEXES_CONVENTION = [
+  { field: "annexe_1_pv_delimitation_croquis", label: "Annexe 1 — Procès-verbal de délimitation / croquis parcellaire" },
+  { field: "annexe_2_pv_consentement_familial", label: "Annexe 2 — Procès-verbal de consentement familial signé" },
+  { field: "annexe_3_acte_reconnaissance_parts", label: "Annexe 3 — Acte de délimitation et reconnaissance des parts" },
+  { field: "annexe_4_acte_remise_jouissance", label: "Annexe 4 — Acte de Remise en Jouissance (36 mois)" },
+  { field: "annexe_5_procuration_mandataire", label: "Annexe 5 — Procuration co-titulaire / mandataire" },
+  { field: "annexe_6_copies_cni_signataires", label: "Annexe 6 — Copies CNI d’au moins six signataires" },
+  { field: "annexe_7_acte_mariage", label: "Annexe 7 — Acte de mariage (si applicable)" },
+  { field: "annexe_8_guide_villageois_attestation", label: "Annexe 8 — Guide villageois / attestation foncière du chef" },
+];
+
+const initialAnnexStatuses = ANNEXES_CONVENTION.reduce((acc, a) => ({ ...acc, [a.field]: "a_fournir" }), {} as Record<string, "joint" | "a_fournir">);
 
 const ProprietairesTerres = () => {
   const [proprietaires, setProprietaires] = useState<any[]>([]);
@@ -40,15 +55,20 @@ const ProprietairesTerres = () => {
     type_piece: "", numero_piece: "", date_delivrance_piece: "",
     domicile: "",
     district_id: "", region_id: "", departement_id: "", sous_prefecture_id: "", village: "",
+    surface_totale_declaree_ha: "", coordonnees_gps: "", date_signature_convention: "",
     statut_foncier: "coutumier", reference_cadastrale: "",
     limites_nord: "", limites_sud: "", limites_est: "", limites_ouest: "",
     servitudes: "", croquis_joint: false,
+    co_titulaire_nom: "", co_titulaire_lien: "", co_titulaire_piece: "", co_titulaire_telephone: "",
+    temoin_proprietaire_nom: "", temoin_proprietaire_qualite: "", representant_agricapital_nom: "", representant_agricapital_qualite: "",
+    leader_communautaire_nom: "", leader_communautaire_qualite: "", voisin_1_nom: "", voisin_1_cote: "", voisin_2_nom: "", voisin_2_cote: "",
     notes: "",
   });
 
   const [files, setFiles] = useState<{ [key: string]: File | null }>({
     photo_profil: null, cni_recto: null, cni_verso: null,
   });
+  const [annexStatuses, setAnnexStatuses] = useState<Record<string, "joint" | "a_fournir">>(initialAnnexStatuses);
 
   const fetchData = async () => {
     try {
