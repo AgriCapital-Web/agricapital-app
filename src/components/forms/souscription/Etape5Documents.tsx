@@ -8,6 +8,16 @@ interface Etape5Props {
   updateFormData: (data: any) => void;
 }
 
+export const ANNEXES_SOUSCRIPTION = [
+  { field: "annexe1_plan_bloc", label: "Annexe 1 — Plan du bloc / zone de plantation", required: true },
+  { field: "annexe2_carto_lot", label: "Annexe 2 — Plan cartographique du lot Hxx (GPS)", required: true },
+  { field: "annexe3_piece_souscripteur", label: "Annexe 3 — Pièce d'identité du souscripteur", required: true },
+  { field: "annexe4_piece_cotitulaire", label: "Annexe 4 — Pièce d'identité du co-titulaire", required: true },
+  { field: "annexe5_procuration", label: "Annexe 5 — Procuration / mandat (si applicable)", required: false },
+  { field: "annexe6_recu_versement", label: "Annexe 6 — Reçu du 1er versement", required: false },
+  { field: "annexe7_calendrier", label: "Annexe 7 — Calendrier de versements signé", required: true },
+];
+
 export const Etape5Documents = ({ formData, updateFormData }: Etape5Props) => {
   const handleFileChange = (field: string, file: File | null, preview: string) => {
     updateFormData({
@@ -15,17 +25,6 @@ export const Etape5Documents = ({ formData, updateFormData }: Etape5Props) => {
       [`${field}_preview`]: preview,
     });
   };
-
-  // Annexes obligatoires du Contrat de Souscription V1 (page 10)
-  const annexesContrat = [
-    { field: "annexe1_plan_bloc", label: "Annexe 1 — Plan du bloc / zone de plantation", required: true },
-    { field: "annexe2_carto_lot", label: "Annexe 2 — Plan cartographique du lot Hxx (GPS)", required: true },
-    { field: "annexe3_piece_souscripteur", label: "Annexe 3 — Pièce d'identité du souscripteur", required: true },
-    { field: "annexe4_piece_cotitulaire", label: "Annexe 4 — Pièce d'identité du co-titulaire", required: true },
-    { field: "annexe5_procuration", label: "Annexe 5 — Procuration / mandat (si applicable)", required: false },
-    { field: "annexe6_recu_versement", label: "Annexe 6 — Reçu du 1er versement", required: false },
-    { field: "annexe7_calendrier", label: "Annexe 7 — Calendrier de versements signé", required: true },
-  ];
 
   return (
     <div className="space-y-6">
@@ -71,7 +70,7 @@ export const Etape5Documents = ({ formData, updateFormData }: Etape5Props) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {annexesContrat.map((a) => (
+          {ANNEXES_SOUSCRIPTION.map((a) => (
             <div key={a.field} className="space-y-1">
               <FileUploadVisual
                 label={`${a.label}${a.required ? " *" : ""}`}
