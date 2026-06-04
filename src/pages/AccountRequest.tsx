@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import logoGreen from "@/assets/logo-green.png";
-import { User, Mail, Phone, Briefcase, MapPin, FileText, Camera, Upload } from "lucide-react";
+import { User, Mail, Phone, Briefcase, MapPin, FileText } from "lucide-react";
 
 const ROLES = [
   { value: "commercial", label: "Commercial / Technico-commercial" },
@@ -36,9 +36,6 @@ const AccountRequest = () => {
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string>("");
-  const [cvFile, setCvFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -95,64 +92,12 @@ const AccountRequest = () => {
     fetchDepartements();
   }, [formData.region]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!photoFile) {
-      toast({
-        variant: "destructive",
-        title: "Photo requise",
-        description: "Veuillez ajouter une photo de profil",
-      });
-      return;
-    }
 
     setIsSubmitting(true);
 
     try {
-      let photoUrl = null;
-      let cvUrl = null;
-
-      // Upload photo
-      const photoPath = `account-requests/${Date.now()}-photo-${photoFile.name}`;
-      const { error: photoError } = await supabase.storage
-        .from('documents')
-        .upload(photoPath, photoFile);
-
-      if (photoError) throw photoError;
-
-      const { data: photoData } = supabase.storage
-        .from('documents')
-        .getPublicUrl(photoPath);
-      photoUrl = photoData.publicUrl;
-
-      // Upload CV if provided
-      if (cvFile) {
-        const cvPath = `account-requests/${Date.now()}-cv-${cvFile.name}`;
-        const { error: cvError } = await supabase.storage
-          .from('documents')
-          .upload(cvPath, cvFile);
-
-        if (cvError) throw cvError;
-
-        const { data: cvData } = supabase.storage
-          .from('documents')
-          .getPublicUrl(cvPath);
-        cvUrl = cvData.publicUrl;
-      }
-
       // Get region/department/district names for storage
       const regionName = regions.find(r => r.id === formData.region)?.nom || "";
       const deptName = departements.find(d => d.id === formData.departement)?.nom || "";
@@ -171,8 +116,8 @@ const AccountRequest = () => {
           district_id: formData.district || null,
           departement: deptName || null,
           justification: formData.message || null,
-          photo_url: photoUrl,
-          cv_url: cvUrl,
+          photo_url: null,
+          cv_url: null,
           statut: 'en_attente'
         });
 
