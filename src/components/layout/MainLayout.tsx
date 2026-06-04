@@ -47,9 +47,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const getInitials = (name: string) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'AG';
 
   const NetworkIndicator = ({ compact = false }: { compact?: boolean }) => {
-    if (!isOnline) return <span className="flex items-center gap-1 text-xs font-medium text-destructive"><WifiOff className="h-3.5 w-3.5" /> {!compact && 'Hors ligne'}</span>;
-    if (networkQuality === 'slow') return <span className="flex items-center gap-1 text-xs font-medium text-accent"><Signal className="h-3.5 w-3.5" /> {!compact && 'Réseau lent'}</span>;
-    return <span className="flex items-center gap-1 text-xs font-medium text-primary"><Wifi className="h-3.5 w-3.5" /> {!compact && 'En ligne'}</span>;
+    if (!isOnline) return <span className="flex items-center gap-1 text-xs font-semibold text-destructive"><WifiOff className="h-3.5 w-3.5" /> {!compact && 'Hors ligne'}</span>;
+    if (networkQuality === 'slow') return <span className="flex items-center gap-1 text-xs font-semibold text-accent"><Signal className="h-3.5 w-3.5" /> {!compact && 'Réseau lent'}</span>;
+    return <span className="flex items-center gap-1 text-xs font-semibold text-primary-foreground"><Wifi className="h-3.5 w-3.5" /> {!compact && 'En ligne'}</span>;
   };
 
   const SidebarContent = () => (
