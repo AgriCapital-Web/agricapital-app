@@ -625,13 +625,40 @@ const ProprietairesTerres = () => {
                       </div>
 
                       <h4 className="font-semibold mt-4 flex items-center gap-2"><FileText className="h-4 w-4" /> Annexes de la Convention</h4>
-                      <p className="text-sm text-muted-foreground">Les documents ci-dessous seront à fournir après l'enregistrement initial :</p>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 1</Badge> PV de délimitation et plan de bornage GPS</div>
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 2</Badge> Acte de reconnaissance des parts</div>
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 3</Badge> PV de consentement familial</div>
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 4</Badge> Acte de remise de plantation (à la production)</div>
-                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded"><Badge variant="outline">Annexe 5</Badge> Procuration co-titulaire/mandataire (si applicable)</div>
+                      <p className="text-sm text-muted-foreground">Cochez “Joint” uniquement si le document est disponible : l’upload devient alors obligatoire.</p>
+                      <div className="space-y-3 text-sm">
+                        {ANNEXES_CONVENTION.map((annexe, index) => {
+                          const isJoint = annexStatuses[annexe.field] === "joint";
+                          return (
+                            <div key={annexe.field} className="rounded-md border p-3 space-y-3">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline">Annexe {index + 1}</Badge>
+                                  <span>{annexe.label.replace(/^Annexe \d+ — /, "")}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <Label className="flex items-center gap-2 text-xs font-normal">
+                                    <Checkbox checked={isJoint} onCheckedChange={(checked) => setAnnexStatuses(s => ({ ...s, [annexe.field]: checked ? "joint" : "a_fournir" }))} />
+                                    Joint
+                                  </Label>
+                                  <Label className="flex items-center gap-2 text-xs font-normal">
+                                    <Checkbox checked={!isJoint} onCheckedChange={(checked) => checked && setAnnexStatuses(s => ({ ...s, [annexe.field]: "a_fournir" }))} />
+                                    À fournir
+                                  </Label>
+                                </div>
+                              </div>
+                              {isJoint && (
+                                <Input
+                                  type="file"
+                                  accept="image/*,.pdf"
+                                  required
+                                  onChange={e => setFiles(f => ({ ...f, [annexe.field]: e.target.files?.[0] || null }))}
+                                />
+                              )}
+                              {files[annexe.field] && <p className="text-xs text-muted-foreground">Fichier sélectionné: {files[annexe.field]?.name}</p>}
+                            </div>
+                          );
+                        })}
                       </div>
                     </TabsContent>
                   </Tabs>
