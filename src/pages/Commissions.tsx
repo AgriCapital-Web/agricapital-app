@@ -50,7 +50,6 @@ const Commissions = () => {
 
   const handleValider = async (commissionId: string) => {
     try {
-      const { data: profileId, error: profileErr } = await (supabase as any).rpc("current_profile_id");
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
       const { data: profile, error: profileErr } = await (supabase as any)
