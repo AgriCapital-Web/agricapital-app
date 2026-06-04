@@ -12,12 +12,13 @@ import logoGreen from "@/assets/logo-green.png";
 import { User, Mail, Phone, Briefcase, MapPin, FileText, Camera, Upload } from "lucide-react";
 
 const ROLES = [
-  { value: "technico_commercial", label: "Technico-commercial" },
+  { value: "commercial", label: "Commercial / Technico-commercial" },
   { value: "chef_equipe", label: "Chef d'équipe" },
   { value: "responsable_zone", label: "Responsable de zone" },
-  { value: "agent_terrain", label: "Agent terrain" },
+  { value: "technicien", label: "Technicien / Agent terrain" },
   { value: "comptable", label: "Comptable" },
-  { value: "support", label: "Support" }
+  { value: "service_client", label: "Service client / Support" },
+  { value: "operations", label: "Opérations" }
 ];
 
 const AccountRequest = () => {
