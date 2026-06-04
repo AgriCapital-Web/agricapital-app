@@ -45,12 +45,12 @@ const AccountRequests = () => {
 
     try {
       if (actionType === 'approve') {
-        // Create user account via edge function
+        const tempPassword = crypto.randomUUID().replace(/-/g, '').slice(0, 16) + 'A1!';
         const { data, error } = await supabase.functions.invoke('create-user', {
           body: {
             username: selectedRequest.email.split('@')[0],
             email: selectedRequest.email,
-            password: 'TempPassword123!', // Temporary password
+            password: tempPassword,
             nom_complet: selectedRequest.nom_complet,
             telephone: selectedRequest.telephone,
             roles: [selectedRequest.role_souhaite]
@@ -71,7 +71,8 @@ const AccountRequests = () => {
 
         toast({
           title: "Demande approuvée",
-          description: "Le compte a été créé avec succès",
+          description: `Compte créé. Mot de passe temporaire à transmettre en privé: ${tempPassword}`,
+          duration: 20000,
         });
       } else if (actionType === 'reject') {
         await (supabase as any)
