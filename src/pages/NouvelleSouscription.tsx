@@ -158,17 +158,12 @@ const NouvelleSouscription = () => {
         }
       }
 
-      // Générer l'ID unique
-      const { data: genId, error: genErr } = await (supabase as any).rpc('generate_souscripteur_id');
-      if (genErr) throw genErr;
-
       // Créer le souscripteur
       const nomComplet = `${formData.nom_famille || ''} ${formData.prenoms || ''}`.trim();
       
       const { data: souscripteur, error: errorSous } = await (supabase as any)
         .from("souscripteurs")
         .insert({
-          id_unique: genId,
           offre_id: formData.offre_id,
           parcelle_id: formData.parcelle_id || null,
           type_souscripteur: formData.type_souscripteur || "sans_terre",
