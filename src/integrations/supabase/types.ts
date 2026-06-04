@@ -197,6 +197,8 @@ export type Database = {
       }
       conventions_foncieres: {
         Row: {
+          caution_par_ha: number | null
+          caution_totale: number | null
           code_dom: string | null
           code_parc: string | null
           code_sp: string | null
@@ -211,6 +213,10 @@ export type Database = {
           id: string
           notes: string | null
           parcelle_id: string | null
+          part_agricapital_ha: number | null
+          part_agricapital_pct: number | null
+          part_proprietaire_ha: number | null
+          part_proprietaire_pct: number | null
           proprietaire_id: string
           reference: string | null
           sous_prefecture_id: string | null
@@ -220,6 +226,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          caution_par_ha?: number | null
+          caution_totale?: number | null
           code_dom?: string | null
           code_parc?: string | null
           code_sp?: string | null
@@ -234,6 +242,10 @@ export type Database = {
           id?: string
           notes?: string | null
           parcelle_id?: string | null
+          part_agricapital_ha?: number | null
+          part_agricapital_pct?: number | null
+          part_proprietaire_ha?: number | null
+          part_proprietaire_pct?: number | null
           proprietaire_id: string
           reference?: string | null
           sous_prefecture_id?: string | null
@@ -243,6 +255,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          caution_par_ha?: number | null
+          caution_totale?: number | null
           code_dom?: string | null
           code_parc?: string | null
           code_sp?: string | null
@@ -257,6 +271,10 @@ export type Database = {
           id?: string
           notes?: string | null
           parcelle_id?: string | null
+          part_agricapital_ha?: number | null
+          part_agricapital_pct?: number | null
+          part_proprietaire_ha?: number | null
+          part_proprietaire_pct?: number | null
           proprietaire_id?: string
           reference?: string | null
           sous_prefecture_id?: string | null
@@ -1611,7 +1629,14 @@ export type Database = {
       }
       proprietaires_terres: {
         Row: {
+          caution_par_ha: number | null
+          caution_totale: number | null
           civilite: string | null
+          co_titulaire_lien: string | null
+          co_titulaire_nom: string | null
+          co_titulaire_piece: string | null
+          co_titulaire_telephone: string | null
+          coordonnees_gps: string | null
           created_at: string | null
           created_by: string | null
           croquis_joint: boolean | null
@@ -1626,6 +1651,8 @@ export type Database = {
           fichier_piece_verso_url: string | null
           id: string
           id_unique: string | null
+          leader_communautaire_nom: string | null
+          leader_communautaire_qualite: string | null
           lieu_naissance: string | null
           limites_est: string | null
           limites_nord: string | null
@@ -1641,25 +1668,45 @@ export type Database = {
           notes: string | null
           numero_enregistrement: string | null
           numero_piece: string | null
+          part_agricapital_ha: number | null
+          part_agricapital_pct: number | null
+          part_proprietaire_ha: number | null
+          part_proprietaire_pct: number | null
           photo_profil_url: string | null
           prenoms: string | null
           reference_cadastrale: string | null
           region_id: string | null
+          representant_agricapital_nom: string | null
+          representant_agricapital_qualite: string | null
           servitudes: string | null
           sous_prefecture_id: string | null
           statut: string | null
           statut_foncier: string | null
+          surface_totale_declaree_ha: number | null
           surface_totale_ha: number | null
           telephone: string
+          temoin_proprietaire_nom: string | null
+          temoin_proprietaire_qualite: string | null
           type_piece: string | null
           type_proprietaire: string | null
           updated_at: string | null
           updated_by: string | null
           village: string | null
+          voisin_1_cote: string | null
+          voisin_1_nom: string | null
+          voisin_2_cote: string | null
+          voisin_2_nom: string | null
           whatsapp: string | null
         }
         Insert: {
+          caution_par_ha?: number | null
+          caution_totale?: number | null
           civilite?: string | null
+          co_titulaire_lien?: string | null
+          co_titulaire_nom?: string | null
+          co_titulaire_piece?: string | null
+          co_titulaire_telephone?: string | null
+          coordonnees_gps?: string | null
           created_at?: string | null
           created_by?: string | null
           croquis_joint?: boolean | null
@@ -1674,6 +1721,8 @@ export type Database = {
           fichier_piece_verso_url?: string | null
           id?: string
           id_unique?: string | null
+          leader_communautaire_nom?: string | null
+          leader_communautaire_qualite?: string | null
           lieu_naissance?: string | null
           limites_est?: string | null
           limites_nord?: string | null
@@ -1689,25 +1738,45 @@ export type Database = {
           notes?: string | null
           numero_enregistrement?: string | null
           numero_piece?: string | null
+          part_agricapital_ha?: number | null
+          part_agricapital_pct?: number | null
+          part_proprietaire_ha?: number | null
+          part_proprietaire_pct?: number | null
           photo_profil_url?: string | null
           prenoms?: string | null
           reference_cadastrale?: string | null
           region_id?: string | null
+          representant_agricapital_nom?: string | null
+          representant_agricapital_qualite?: string | null
           servitudes?: string | null
           sous_prefecture_id?: string | null
           statut?: string | null
           statut_foncier?: string | null
+          surface_totale_declaree_ha?: number | null
           surface_totale_ha?: number | null
           telephone: string
+          temoin_proprietaire_nom?: string | null
+          temoin_proprietaire_qualite?: string | null
           type_piece?: string | null
           type_proprietaire?: string | null
           updated_at?: string | null
           updated_by?: string | null
           village?: string | null
+          voisin_1_cote?: string | null
+          voisin_1_nom?: string | null
+          voisin_2_cote?: string | null
+          voisin_2_nom?: string | null
           whatsapp?: string | null
         }
         Update: {
+          caution_par_ha?: number | null
+          caution_totale?: number | null
           civilite?: string | null
+          co_titulaire_lien?: string | null
+          co_titulaire_nom?: string | null
+          co_titulaire_piece?: string | null
+          co_titulaire_telephone?: string | null
+          coordonnees_gps?: string | null
           created_at?: string | null
           created_by?: string | null
           croquis_joint?: boolean | null
@@ -1722,6 +1791,8 @@ export type Database = {
           fichier_piece_verso_url?: string | null
           id?: string
           id_unique?: string | null
+          leader_communautaire_nom?: string | null
+          leader_communautaire_qualite?: string | null
           lieu_naissance?: string | null
           limites_est?: string | null
           limites_nord?: string | null
@@ -1737,21 +1808,34 @@ export type Database = {
           notes?: string | null
           numero_enregistrement?: string | null
           numero_piece?: string | null
+          part_agricapital_ha?: number | null
+          part_agricapital_pct?: number | null
+          part_proprietaire_ha?: number | null
+          part_proprietaire_pct?: number | null
           photo_profil_url?: string | null
           prenoms?: string | null
           reference_cadastrale?: string | null
           region_id?: string | null
+          representant_agricapital_nom?: string | null
+          representant_agricapital_qualite?: string | null
           servitudes?: string | null
           sous_prefecture_id?: string | null
           statut?: string | null
           statut_foncier?: string | null
+          surface_totale_declaree_ha?: number | null
           surface_totale_ha?: number | null
           telephone?: string
+          temoin_proprietaire_nom?: string | null
+          temoin_proprietaire_qualite?: string | null
           type_piece?: string | null
           type_proprietaire?: string | null
           updated_at?: string | null
           updated_by?: string | null
           village?: string | null
+          voisin_1_cote?: string | null
+          voisin_1_nom?: string | null
+          voisin_2_cote?: string | null
+          voisin_2_nom?: string | null
           whatsapp?: string | null
         }
         Relationships: [
