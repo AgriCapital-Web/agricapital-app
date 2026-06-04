@@ -77,11 +77,14 @@ const UtilisateurForm = ({ utilisateur, onSuccess, onCancel }: UtilisateurFormPr
 
         toast({ title: "Succès", description: "Utilisateur modifié" });
       } else {
-        // Create new user via edge function
+        // Generate a secure random temporary password if none provided
+        const tempPassword = data.password || (
+          crypto.randomUUID().replace(/-/g, '').slice(0, 16) + 'A1!'
+        );
         const { data: result, error } = await supabase.functions.invoke('create-user', {
           body: {
             email: data.email,
-            password: data.password || '@AgriCapital2026',
+            password: tempPassword,
             nom_complet: data.nom_complet,
             telephone: data.telephone,
             equipe_id: data.equipe_id || null,
@@ -93,9 +96,10 @@ const UtilisateurForm = ({ utilisateur, onSuccess, onCancel }: UtilisateurFormPr
         if (error) throw error;
         if (!result.success) throw new Error(result.error);
 
-        toast({ 
-          title: "Succès", 
-          description: `Utilisateur créé. Mot de passe par défaut: @AgriCapital2026` 
+        toast({
+          title: "Utilisateur créé",
+          description: `Mot de passe temporaire (à communiquer en privé): ${tempPassword}`,
+          duration: 20000,
         });
       }
       onSuccess();
