@@ -105,25 +105,33 @@ const ProprietairesTerres = () => {
     setSousPrefectures(await fetchFilteredSousPrefectures(v));
   };
 
-  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
-    const ext = file.name.split('.').pop();
-    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from('pieces-identite').upload(path, file);
-    if (error) { console.error(error); return null; }
-    const { data: { publicUrl } } = supabase.storage.from('pieces-identite').getPublicUrl(path);
-    return publicUrl;
+  const uploadFile = async (bucket: string, file: File, folder: string): Promise<string | null> => {
+    const result = await uploadToStorage(bucket, file, folder);
+    if (!result?.url) throw new Error(`Upload impossible: ${file.name}`);
+    return result.url;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Non authentifié");
+      const missingAnnex = ANNEXES_CONVENTION.find((a) => annexStatuses[a.field] === "joint" && !files[a.field]);
+      if (missingAnnex) throw new Error(`${missingAnnex.label}: fichier obligatoire si “Joint” est coché`);
+
       const { data: genId } = await (supabase as any).rpc("generate_proprietaire_id");
       
       let photo_profil_url = null, fichier_piece_recto_url = null, fichier_piece_verso_url = null;
-      if (files.photo_profil) photo_profil_url = await uploadFile(files.photo_profil, 'proprietaires/photos');
-      if (files.cni_recto) fichier_piece_recto_url = await uploadFile(files.cni_recto, 'proprietaires/pieces');
-      if (files.cni_verso) fichier_piece_verso_url = await uploadFile(files.cni_verso, 'proprietaires/pieces');
+      if (files.photo_profil) photo_profil_url = await uploadFile('photos-profils', files.photo_profil, user.id);
+      if (files.cni_recto) fichier_piece_recto_url = await uploadFile('pieces-identite', files.cni_recto, `proprietaires/${user.id}/pieces`);
+      if (files.cni_verso) fichier_piece_verso_url = await uploadFile('pieces-identite', files.cni_verso, `proprietaires/${user.id}/pieces`);
+
+      const annexUploads: Record<string, string | null> = {};
+      for (const annexe of ANNEXES_CONVENTION) {
+        const file = files[annexe.field];
+        annexUploads[annexe.field] = file ? await uploadFile('documents-fonciers', file, `conventions/${user.id}/annexes`) : null;
+      }
 
       const nomComplet = formData.type_proprietaire === 'personne_morale' 
         ? formData.denomination_sociale 
@@ -131,24 +139,134 @@ const ProprietairesTerres = () => {
         ? formData.nom_representant
         : `${formData.nom} ${formData.prenoms}`.trim();
 
-      const { error } = await (supabase as any).from("proprietaires_terres").insert({
-        ...formData,
+      const surfaceTotale = formData.surface_totale_declaree_ha ? parseFloat(formData.surface_totale_declaree_ha) : null;
+      const partProprietaireHa = surfaceTotale ? surfaceTotale / 2 : null;
+      const partAgriHa = surfaceTotale ? surfaceTotale / 2 : null;
+      const cautionTotale = partAgriHa ? partAgriHa * 50000 : null;
+
+      const { data: proprietaire, error } = await (supabase as any).from("proprietaires_terres").insert({
         id_unique: genId,
         nom_complet: nomComplet,
         nom: formData.nom || nomComplet,
+        type_proprietaire: formData.type_proprietaire,
+        civilite: formData.civilite || null,
+        prenoms: formData.prenoms || null,
+        lieu_naissance: formData.lieu_naissance || null,
+        nom_pere: formData.nom_pere || null,
+        nom_mere: formData.nom_mere || null,
+        denomination_sociale: formData.denomination_sociale || null,
+        numero_enregistrement: formData.numero_enregistrement || null,
+        nom_representant: formData.nom_representant || null,
+        telephone: formData.telephone,
+        whatsapp: formData.whatsapp || null,
+        domicile: formData.domicile || null,
+        numero_piece: formData.numero_piece || null,
         photo_profil_url, fichier_piece_recto_url, fichier_piece_verso_url,
         district_id: formData.district_id || null,
         region_id: formData.region_id || null,
         departement_id: formData.departement_id || null,
         sous_prefecture_id: formData.sous_prefecture_id || null,
+        village: formData.village || null,
         nombre_membres: formData.nombre_membres ? parseInt(formData.nombre_membres) : null,
         date_naissance: formData.date_naissance || null,
         date_delivrance_piece: formData.date_delivrance_piece || null,
-        civilite: formData.civilite || null,
         type_piece: formData.type_piece || null,
         email: formData.email || null,
-      });
+        statut_foncier: formData.statut_foncier || "coutumier",
+        reference_cadastrale: formData.reference_cadastrale || null,
+        coordonnees_gps: formData.coordonnees_gps || null,
+        surface_totale_declaree_ha: surfaceTotale,
+        part_proprietaire_pct: 50,
+        part_agricapital_pct: 50,
+        part_proprietaire_ha: partProprietaireHa,
+        part_agricapital_ha: partAgriHa,
+        caution_par_ha: 50000,
+        caution_totale: cautionTotale,
+        limites_nord: formData.limites_nord || null,
+        limites_sud: formData.limites_sud || null,
+        limites_est: formData.limites_est || null,
+        limites_ouest: formData.limites_ouest || null,
+        servitudes: formData.servitudes || null,
+        croquis_joint: formData.croquis_joint,
+        co_titulaire_nom: formData.co_titulaire_nom || null,
+        co_titulaire_lien: formData.co_titulaire_lien || null,
+        co_titulaire_piece: formData.co_titulaire_piece || null,
+        co_titulaire_telephone: formData.co_titulaire_telephone || null,
+        temoin_proprietaire_nom: formData.temoin_proprietaire_nom || null,
+        temoin_proprietaire_qualite: formData.temoin_proprietaire_qualite || null,
+        representant_agricapital_nom: formData.representant_agricapital_nom || null,
+        representant_agricapital_qualite: formData.representant_agricapital_qualite || null,
+        leader_communautaire_nom: formData.leader_communautaire_nom || null,
+        leader_communautaire_qualite: formData.leader_communautaire_qualite || null,
+        voisin_1_nom: formData.voisin_1_nom || null,
+        voisin_1_cote: formData.voisin_1_cote || null,
+        voisin_2_nom: formData.voisin_2_nom || null,
+        voisin_2_cote: formData.voisin_2_cote || null,
+        notes: formData.notes || null,
+        created_by: user.id,
+        updated_by: user.id,
+        statut: "actif",
+      }).select().single();
       if (error) throw error;
+
+      let parcelleId: string | null = null;
+      if (surfaceTotale) {
+        const { data: parcId } = await (supabase as any).rpc("generate_parcelle_id");
+        const { data: parcelle, error: parcelleError } = await (supabase as any).from("parcelles").insert({
+          id_unique: parcId,
+          proprietaire_id: proprietaire.id,
+          nom: `${nomComplet} — ${formData.village || "Parcelle PP"}`,
+          surface_totale_ha: surfaceTotale,
+          district_id: formData.district_id || null,
+          region_id: formData.region_id || null,
+          departement_id: formData.departement_id || null,
+          sous_prefecture_id: formData.sous_prefecture_id || null,
+          village: formData.village || null,
+          localisation_gps_lat: null,
+          localisation_gps_lng: null,
+          duree_convention: 30,
+          date_convention: formData.date_signature_convention || null,
+          notes: formData.notes || null,
+          created_by: user.id,
+          updated_by: user.id,
+        }).select().single();
+        if (parcelleError) throw parcelleError;
+        parcelleId = parcelle.id;
+      }
+
+      const { data: convention, error: conventionError } = await (supabase as any).from("conventions_foncieres").insert({
+        proprietaire_id: proprietaire.id,
+        parcelle_id: parcelleId,
+        sous_prefecture_id: formData.sous_prefecture_id || null,
+        type_convention: "PP",
+        duree_ans: 30,
+        date_signature: formData.date_signature_convention || null,
+        date_debut: formData.date_signature_convention || null,
+        surface_totale_ha: surfaceTotale || 0,
+        part_proprietaire_pct: 50,
+        part_agricapital_pct: 50,
+        part_proprietaire_ha: partProprietaireHa,
+        part_agricapital_ha: partAgriHa,
+        caution_par_ha: 50000,
+        caution_totale: cautionTotale,
+        statut: "active",
+        notes: formData.notes || null,
+        created_by: user.id,
+      }).select().single();
+      if (conventionError) throw conventionError;
+
+      const documents = ANNEXES_CONVENTION.map((a) => ({
+        proprietaire_id: proprietaire.id,
+        parcelle_id: parcelleId,
+        type_document: a.field,
+        designation: a.label,
+        statut: annexStatuses[a.field],
+        fichier_url: annexUploads[a.field],
+        uploaded_by: annexUploads[a.field] ? user.id : null,
+        notes: convention?.id ? `Convention ${convention.reference || convention.id}` : null,
+      }));
+      const { error: docsError } = await (supabase as any).from("documents_convention").insert(documents);
+      if (docsError) throw docsError;
       toast({ title: "Succès", description: `Propriétaire ${genId} enregistré` });
       setIsFormOpen(false);
       resetForm();
