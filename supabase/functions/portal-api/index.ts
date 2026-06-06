@@ -60,6 +60,8 @@ serve(async (req) => {
           { data: promotions },
           { data: offres },
           { data: remboursements },
+          { data: synthese },
+          { data: depotInitial },
         ] = await Promise.all([
           supabase.from("plantations")
             .select("*, regions(nom), departements(nom), sous_prefectures(nom), districts(nom)")
@@ -85,6 +87,15 @@ serve(async (req) => {
             .eq("souscripteur_id", souscripteur.id)
             .order("created_at", { ascending: false })
             .limit(10),
+          supabase.from("v_souscripteur_synthese")
+            .select("*")
+            .eq("id", souscripteur.id)
+            .maybeSingle(),
+          supabase.from("paiements")
+            .select("*")
+            .eq("souscripteur_id", souscripteur.id)
+            .eq("est_depot_initial", true)
+            .maybeSingle(),
         ]);
 
         // Calculate summary stats
@@ -104,14 +115,54 @@ serve(async (req) => {
           remboursements: remboursements || [],
           promotion: promotions?.[0] || null,
           offres: offres || [],
+          synthese: synthese || null,
+          depot_initial: depotInitial || null,
           stats: {
             totalPlantations: (plantations || []).length,
             totalHectares: souscripteur.total_hectares || 0,
             totalDAPaye,
             totalRedevances,
             paiementsEnRetard: paiementsEnRetard.length,
+            compteActif: !!souscripteur.compte_actif,
+            depotInitialDu: depotInitial && depotInitial.statut !== 'valide' ? depotInitial.montant : 0,
           },
         }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      case "depot-initial": {
+        const souscripteur = await getSouscripteur();
+        if (!souscripteur) {
+          return new Response(JSON.stringify({ error: "Souscripteur non trouvé" }), {
+            status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+        const { data: depot } = await supabase
+          .from("paiements")
+          .select("*")
+          .eq("souscripteur_id", souscripteur.id)
+          .eq("est_depot_initial", true)
+          .maybeSingle();
+        return new Response(JSON.stringify({ depot_initial: depot || null, souscripteur }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      case "echeances": {
+        const souscripteur = await getSouscripteur();
+        if (!souscripteur) {
+          return new Response(JSON.stringify({ error: "Souscripteur non trouvé" }), {
+            status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+        const { data: echeances } = await supabase
+          .from("paiements")
+          .select("*")
+          .eq("souscripteur_id", souscripteur.id)
+          .eq("type_paiement", "REDEVANCE")
+          .order("numero_echeance", { ascending: true });
+        return new Response(JSON.stringify({ echeances: echeances || [] }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
