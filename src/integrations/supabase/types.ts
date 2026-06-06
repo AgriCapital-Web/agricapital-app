@@ -550,6 +550,13 @@ export type Database = {
             referencedRelation: "souscripteurs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "documents_souscription_souscripteur_id_fkey"
+            columns: ["souscripteur_id"]
+            isOneToOne: false
+            referencedRelation: "v_souscripteur_synthese"
+            referencedColumns: ["id"]
+          },
         ]
       }
       domaines: {
@@ -872,6 +879,13 @@ export type Database = {
             referencedRelation: "souscripteurs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "lots_hectares_souscripteur_id_fkey"
+            columns: ["souscripteur_id"]
+            isOneToOne: false
+            referencedRelation: "v_souscripteur_synthese"
+            referencedColumns: ["id"]
+          },
         ]
       }
       notifications: {
@@ -998,6 +1012,7 @@ export type Database = {
           date_paiement: string | null
           date_upload_preuve: string | null
           date_validation: string | null
+          est_depot_initial: boolean
           fichier_preuve_url: string | null
           id: string
           id_transaction: string | null
@@ -1008,6 +1023,7 @@ export type Database = {
           montant_paye: number | null
           montant_theorique: number | null
           notes: string | null
+          numero_echeance: number | null
           observations: string | null
           operateur_mobile_money: string | null
           plantation_id: string | null
@@ -1032,6 +1048,7 @@ export type Database = {
           date_paiement?: string | null
           date_upload_preuve?: string | null
           date_validation?: string | null
+          est_depot_initial?: boolean
           fichier_preuve_url?: string | null
           id?: string
           id_transaction?: string | null
@@ -1042,6 +1059,7 @@ export type Database = {
           montant_paye?: number | null
           montant_theorique?: number | null
           notes?: string | null
+          numero_echeance?: number | null
           observations?: string | null
           operateur_mobile_money?: string | null
           plantation_id?: string | null
@@ -1066,6 +1084,7 @@ export type Database = {
           date_paiement?: string | null
           date_upload_preuve?: string | null
           date_validation?: string | null
+          est_depot_initial?: boolean
           fichier_preuve_url?: string | null
           id?: string
           id_transaction?: string | null
@@ -1076,6 +1095,7 @@ export type Database = {
           montant_paye?: number | null
           montant_theorique?: number | null
           notes?: string | null
+          numero_echeance?: number | null
           observations?: string | null
           operateur_mobile_money?: string | null
           plantation_id?: string | null
@@ -1104,6 +1124,13 @@ export type Database = {
             columns: ["souscripteur_id"]
             isOneToOne: false
             referencedRelation: "souscripteurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paiements_souscripteur_id_fkey"
+            columns: ["souscripteur_id"]
+            isOneToOne: false
+            referencedRelation: "v_souscripteur_synthese"
             referencedColumns: ["id"]
           },
         ]
@@ -1449,6 +1476,13 @@ export type Database = {
             columns: ["souscripteur_id"]
             isOneToOne: false
             referencedRelation: "souscripteurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plantations_souscripteur_id_fkey"
+            columns: ["souscripteur_id"]
+            isOneToOne: false
+            referencedRelation: "v_souscripteur_synthese"
             referencedColumns: ["id"]
           },
         ]
@@ -1989,6 +2023,13 @@ export type Database = {
             referencedRelation: "souscripteurs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "remboursements_souscripteur_id_fkey"
+            columns: ["souscripteur_id"]
+            isOneToOne: false
+            referencedRelation: "v_souscripteur_synthese"
+            referencedColumns: ["id"]
+          },
         ]
       }
       retraits_portefeuille: {
@@ -2088,12 +2129,17 @@ export type Database = {
           banque_operateur: string | null
           civilite: string | null
           code_sp_contrat: string | null
+          compte_actif: boolean
+          contrat_debut_at: string | null
+          contrat_fin_at: string | null
           created_at: string | null
           created_by: string | null
+          da_paye_at: string | null
           date_delivrance_piece: string | null
           date_naissance: string | null
           departement_id: string | null
           district_id: string | null
+          documents_valides_at: string | null
           domicile: string | null
           domicile_residence: string | null
           email: string | null
@@ -2104,6 +2150,7 @@ export type Database = {
           id_unique: string | null
           lieu_naissance: string | null
           localite: string | null
+          mensualite_montant: number | null
           nationalite: string | null
           nom: string | null
           nom_complet: string | null
@@ -2118,6 +2165,7 @@ export type Database = {
           parcelle_id: string | null
           photo_profil_url: string | null
           prenoms: string | null
+          prochaine_echeance: string | null
           region_id: string | null
           sous_prefecture_id: string | null
           statut: string | null
@@ -2139,12 +2187,17 @@ export type Database = {
           banque_operateur?: string | null
           civilite?: string | null
           code_sp_contrat?: string | null
+          compte_actif?: boolean
+          contrat_debut_at?: string | null
+          contrat_fin_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          da_paye_at?: string | null
           date_delivrance_piece?: string | null
           date_naissance?: string | null
           departement_id?: string | null
           district_id?: string | null
+          documents_valides_at?: string | null
           domicile?: string | null
           domicile_residence?: string | null
           email?: string | null
@@ -2155,6 +2208,7 @@ export type Database = {
           id_unique?: string | null
           lieu_naissance?: string | null
           localite?: string | null
+          mensualite_montant?: number | null
           nationalite?: string | null
           nom?: string | null
           nom_complet?: string | null
@@ -2169,6 +2223,7 @@ export type Database = {
           parcelle_id?: string | null
           photo_profil_url?: string | null
           prenoms?: string | null
+          prochaine_echeance?: string | null
           region_id?: string | null
           sous_prefecture_id?: string | null
           statut?: string | null
@@ -2190,12 +2245,17 @@ export type Database = {
           banque_operateur?: string | null
           civilite?: string | null
           code_sp_contrat?: string | null
+          compte_actif?: boolean
+          contrat_debut_at?: string | null
+          contrat_fin_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          da_paye_at?: string | null
           date_delivrance_piece?: string | null
           date_naissance?: string | null
           departement_id?: string | null
           district_id?: string | null
+          documents_valides_at?: string | null
           domicile?: string | null
           domicile_residence?: string | null
           email?: string | null
@@ -2206,6 +2266,7 @@ export type Database = {
           id_unique?: string | null
           lieu_naissance?: string | null
           localite?: string | null
+          mensualite_montant?: number | null
           nationalite?: string | null
           nom?: string | null
           nom_complet?: string | null
@@ -2220,6 +2281,7 @@ export type Database = {
           parcelle_id?: string | null
           photo_profil_url?: string | null
           prenoms?: string | null
+          prochaine_echeance?: string | null
           region_id?: string | null
           sous_prefecture_id?: string | null
           statut?: string | null
@@ -2453,10 +2515,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transferts_dest_id_fkey"
+            columns: ["souscripteur_dest_id"]
+            isOneToOne: false
+            referencedRelation: "v_souscripteur_synthese"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transferts_paiements_souscripteur_dest_id_fkey"
             columns: ["souscripteur_dest_id"]
             isOneToOne: false
             referencedRelation: "souscripteurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transferts_paiements_souscripteur_dest_id_fkey"
+            columns: ["souscripteur_dest_id"]
+            isOneToOne: false
+            referencedRelation: "v_souscripteur_synthese"
             referencedColumns: ["id"]
           },
           {
@@ -2467,10 +2543,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transferts_paiements_souscripteur_source_id_fkey"
+            columns: ["souscripteur_source_id"]
+            isOneToOne: false
+            referencedRelation: "v_souscripteur_synthese"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transferts_source_id_fkey"
             columns: ["souscripteur_source_id"]
             isOneToOne: false
             referencedRelation: "souscripteurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transferts_source_id_fkey"
+            columns: ["souscripteur_source_id"]
+            isOneToOne: false
+            referencedRelation: "v_souscripteur_synthese"
             referencedColumns: ["id"]
           },
         ]
@@ -2557,12 +2647,66 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_souscripteur_synthese: {
+        Row: {
+          avancement_pct: number | null
+          compte_actif: boolean | null
+          contrat_debut_at: string | null
+          contrat_fin_at: string | null
+          echeances_payees: number | null
+          id: string | null
+          id_unique: string | null
+          jours_restants: number | null
+          mensualite_montant: number | null
+          nom_complet: string | null
+          prochaine_echeance: string | null
+          restant_du: number | null
+          total_paye: number | null
+          user_id: string | null
+        }
+        Insert: {
+          avancement_pct?: never
+          compte_actif?: boolean | null
+          contrat_debut_at?: string | null
+          contrat_fin_at?: string | null
+          echeances_payees?: never
+          id?: string | null
+          id_unique?: string | null
+          jours_restants?: never
+          mensualite_montant?: number | null
+          nom_complet?: string | null
+          prochaine_echeance?: string | null
+          restant_du?: never
+          total_paye?: never
+          user_id?: string | null
+        }
+        Update: {
+          avancement_pct?: never
+          compte_actif?: boolean | null
+          contrat_debut_at?: string | null
+          contrat_fin_at?: string | null
+          echeances_payees?: never
+          id?: string | null
+          id_unique?: string | null
+          jours_restants?: never
+          mensualite_montant?: number | null
+          nom_complet?: string | null
+          prochaine_echeance?: string | null
+          restant_du?: never
+          total_paye?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_sp_code: { Args: { _sp_id: string }; Returns: string }
       cleanup_expired_otp: { Args: never; Returns: undefined }
       cleanup_rate_limits: { Args: never; Returns: undefined }
+      create_depot_initial: {
+        Args: { _souscripteur_id: string }
+        Returns: string
+      }
       current_profile_id: { Args: never; Returns: string }
       generate_parcelle_id: { Args: never; Returns: string }
       generate_plantation_id: { Args: never; Returns: string }

@@ -11,6 +11,7 @@ import AIAssistant from "@/components/ai/AIAssistant";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
+import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
 import {
   LayoutDashboard, Users, Sprout, CreditCard, LogOut, Menu, Receipt,
   BarChart3, Ticket, Wallet, FileText, Settings, UserCircle, Wifi, WifiOff, RefreshCw, Signal,
@@ -25,6 +26,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const { isOnline, isSyncing, syncNow, pendingCount, networkQuality } = useOfflineSync();
+  useGlobalRealtime();
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", permission: PERMISSIONS.VIEW_DASHBOARD },
