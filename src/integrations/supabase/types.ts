@@ -2662,6 +2662,7 @@ export type Database = {
           prochaine_echeance: string | null
           restant_du: number | null
           total_paye: number | null
+          user_id: string | null
         }
         Insert: {
           avancement_pct?: never
@@ -2677,6 +2678,7 @@ export type Database = {
           prochaine_echeance?: string | null
           restant_du?: never
           total_paye?: never
+          user_id?: string | null
         }
         Update: {
           avancement_pct?: never
@@ -2692,6 +2694,7 @@ export type Database = {
           prochaine_echeance?: string | null
           restant_du?: never
           total_paye?: never
+          user_id?: string | null
         }
         Relationships: []
       }
