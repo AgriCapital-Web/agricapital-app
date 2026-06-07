@@ -933,10 +933,13 @@ export type Database = {
           couleur: string | null
           created_at: string | null
           description: string | null
+          duree_installation_mois: number
+          duree_production_ans: number
           id: string
           montant_da_par_ha: number
           nom: string
           ordre: number | null
+          redevance_production_par_ha_an: number
           type_offre: string | null
           updated_at: string | null
         }
@@ -948,10 +951,13 @@ export type Database = {
           couleur?: string | null
           created_at?: string | null
           description?: string | null
+          duree_installation_mois?: number
+          duree_production_ans?: number
           id?: string
           montant_da_par_ha?: number
           nom: string
           ordre?: number | null
+          redevance_production_par_ha_an?: number
           type_offre?: string | null
           updated_at?: string | null
         }
@@ -963,10 +969,13 @@ export type Database = {
           couleur?: string | null
           created_at?: string | null
           description?: string | null
+          duree_installation_mois?: number
+          duree_production_ans?: number
           id?: string
           montant_da_par_ha?: number
           nom?: string
           ordre?: number | null
+          redevance_production_par_ha_an?: number
           type_offre?: string | null
           updated_at?: string | null
         }
@@ -1016,6 +1025,8 @@ export type Database = {
           fichier_preuve_url: string | null
           id: string
           id_transaction: string | null
+          jours_couverts: number
+          jours_retard: number
           kkiapay_transaction_id: string | null
           metadata: Json | null
           mode_paiement: string | null
@@ -1026,6 +1037,9 @@ export type Database = {
           numero_echeance: number | null
           observations: string | null
           operateur_mobile_money: string | null
+          periode_debut: string | null
+          periode_fin: string | null
+          phase: string | null
           plantation_id: string | null
           preuve_paiement_url: string | null
           reference: string | null
@@ -1052,6 +1066,8 @@ export type Database = {
           fichier_preuve_url?: string | null
           id?: string
           id_transaction?: string | null
+          jours_couverts?: number
+          jours_retard?: number
           kkiapay_transaction_id?: string | null
           metadata?: Json | null
           mode_paiement?: string | null
@@ -1062,6 +1078,9 @@ export type Database = {
           numero_echeance?: number | null
           observations?: string | null
           operateur_mobile_money?: string | null
+          periode_debut?: string | null
+          periode_fin?: string | null
+          phase?: string | null
           plantation_id?: string | null
           preuve_paiement_url?: string | null
           reference?: string | null
@@ -1088,6 +1107,8 @@ export type Database = {
           fichier_preuve_url?: string | null
           id?: string
           id_transaction?: string | null
+          jours_couverts?: number
+          jours_retard?: number
           kkiapay_transaction_id?: string | null
           metadata?: Json | null
           mode_paiement?: string | null
@@ -1098,6 +1119,9 @@ export type Database = {
           numero_echeance?: number | null
           observations?: string | null
           operateur_mobile_money?: string | null
+          periode_debut?: string | null
+          periode_fin?: string | null
+          phase?: string | null
           plantation_id?: string | null
           preuve_paiement_url?: string | null
           reference?: string | null
@@ -1620,6 +1644,7 @@ export type Database = {
         Row: {
           active: boolean | null
           applique_toutes_offres: boolean | null
+          cible: string
           created_at: string | null
           date_debut: string
           date_fin: string
@@ -1634,6 +1659,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           applique_toutes_offres?: boolean | null
+          cible?: string
           created_at?: string | null
           date_debut: string
           date_fin: string
@@ -1648,6 +1674,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           applique_toutes_offres?: boolean | null
+          cible?: string
           created_at?: string | null
           date_debut?: string
           date_fin?: string
@@ -2148,9 +2175,13 @@ export type Database = {
           fichier_piece_verso_url: string | null
           id: string
           id_unique: string | null
+          jours_contrat_total: number
+          jours_payes: number
+          jours_retard: number
           lieu_naissance: string | null
           localite: string | null
           mensualite_montant: number | null
+          montant_total_contrat: number
           nationalite: string | null
           nom: string | null
           nom_complet: string | null
@@ -2163,6 +2194,7 @@ export type Database = {
           numero_piece: string | null
           offre_id: string | null
           parcelle_id: string | null
+          phase_actuelle: string
           photo_profil_url: string | null
           prenoms: string | null
           prochaine_echeance: string | null
@@ -2171,6 +2203,7 @@ export type Database = {
           statut: string | null
           statut_global: string | null
           statut_marital: string | null
+          taux_journalier_ha: number
           telephone: string
           total_hectares: number | null
           type_compte: string | null
@@ -2206,9 +2239,13 @@ export type Database = {
           fichier_piece_verso_url?: string | null
           id?: string
           id_unique?: string | null
+          jours_contrat_total?: number
+          jours_payes?: number
+          jours_retard?: number
           lieu_naissance?: string | null
           localite?: string | null
           mensualite_montant?: number | null
+          montant_total_contrat?: number
           nationalite?: string | null
           nom?: string | null
           nom_complet?: string | null
@@ -2221,6 +2258,7 @@ export type Database = {
           numero_piece?: string | null
           offre_id?: string | null
           parcelle_id?: string | null
+          phase_actuelle?: string
           photo_profil_url?: string | null
           prenoms?: string | null
           prochaine_echeance?: string | null
@@ -2229,6 +2267,7 @@ export type Database = {
           statut?: string | null
           statut_global?: string | null
           statut_marital?: string | null
+          taux_journalier_ha?: number
           telephone: string
           total_hectares?: number | null
           type_compte?: string | null
@@ -2264,9 +2303,13 @@ export type Database = {
           fichier_piece_verso_url?: string | null
           id?: string
           id_unique?: string | null
+          jours_contrat_total?: number
+          jours_payes?: number
+          jours_retard?: number
           lieu_naissance?: string | null
           localite?: string | null
           mensualite_montant?: number | null
+          montant_total_contrat?: number
           nationalite?: string | null
           nom?: string | null
           nom_complet?: string | null
@@ -2279,6 +2322,7 @@ export type Database = {
           numero_piece?: string | null
           offre_id?: string | null
           parcelle_id?: string | null
+          phase_actuelle?: string
           photo_profil_url?: string | null
           prenoms?: string | null
           prochaine_echeance?: string | null
@@ -2287,6 +2331,7 @@ export type Database = {
           statut?: string | null
           statut_global?: string | null
           statut_marital?: string | null
+          taux_journalier_ha?: number
           telephone?: string
           total_hectares?: number | null
           type_compte?: string | null
@@ -2653,14 +2698,22 @@ export type Database = {
           compte_actif: boolean | null
           contrat_debut_at: string | null
           contrat_fin_at: string | null
+          echeances_en_retard: number | null
           echeances_payees: number | null
           id: string | null
           id_unique: string | null
+          jours_contrat_total: number | null
+          jours_payes: number | null
           jours_restants: number | null
+          jours_retard: number | null
           mensualite_montant: number | null
+          montant_total_contrat: number | null
           nom_complet: string | null
+          phase_actuelle: string | null
           prochaine_echeance: string | null
           restant_du: number | null
+          taux_journalier_ha: number | null
+          total_hectares: number | null
           total_paye: number | null
           user_id: string | null
         }
@@ -2669,14 +2722,22 @@ export type Database = {
           compte_actif?: boolean | null
           contrat_debut_at?: string | null
           contrat_fin_at?: string | null
+          echeances_en_retard?: never
           echeances_payees?: never
           id?: string | null
           id_unique?: string | null
+          jours_contrat_total?: number | null
+          jours_payes?: number | null
           jours_restants?: never
+          jours_retard?: number | null
           mensualite_montant?: number | null
+          montant_total_contrat?: number | null
           nom_complet?: string | null
+          phase_actuelle?: string | null
           prochaine_echeance?: string | null
           restant_du?: never
+          taux_journalier_ha?: number | null
+          total_hectares?: number | null
           total_paye?: never
           user_id?: string | null
         }
@@ -2685,14 +2746,22 @@ export type Database = {
           compte_actif?: boolean | null
           contrat_debut_at?: string | null
           contrat_fin_at?: string | null
+          echeances_en_retard?: never
           echeances_payees?: never
           id?: string | null
           id_unique?: string | null
+          jours_contrat_total?: number | null
+          jours_payes?: number | null
           jours_restants?: never
+          jours_retard?: number | null
           mensualite_montant?: number | null
+          montant_total_contrat?: number | null
           nom_complet?: string | null
+          phase_actuelle?: string | null
           prochaine_echeance?: string | null
           restant_du?: never
+          taux_journalier_ha?: number | null
+          total_hectares?: number | null
           total_paye?: never
           user_id?: string | null
         }
@@ -2715,6 +2784,7 @@ export type Database = {
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      mark_overdue_payments: { Args: never; Returns: undefined }
       notify_hierarchy: {
         Args: {
           p_data?: Json
@@ -2723,6 +2793,20 @@ export type Database = {
           p_type: string
         }
         Returns: undefined
+      }
+      recompute_contrat_totaux: {
+        Args: { _souscripteur_id: string }
+        Returns: undefined
+      }
+      simuler_paiement_fractionne: {
+        Args: { _montant: number; _souscripteur_id: string }
+        Returns: {
+          jours_couverts: number
+          periode_debut: string
+          periode_fin: string
+          phase: string
+          taux_journalier: number
+        }[]
       }
     }
     Enums: {
