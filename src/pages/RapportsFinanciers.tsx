@@ -13,6 +13,7 @@ import { DollarSign, TrendingUp, Users, MapPin, Download, Filter } from "lucide-
 
 const RapportsFinanciers = () => {
   const [commissions, setCommissions] = useState<any[]>([]);
+  const [synthese, setSynthese] = useState<any[]>([]);
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
   const [equipes, setEquipes] = useState<any[]>([]);
@@ -36,7 +37,7 @@ const RapportsFinanciers = () => {
 
   const fetchData = async () => {
     // Fetch all data
-    const [commissionsRes, regionsRes, departementsRes, equipesRes, usersRes, planteursRes, plantationsRes] = await Promise.all([
+    const [commissionsRes, regionsRes, departementsRes, equipesRes, usersRes, planteursRes, plantationsRes, syntheseRes] = await Promise.all([
       (supabase as any).from("commissions").select(`
         *,
         profile:profiles!commissions_profile_id_fkey(id, nom_complet, equipe_id),
@@ -48,6 +49,7 @@ const RapportsFinanciers = () => {
       (supabase as any).from("profiles").select("id, nom_complet, equipe_id"),
       (supabase as any).from("souscripteurs").select("id"),
       (supabase as any).from("plantations").select("id, superficie_ha"),
+      (supabase as any).from("v_souscripteur_synthese").select("*").order("avancement_pct", { ascending: false }),
     ]);
 
     if (commissionsRes.data) setCommissions(commissionsRes.data);
@@ -55,6 +57,7 @@ const RapportsFinanciers = () => {
     if (departementsRes.data) setDepartements(departementsRes.data);
     if (equipesRes.data) setEquipes(equipesRes.data);
     if (usersRes.data) setUsers(usersRes.data);
+    if (syntheseRes.data) setSynthese(syntheseRes.data);
 
     // Calculate stats
     const commissionsData = commissionsRes.data || [];
@@ -79,6 +82,8 @@ const RapportsFinanciers = () => {
   }, []);
 
   useRealtime({ table: "commissions", onChange: fetchData });
+  useRealtime({ table: "souscripteurs", onChange: fetchData });
+  useRealtime({ table: "paiements", onChange: fetchData });
 
   const formatMontant = (m: number) => new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF" }).format(m);
 
@@ -266,6 +271,7 @@ const RapportsFinanciers = () => {
               <TabsTrigger value="liste">Liste des Commissions</TabsTrigger>
               <TabsTrigger value="par-commercial">Par Commercial</TabsTrigger>
               <TabsTrigger value="par-equipe">Par Équipe</TabsTrigger>
+              <TabsTrigger value="synthese-28">Synthèse 28 ans</TabsTrigger>
             </TabsList>
 
             <TabsContent value="liste" className="space-y-4">
@@ -368,6 +374,59 @@ const RapportsFinanciers = () => {
                           <TableCell className="font-medium">{e.equipe}</TableCell>
                           <TableCell>{e.count}</TableCell>
                           <TableCell className="font-semibold">{formatMontant(e.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="synthese-28" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Synthèse contrats — Cycle 28 ans</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Souscripteur</TableHead>
+                        <TableHead>Phase</TableHead>
+                        <TableHead>Hectares</TableHead>
+                        <TableHead>Total contrat</TableHead>
+                        <TableHead>Payé</TableHead>
+                        <TableHead>Restant dû</TableHead>
+                        <TableHead>Avancement</TableHead>
+                        <TableHead>Jours restants</TableHead>
+                        <TableHead>Retard</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {synthese.length === 0 ? (
+                        <TableRow><TableCell colSpan={9} className="text-center py-8">Aucune donnée</TableCell></TableRow>
+                      ) : synthese.map((r: any) => (
+                        <TableRow key={r.id}>
+                          <TableCell>
+                            <div className="font-medium">{r.nom_complet}</div>
+                            <div className="text-xs text-muted-foreground">{r.id_unique}</div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{r.phase_actuelle || '—'}</Badge>
+                          </TableCell>
+                          <TableCell>{Number(r.total_hectares || 0).toFixed(2)}</TableCell>
+                          <TableCell>{formatMontant(Number(r.montant_total_contrat || 0))}</TableCell>
+                          <TableCell className="text-green-600 font-medium">{formatMontant(Number(r.total_paye || 0))}</TableCell>
+                          <TableCell className="text-amber-600 font-medium">{formatMontant(Number(r.restant_du || 0))}</TableCell>
+                          <TableCell>
+                            <Badge className="bg-primary">{Number(r.avancement_pct || 0).toFixed(1)}%</Badge>
+                          </TableCell>
+                          <TableCell>{Number(r.jours_restants || 0).toLocaleString()} j</TableCell>
+                          <TableCell>
+                            {Number(r.echeances_en_retard || 0) > 0
+                              ? <Badge className="bg-red-500">{r.echeances_en_retard} en retard</Badge>
+                              : <Badge variant="outline">À jour</Badge>}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
