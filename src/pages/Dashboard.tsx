@@ -81,9 +81,37 @@ const Dashboard = () => {
   const [topPlanteurs, setTopPlanteurs] = useState<any[]>([]);
   const [docsEnAttente, setDocsEnAttente] = useState(0);
   const [souscriptionsEnAttente, setSouscriptionsEnAttente] = useState(0);
+  const [synthese, setSynthese] = useState<any[]>([]);
+  const [syntheseAgg, setSyntheseAgg] = useState({
+    contratsActifs: 0,
+    enInstallation: 0,
+    enProduction: 0,
+    joursRestantsMoy: 0,
+    echeancesRetardTotal: 0,
+    restantDuTotal: 0,
+    avancementMoy: 0,
+  });
 
   const fetchStats = async () => {
     try {
+      // Vue de synthèse — cycle 28 ans
+      const { data: syn } = await (supabase as any)
+        .from("v_souscripteur_synthese")
+        .select("*");
+      if (syn && syn.length) {
+        setSynthese(syn);
+        const actifs = syn.filter((r: any) => r.compte_actif);
+        setSyntheseAgg({
+          contratsActifs: actifs.length,
+          enInstallation: actifs.filter((r: any) => r.phase_actuelle === "installation").length,
+          enProduction: actifs.filter((r: any) => r.phase_actuelle === "production").length,
+          joursRestantsMoy: actifs.length ? Math.round(actifs.reduce((s: number, r: any) => s + (r.jours_restants || 0), 0) / actifs.length) : 0,
+          echeancesRetardTotal: syn.reduce((s: number, r: any) => s + Number(r.echeances_en_retard || 0), 0),
+          restantDuTotal: syn.reduce((s: number, r: any) => s + Number(r.restant_du || 0), 0),
+          avancementMoy: actifs.length ? Math.round(actifs.reduce((s: number, r: any) => s + Number(r.avancement_pct || 0), 0) / actifs.length) : 0,
+        });
+      }
+
       // Stats globales
       const { count: planteursCount } = await (supabase as any)
         .from("souscripteurs")
