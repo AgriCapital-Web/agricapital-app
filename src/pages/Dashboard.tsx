@@ -81,9 +81,37 @@ const Dashboard = () => {
   const [topPlanteurs, setTopPlanteurs] = useState<any[]>([]);
   const [docsEnAttente, setDocsEnAttente] = useState(0);
   const [souscriptionsEnAttente, setSouscriptionsEnAttente] = useState(0);
+  const [synthese, setSynthese] = useState<any[]>([]);
+  const [syntheseAgg, setSyntheseAgg] = useState({
+    contratsActifs: 0,
+    enInstallation: 0,
+    enProduction: 0,
+    joursRestantsMoy: 0,
+    echeancesRetardTotal: 0,
+    restantDuTotal: 0,
+    avancementMoy: 0,
+  });
 
   const fetchStats = async () => {
     try {
+      // Vue de synthèse — cycle 28 ans
+      const { data: syn } = await (supabase as any)
+        .from("v_souscripteur_synthese")
+        .select("*");
+      if (syn && syn.length) {
+        setSynthese(syn);
+        const actifs = syn.filter((r: any) => r.compte_actif);
+        setSyntheseAgg({
+          contratsActifs: actifs.length,
+          enInstallation: actifs.filter((r: any) => r.phase_actuelle === "installation").length,
+          enProduction: actifs.filter((r: any) => r.phase_actuelle === "production").length,
+          joursRestantsMoy: actifs.length ? Math.round(actifs.reduce((s: number, r: any) => s + (r.jours_restants || 0), 0) / actifs.length) : 0,
+          echeancesRetardTotal: syn.reduce((s: number, r: any) => s + Number(r.echeances_en_retard || 0), 0),
+          restantDuTotal: syn.reduce((s: number, r: any) => s + Number(r.restant_du || 0), 0),
+          avancementMoy: actifs.length ? Math.round(actifs.reduce((s: number, r: any) => s + Number(r.avancement_pct || 0), 0) / actifs.length) : 0,
+        });
+      }
+
       // Stats globales
       const { count: planteursCount } = await (supabase as any)
         .from("souscripteurs")
@@ -420,6 +448,50 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Synthèse cycle 28 ans — v_souscripteur_synthese */}
+          {synthese.length > 0 && !isSouscripteurOnly && (
+            <Card className="border-l-4 border-l-primary">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Synthèse contrats — Cycle 28 ans (3 ans installation + 25 ans production)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-center">
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xl font-bold">{syntheseAgg.contratsActifs}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase">Contrats actifs</div>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xl font-bold text-blue-600">{syntheseAgg.enInstallation}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase">Installation (36 mois)</div>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xl font-bold text-green-600">{syntheseAgg.enProduction}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase">Production (25 ans)</div>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xl font-bold">{syntheseAgg.joursRestantsMoy.toLocaleString()}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase">Jours restants (moy.)</div>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xl font-bold text-amber-600">{syntheseAgg.avancementMoy}%</div>
+                    <div className="text-[10px] text-muted-foreground uppercase">Avancement moy.</div>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xl font-bold text-red-600">{syntheseAgg.echeancesRetardTotal}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase">Échéances en retard</div>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-sm font-bold">{formatMontant(syntheseAgg.restantDuTotal)}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase">Reste à percevoir</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* KPIs adaptés au rôle */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">

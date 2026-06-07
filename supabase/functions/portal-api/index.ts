@@ -167,6 +167,65 @@ serve(async (req) => {
         });
       }
 
+      case "synthese": {
+        const souscripteur = await getSouscripteur();
+        if (!souscripteur) {
+          return new Response(JSON.stringify({ error: "Souscripteur non trouvé" }), {
+            status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+        const { data: synthese } = await supabase
+          .from("v_souscripteur_synthese")
+          .select("*")
+          .eq("id", souscripteur.id)
+          .maybeSingle();
+        return new Response(JSON.stringify({ synthese: synthese || null }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      case "simuler-paiement": {
+        if (req.method !== "POST") {
+          return new Response(JSON.stringify({ error: "POST requis" }), {
+            status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+        const body = await req.json();
+        const montant = Number(body?.montant);
+        if (!montant || montant <= 0) {
+          return new Response(JSON.stringify({ error: "Montant invalide" }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+        const souscripteur = await getSouscripteur();
+        if (!souscripteur) {
+          return new Response(JSON.stringify({ error: "Souscripteur non trouvé" }), {
+            status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
+        }
+        const { data, error } = await supabase.rpc("simuler_paiement_fractionne", {
+          _souscripteur_id: souscripteur.id,
+          _montant: montant,
+        });
+        if (error) throw error;
+        return new Response(JSON.stringify({ simulation: Array.isArray(data) ? data[0] : data }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      case "promotions-actives": {
+        const cible = url.searchParams.get("cible"); // depot_initial | total_contrat
+        let q = supabase.from("promotions").select("*")
+          .eq("active", true)
+          .lte("date_debut", new Date().toISOString())
+          .gte("date_fin", new Date().toISOString());
+        if (cible) q = q.eq("cible", cible);
+        const { data: promos } = await q.order("created_at", { ascending: false });
+        return new Response(JSON.stringify({ promotions: promos || [] }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
       case "paiement-history": {
         const souscripteur = await getSouscripteur();
         if (!souscripteur) {
