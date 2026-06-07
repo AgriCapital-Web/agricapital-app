@@ -29,6 +29,7 @@ const Promotions = () => {
     description: "",
     applique_toutes_offres: true,
     type_promotion: "depot_initial" as string,
+    cible: "depot_initial" as string,
   });
 
   const { data: promotions, isLoading } = useQuery({
@@ -53,7 +54,8 @@ const Promotions = () => {
         description: data.description,
         active: true,
         applique_toutes_offres: data.applique_toutes_offres,
-        type_promotion: data.type_promotion,
+        type_promotion: data.cible === "total_contrat" ? "cout_global" : "depot_initial",
+        cible: data.cible,
       };
 
       if (editingPromo) {
@@ -111,6 +113,7 @@ const Promotions = () => {
       description: "",
       applique_toutes_offres: true,
       type_promotion: "depot_initial",
+      cible: "depot_initial",
     });
     setEditingPromo(null);
   };
@@ -125,6 +128,7 @@ const Promotions = () => {
       description: promo.description || "",
       applique_toutes_offres: promo.applique_toutes_offres ?? true,
       type_promotion: promo.type_promotion || "depot_initial",
+      cible: promo.cible || (promo.type_promotion === "cout_global" ? "total_contrat" : "depot_initial"),
     });
     setIsDialogOpen(true);
   };
@@ -140,9 +144,10 @@ const Promotions = () => {
       : <Badge variant="secondary">INACTIF</Badge>;
   };
 
-  const getTypeBadge = (type: string) => {
-    return type === "cout_global"
-      ? <Badge className="bg-amber-500">Coût Global</Badge>
+  const getTypeBadge = (promo: any) => {
+    const cible = promo.cible || (promo.type_promotion === "cout_global" ? "total_contrat" : "depot_initial");
+    return cible === "total_contrat"
+      ? <Badge className="bg-amber-500">Total du Contrat</Badge>
       : <Badge className="bg-blue-500">Dépôt Initial</Badge>;
   };
 
@@ -188,8 +193,8 @@ const Promotions = () => {
               <div className="space-y-2">
                 <Label>Type de promotion *</Label>
                 <Select
-                  value={formData.type_promotion}
-                  onValueChange={(v) => setFormData({...formData, type_promotion: v})}
+                  value={formData.cible}
+                  onValueChange={(v) => setFormData({...formData, cible: v, type_promotion: v === "total_contrat" ? "cout_global" : "depot_initial"})}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -198,14 +203,14 @@ const Promotions = () => {
                     <SelectItem value="depot_initial">
                       Réduction sur le Dépôt Initial (DA)
                     </SelectItem>
-                    <SelectItem value="cout_global">
-                      Réduction sur le Coût Global de souscription
+                    <SelectItem value="total_contrat">
+                      Réduction sur le Total du Contrat (28 ans)
                     </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {formData.type_promotion === "cout_global" 
-                    ? "La réduction s'applique sur le prix total de souscription (DA + contributions mensuelles)"
+                  {formData.cible === "total_contrat" 
+                    ? "La réduction s'applique sur le total du contrat (DA + 36 mois installation + 25 ans production)"
                     : "La réduction s'applique uniquement sur le Droit d'Accès (30 000 F/ha de base)"
                   }
                 </p>
@@ -224,7 +229,7 @@ const Promotions = () => {
                     />
                     <Percent className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
-                  {formData.type_promotion === "depot_initial" && (
+                  {formData.cible === "depot_initial" && (
                     <p className="text-xs text-muted-foreground">
                       DA réduit: {calculateReducedAmount(parseInt(formData.pourcentage_reduction || "0")).toLocaleString()} F/ha
                     </p>
@@ -233,9 +238,9 @@ const Promotions = () => {
 
                 <div className="space-y-2">
                   <Label>Référence</Label>
-                  <Input value={formData.type_promotion === "depot_initial" ? "30 000 F/ha (DA)" : "Coût total"} disabled />
+                  <Input value={formData.cible === "depot_initial" ? "30 000 F/ha (DA)" : "Total contrat 28 ans"} disabled />
                   <p className="text-xs text-primary font-medium">
-                    Économie: {formData.type_promotion === "depot_initial" 
+                    Économie: {formData.cible === "depot_initial" 
                       ? `${(30000 * parseInt(formData.pourcentage_reduction || "0") / 100).toLocaleString()} F/ha`
                       : `${formData.pourcentage_reduction}% sur le total`
                     }
@@ -294,7 +299,7 @@ const Promotions = () => {
                 {promotions.map((promo: any) => (
                   <TableRow key={promo.id}>
                     <TableCell className="font-medium">{promo.nom}</TableCell>
-                    <TableCell>{getTypeBadge(promo.type_promotion || 'depot_initial')}</TableCell>
+                    <TableCell>{getTypeBadge(promo)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-primary font-bold">{promo.pourcentage_reduction}%</Badge>
                     </TableCell>
