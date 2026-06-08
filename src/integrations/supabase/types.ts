@@ -555,7 +555,7 @@ export type Database = {
             columns: ["souscripteur_id"]
             isOneToOne: false
             referencedRelation: "v_souscripteur_synthese"
-            referencedColumns: ["id"]
+            referencedColumns: ["souscripteur_id"]
           },
         ]
       }
@@ -884,7 +884,7 @@ export type Database = {
             columns: ["souscripteur_id"]
             isOneToOne: false
             referencedRelation: "v_souscripteur_synthese"
-            referencedColumns: ["id"]
+            referencedColumns: ["souscripteur_id"]
           },
         ]
       }
@@ -934,12 +934,19 @@ export type Database = {
           created_at: string | null
           description: string | null
           duree_installation_mois: number
+          duree_paiement_mois: number
           duree_production_ans: number
+          gestion_type: string
           id: string
+          montant_cash_par_ha: number
           montant_da_par_ha: number
+          montant_depot_initial_par_ha: number
+          montant_total_par_ha: number
           nom: string
           ordre: number | null
+          pourcentage_revenus_reverses: number
           redevance_production_par_ha_an: number
+          tranches_paiement: Json
           type_offre: string | null
           updated_at: string | null
         }
@@ -952,12 +959,19 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           duree_installation_mois?: number
+          duree_paiement_mois?: number
           duree_production_ans?: number
+          gestion_type?: string
           id?: string
+          montant_cash_par_ha?: number
           montant_da_par_ha?: number
+          montant_depot_initial_par_ha?: number
+          montant_total_par_ha?: number
           nom: string
           ordre?: number | null
+          pourcentage_revenus_reverses?: number
           redevance_production_par_ha_an?: number
+          tranches_paiement?: Json
           type_offre?: string | null
           updated_at?: string | null
         }
@@ -970,12 +984,19 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           duree_installation_mois?: number
+          duree_paiement_mois?: number
           duree_production_ans?: number
+          gestion_type?: string
           id?: string
+          montant_cash_par_ha?: number
           montant_da_par_ha?: number
+          montant_depot_initial_par_ha?: number
+          montant_total_par_ha?: number
           nom?: string
           ordre?: number | null
+          pourcentage_revenus_reverses?: number
           redevance_production_par_ha_an?: number
+          tranches_paiement?: Json
           type_offre?: string | null
           updated_at?: string | null
         }
@@ -1155,7 +1176,7 @@ export type Database = {
             columns: ["souscripteur_id"]
             isOneToOne: false
             referencedRelation: "v_souscripteur_synthese"
-            referencedColumns: ["id"]
+            referencedColumns: ["souscripteur_id"]
           },
         ]
       }
@@ -1507,7 +1528,7 @@ export type Database = {
             columns: ["souscripteur_id"]
             isOneToOne: false
             referencedRelation: "v_souscripteur_synthese"
-            referencedColumns: ["id"]
+            referencedColumns: ["souscripteur_id"]
           },
         ]
       }
@@ -1645,11 +1666,13 @@ export type Database = {
           active: boolean | null
           applique_toutes_offres: boolean | null
           cible: string
+          code: string | null
           created_at: string | null
           date_debut: string
           date_fin: string
           description: string | null
           id: string
+          montant_fixe_reduction: number | null
           nom: string
           offre_ids: Json | null
           pourcentage_reduction: number
@@ -1660,11 +1683,13 @@ export type Database = {
           active?: boolean | null
           applique_toutes_offres?: boolean | null
           cible?: string
+          code?: string | null
           created_at?: string | null
           date_debut: string
           date_fin: string
           description?: string | null
           id?: string
+          montant_fixe_reduction?: number | null
           nom: string
           offre_ids?: Json | null
           pourcentage_reduction?: number
@@ -1675,11 +1700,13 @@ export type Database = {
           active?: boolean | null
           applique_toutes_offres?: boolean | null
           cible?: string
+          code?: string | null
           created_at?: string | null
           date_debut?: string
           date_fin?: string
           description?: string | null
           id?: string
+          montant_fixe_reduction?: number | null
           nom?: string
           offre_ids?: Json | null
           pourcentage_reduction?: number
@@ -2055,7 +2082,7 @@ export type Database = {
             columns: ["souscripteur_id"]
             isOneToOne: false
             referencedRelation: "v_souscripteur_synthese"
-            referencedColumns: ["id"]
+            referencedColumns: ["souscripteur_id"]
           },
         ]
       }
@@ -2181,6 +2208,7 @@ export type Database = {
           lieu_naissance: string | null
           localite: string | null
           mensualite_montant: number | null
+          montant_promo_applique: number
           montant_total_contrat: number
           nationalite: string | null
           nom: string | null
@@ -2198,6 +2226,7 @@ export type Database = {
           photo_profil_url: string | null
           prenoms: string | null
           prochaine_echeance: string | null
+          promotion_id: string | null
           region_id: string | null
           sous_prefecture_id: string | null
           statut: string | null
@@ -2245,6 +2274,7 @@ export type Database = {
           lieu_naissance?: string | null
           localite?: string | null
           mensualite_montant?: number | null
+          montant_promo_applique?: number
           montant_total_contrat?: number
           nationalite?: string | null
           nom?: string | null
@@ -2262,6 +2292,7 @@ export type Database = {
           photo_profil_url?: string | null
           prenoms?: string | null
           prochaine_echeance?: string | null
+          promotion_id?: string | null
           region_id?: string | null
           sous_prefecture_id?: string | null
           statut?: string | null
@@ -2309,6 +2340,7 @@ export type Database = {
           lieu_naissance?: string | null
           localite?: string | null
           mensualite_montant?: number | null
+          montant_promo_applique?: number
           montant_total_contrat?: number
           nationalite?: string | null
           nom?: string | null
@@ -2326,6 +2358,7 @@ export type Database = {
           photo_profil_url?: string | null
           prenoms?: string | null
           prochaine_echeance?: string | null
+          promotion_id?: string | null
           region_id?: string | null
           sous_prefecture_id?: string | null
           statut?: string | null
@@ -2370,6 +2403,13 @@ export type Database = {
             columns: ["parcelle_id"]
             isOneToOne: false
             referencedRelation: "parcelles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "souscripteurs_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
             referencedColumns: ["id"]
           },
           {
@@ -2564,7 +2604,7 @@ export type Database = {
             columns: ["souscripteur_dest_id"]
             isOneToOne: false
             referencedRelation: "v_souscripteur_synthese"
-            referencedColumns: ["id"]
+            referencedColumns: ["souscripteur_id"]
           },
           {
             foreignKeyName: "transferts_paiements_souscripteur_dest_id_fkey"
@@ -2578,7 +2618,7 @@ export type Database = {
             columns: ["souscripteur_dest_id"]
             isOneToOne: false
             referencedRelation: "v_souscripteur_synthese"
-            referencedColumns: ["id"]
+            referencedColumns: ["souscripteur_id"]
           },
           {
             foreignKeyName: "transferts_paiements_souscripteur_source_id_fkey"
@@ -2592,7 +2632,7 @@ export type Database = {
             columns: ["souscripteur_source_id"]
             isOneToOne: false
             referencedRelation: "v_souscripteur_synthese"
-            referencedColumns: ["id"]
+            referencedColumns: ["souscripteur_id"]
           },
           {
             foreignKeyName: "transferts_source_id_fkey"
@@ -2606,7 +2646,7 @@ export type Database = {
             columns: ["souscripteur_source_id"]
             isOneToOne: false
             referencedRelation: "v_souscripteur_synthese"
-            referencedColumns: ["id"]
+            referencedColumns: ["souscripteur_id"]
           },
         ]
       }
@@ -2694,78 +2734,38 @@ export type Database = {
     Views: {
       v_souscripteur_synthese: {
         Row: {
-          avancement_pct: number | null
           compte_actif: boolean | null
           contrat_debut_at: string | null
           contrat_fin_at: string | null
-          echeances_en_retard: number | null
-          echeances_payees: number | null
-          id: string | null
+          duree_paiement_mois: number | null
+          gestion_type: string | null
           id_unique: string | null
-          jours_contrat_total: number | null
-          jours_payes: number | null
-          jours_restants: number | null
           jours_retard: number | null
-          mensualite_montant: number | null
+          mois_payes: number | null
+          mois_restants: number | null
           montant_total_contrat: number | null
           nom_complet: string | null
+          offre_id: string | null
+          offre_nom: string | null
           phase_actuelle: string | null
+          pourcentage_avancement: number | null
+          pourcentage_revenus_reverses: number | null
           prochaine_echeance: string | null
-          restant_du: number | null
+          reste_a_payer: number | null
+          souscripteur_id: string | null
           taux_journalier_ha: number | null
           total_hectares: number | null
           total_paye: number | null
-          user_id: string | null
         }
-        Insert: {
-          avancement_pct?: never
-          compte_actif?: boolean | null
-          contrat_debut_at?: string | null
-          contrat_fin_at?: string | null
-          echeances_en_retard?: never
-          echeances_payees?: never
-          id?: string | null
-          id_unique?: string | null
-          jours_contrat_total?: number | null
-          jours_payes?: number | null
-          jours_restants?: never
-          jours_retard?: number | null
-          mensualite_montant?: number | null
-          montant_total_contrat?: number | null
-          nom_complet?: string | null
-          phase_actuelle?: string | null
-          prochaine_echeance?: string | null
-          restant_du?: never
-          taux_journalier_ha?: number | null
-          total_hectares?: number | null
-          total_paye?: never
-          user_id?: string | null
-        }
-        Update: {
-          avancement_pct?: never
-          compte_actif?: boolean | null
-          contrat_debut_at?: string | null
-          contrat_fin_at?: string | null
-          echeances_en_retard?: never
-          echeances_payees?: never
-          id?: string | null
-          id_unique?: string | null
-          jours_contrat_total?: number | null
-          jours_payes?: number | null
-          jours_restants?: never
-          jours_retard?: number | null
-          mensualite_montant?: number | null
-          montant_total_contrat?: number | null
-          nom_complet?: string | null
-          phase_actuelle?: string | null
-          prochaine_echeance?: string | null
-          restant_du?: never
-          taux_journalier_ha?: number | null
-          total_hectares?: number | null
-          total_paye?: never
-          user_id?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "souscripteurs_offre_id_fkey"
+            columns: ["offre_id"]
+            isOneToOne: false
+            referencedRelation: "offres"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
