@@ -204,14 +204,14 @@ const Promotions = () => {
                       Réduction sur le Dépôt Initial (DA)
                     </SelectItem>
                     <SelectItem value="total_contrat">
-                      Réduction sur le Total du Contrat (28 ans)
+                      Réduction sur le Total du Contrat (34 mois)
                     </SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   {formData.cible === "total_contrat" 
-                    ? "La réduction s'applique sur le total du contrat (DA + 36 mois installation + 25 ans production)"
-                    : "La réduction s'applique uniquement sur le Droit d'Accès (30 000 F/ha de base)"
+                    ? "La réduction s'applique sur le coût total du contrat (DI + 34 mensualités)"
+                    : "La réduction s'applique uniquement sur le Dépôt Initial (DI) au moment du paiement"
                   }
                 </p>
               </div>
@@ -238,10 +238,10 @@ const Promotions = () => {
 
                 <div className="space-y-2">
                   <Label>Référence</Label>
-                  <Input value={formData.cible === "depot_initial" ? "30 000 F/ha (DA)" : "Total contrat 28 ans"} disabled />
+                  <Input value={formData.cible === "depot_initial" ? "Dépôt Initial selon l'offre" : "Total contrat 34 mois"} disabled />
                   <p className="text-xs text-primary font-medium">
                     Économie: {formData.cible === "depot_initial" 
-                      ? `${(30000 * parseInt(formData.pourcentage_reduction || "0") / 100).toLocaleString()} F/ha`
+                      ? `${formData.pourcentage_reduction}% sur le DI`
                       : `${formData.pourcentage_reduction}% sur le total`
                     }
                   </p>
