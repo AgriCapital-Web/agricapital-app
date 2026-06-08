@@ -20,7 +20,9 @@ interface Etape0Props {
 const getIcone = (code: string) => {
   switch (code) {
     case 'palm-elite': return Crown;
+    case 'palm-invest-plus': return Crown;
     case 'palm-invest': return TrendingUp;
+    case 'terra-palm-plus': return Crown;
     case 'terra-palm': return Leaf;
     default: return Crown;
   }
@@ -29,6 +31,8 @@ const getIcone = (code: string) => {
 const getCouleur = (code: string) => {
   switch (code) {
     case 'palm-elite':
+    case 'palm-invest-plus':
+    case 'terra-palm-plus':
       return { text: 'text-amber-600', bg: 'bg-amber-500/10', border: 'border-amber-500/30' };
     case 'palm-invest':
       return { text: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30' };
@@ -76,29 +80,49 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
     return [];
   };
 
-  // Calculer le montant total du DA basé sur l'offre et la superficie
-  const montantDA = useMemo(() => {
+  // Calculer DI + total contrat avec application de la promo selon cible
+  const calculs = useMemo(() => {
     if (!formData.offre_id || !formData.superficie_prevue || !offres) return null;
     
     const offre = offres.find(o => o.id === formData.offre_id);
     if (!offre) return null;
-    
-    let tarifDA = offre.montant_da_par_ha;
-    
-    // Appliquer la promotion si elle existe
+
+    const ha = Number(formData.superficie_prevue);
+    const o = offre as any;
+    const diUnitaire = o.montant_depot_initial_par_ha ?? o.montant_da_par_ha ?? 0;
+    const totalUnitaire = o.montant_total_par_ha ?? 0;
+
+    let diUnitaireFinal = diUnitaire;
+    let totalFinal = totalUnitaire * ha;
+    let promoCible: string | null = null;
+    let promoReduction = 0;
+
     if (promotionActive) {
-      tarifDA = offre.montant_da_par_ha - (offre.montant_da_par_ha * promotionActive.pourcentage_reduction / 100);
+      promoCible = (promotionActive as any).cible ?? 'depot_initial';
+      promoReduction = promotionActive.pourcentage_reduction;
+      if (promoCible === 'depot_initial') {
+        diUnitaireFinal = diUnitaire - (diUnitaire * promoReduction / 100);
+      } else if (promoCible === 'total_contrat') {
+        totalFinal = totalFinal - (totalFinal * promoReduction / 100);
+      }
     }
-    
-    const total = tarifDA * Number(formData.superficie_prevue);
-    
+
+    const totalDI = diUnitaireFinal * ha;
+    const tranches = Array.isArray(o.tranches_paiement) ? o.tranches_paiement : [];
+
     return {
-      tarifUnitaire: tarifDA,
-      tarifNormal: offre.montant_da_par_ha,
-      total,
-      superficie: Number(formData.superficie_prevue),
+      ha,
+      diUnitaire,
+      diUnitaireFinal,
+      totalDI,
+      totalUnitaire,
+      totalFinal,
+      totalNormal: totalUnitaire * ha,
+      cashUnitaire: o.montant_cash_par_ha ?? 0,
+      tranches,
+      promoCible,
+      promoReduction,
       promotionAppliquee: !!promotionActive,
-      pourcentageReduction: promotionActive?.pourcentage_reduction || 0
     };
   }, [formData.offre_id, formData.superficie_prevue, promotionActive, offres]);
 
@@ -120,7 +144,7 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
             <span>🎉 Promotion en cours: {promotionActive.nom}</span>
           </div>
           <p className="text-sm text-amber-600">
-            Réduction de {promotionActive.pourcentage_reduction}% sur le Droit d'Accès!
+            -{promotionActive.pourcentage_reduction}% sur {(promotionActive as any).cible === 'total_contrat' ? 'le total du contrat (34 mois)' : 'le Dépôt Initial'}
           </p>
         </div>
       )}
@@ -136,7 +160,7 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
             onValueChange={(value) => updateFormData({ offre_id: value })}
             className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
-            {offres?.map((offre) => {
+            {offres?.map((offre: any) => {
               const IconComponent = getIcone(offre.code);
               const couleurs = getCouleur(offre.code);
               const isSelected = formData.offre_id === offre.id;
@@ -168,24 +192,22 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
                     </div>
                     
                     <div className="mt-auto space-y-2">
-                      {offre.montant_da_par_ha === 0 ? (
+                      {offre.montant_total_par_ha === 0 ? (
                         <div className="flex items-baseline gap-1">
                           <span className="text-lg font-bold text-green-600">GRATUIT</span>
                         </div>
                       ) : (
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-lg font-bold">{formatMontant(offre.montant_da_par_ha)}F</span>
-                          <span className="text-xs text-muted-foreground">/ha</span>
-                        </div>
-                      )}
-                      
-                      {offre.contribution_mensuelle_par_ha > 0 ? (
-                        <div className="text-xs text-muted-foreground">
-                          + {formatMontant(offre.contribution_mensuelle_par_ha)}F/mois/ha (redevance mensuelle)
-                        </div>
-                      ) : (
-                        <div className="text-xs text-green-600 font-medium">
-                          Aucune redevance mensuelle
+                        <div className="space-y-1">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-lg font-bold">{formatMontant(offre.montant_total_par_ha)}F</span>
+                            <span className="text-xs text-muted-foreground">/ha (total 34 mois)</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            DI: {formatMontant(offre.montant_depot_initial_par_ha)}F/ha · Cash: {formatMontant(offre.montant_cash_par_ha)}F/ha
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {offre.gestion_type === 'deleguee' ? 'Gestion déléguée · 75% revenus' : 'Gestion propre · 100% revenus'}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -225,25 +247,36 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
             />
           </div>
 
-          {/* Calcul du montant */}
-          {montantDA && (
-            <div className="p-4 bg-primary/10 rounded-lg space-y-2">
+          {/* Récap calculé */}
+          {calculs && (
+            <div className="p-4 bg-primary/10 rounded-lg space-y-3">
               <div className="flex justify-between text-sm">
                 <span>Superficie:</span>
-                <span className="font-medium">{montantDA.superficie} ha</span>
+                <span className="font-medium">{calculs.ha} ha</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>Tarif DA{montantDA.promotionAppliquee ? ' (promo)' : ''}:</span>
-                <span className="font-medium">{formatMontant(montantDA.tarifUnitaire)} F/ha</span>
+                <span>Dépôt Initial{calculs.promoCible === 'depot_initial' ? ' (promo)' : ''}:</span>
+                <span className="font-bold text-primary">{formatMontant(calculs.totalDI)} F</span>
               </div>
+              {calculs.tranches.length > 0 && (
+                <div className="border-t pt-2 space-y-1 text-sm">
+                  <div className="font-medium mb-1">Échéances mensuelles (34 mois) :</div>
+                  {calculs.tranches.map((t: any, i: number) => (
+                    <div key={i} className="flex justify-between text-xs text-muted-foreground">
+                      <span>An {t.annee} — {t.mois} mois</span>
+                      <span>{formatMontant(Number(t.mensualite_par_ha) * calculs.ha)} F/mois</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="border-t pt-2 flex justify-between">
-                <span className="font-semibold">Montant Droit d'Accès:</span>
-                <span className="text-lg font-bold text-primary">{formatMontant(montantDA.total)} F</span>
+                <span className="font-semibold">Total contrat (34 mois){calculs.promoCible === 'total_contrat' ? ' (promo)' : ''}:</span>
+                <span className="text-lg font-bold text-primary">{formatMontant(calculs.totalFinal)} F</span>
               </div>
-              {montantDA.promotionAppliquee && (
+              {calculs.promotionAppliquee && (
                 <div className="flex items-center gap-1 text-xs text-amber-600">
                   <Sparkles className="h-3 w-3" />
-                  <span>Promotion appliquée!</span>
+                  <span>Promo -{calculs.promoReduction}% appliquée sur {calculs.promoCible === 'total_contrat' ? 'le total' : 'le DI'}</span>
                 </div>
               )}
             </div>
