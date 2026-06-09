@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -190,30 +191,38 @@ const Promotions = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Type de promotion *</Label>
-                <Select
+              <div className="space-y-3 rounded-lg border-2 border-primary/30 bg-primary/5 p-4">
+                <Label className="text-base font-bold">Sur quoi s'applique la réduction ? *</Label>
+                <RadioGroup
                   value={formData.cible}
                   onValueChange={(v) => setFormData({...formData, cible: v, type_promotion: v === "total_contrat" ? "cout_global" : "depot_initial"})}
+                  className="grid gap-3 sm:grid-cols-2"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="depot_initial">
-                      Réduction sur le Dépôt Initial (DA)
-                    </SelectItem>
-                    <SelectItem value="total_contrat">
-                      Réduction sur le Total du Contrat (34 mois)
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {formData.cible === "total_contrat" 
-                    ? "La réduction s'applique sur le coût total du contrat (DI + 34 mensualités)"
-                    : "La réduction s'applique uniquement sur le Dépôt Initial (DI) au moment du paiement"
-                  }
-                </p>
+                  <label
+                    htmlFor="cible-di"
+                    className={`flex cursor-pointer items-start gap-3 rounded-md border-2 p-3 transition ${formData.cible === "depot_initial" ? "border-primary bg-background shadow-sm" : "border-muted bg-background/50 hover:border-primary/50"}`}
+                  >
+                    <RadioGroupItem value="depot_initial" id="cible-di" className="mt-1" />
+                    <div className="space-y-1">
+                      <div className="font-semibold">Dépôt Initial (DI)</div>
+                      <p className="text-xs text-muted-foreground">
+                        Réduction appliquée uniquement sur le DI au moment du paiement.
+                      </p>
+                    </div>
+                  </label>
+                  <label
+                    htmlFor="cible-total"
+                    className={`flex cursor-pointer items-start gap-3 rounded-md border-2 p-3 transition ${formData.cible === "total_contrat" ? "border-primary bg-background shadow-sm" : "border-muted bg-background/50 hover:border-primary/50"}`}
+                  >
+                    <RadioGroupItem value="total_contrat" id="cible-total" className="mt-1" />
+                    <div className="space-y-1">
+                      <div className="font-semibold">Total du Contrat (34 mois)</div>
+                      <p className="text-xs text-muted-foreground">
+                        Réduction sur le coût total : DI + 34 mensualités.
+                      </p>
+                    </div>
+                  </label>
+                </RadioGroup>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
