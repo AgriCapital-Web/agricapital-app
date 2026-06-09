@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, CheckCircle, XCircle, Percent } from "lucide-react";
+import { Plus, Edit, Trash2, CheckCircle, XCircle, Percent, Calculator } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -41,6 +41,19 @@ const Promotions = () => {
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
+    }
+  });
+
+  // Offres de référence pour la simulation (par hectare)
+  const { data: offresRef } = useQuery({
+    queryKey: ['offres-simulation'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('offres')
+        .select('code, nom, montant_depot_initial_par_ha, montant_total_par_ha')
+        .eq('active', true)
+        .order('montant_total_par_ha', { ascending: true });
+      return data || [];
     }
   });
 
@@ -271,6 +284,51 @@ const Promotions = () => {
                 <Label htmlFor="desc">Description</Label>
                 <Textarea id="desc" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={3} />
               </div>
+
+              {/* Récapitulatif d'impact avant validation */}
+              {parseInt(formData.pourcentage_reduction || "0") > 0 && (offresRef?.length ?? 0) > 0 && (
+                <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
+                  <div className="flex items-center gap-2 font-semibold text-primary">
+                    <Calculator className="h-4 w-4" />
+                    Récapitulatif d'impact (par hectare)
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Cible: <strong>{formData.cible === "depot_initial" ? "Dépôt Initial" : "Total du contrat (34 mois)"}</strong> — Réduction: <strong>{formData.pourcentage_reduction}%</strong>
+                  </p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left">
+                          <th className="py-2 pr-2">Offre</th>
+                          <th className="py-2 pr-2 text-right">Montant avant</th>
+                          <th className="py-2 pr-2 text-right">Réduction</th>
+                          <th className="py-2 text-right">Montant après</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {offresRef!.map((o: any) => {
+                          const base = formData.cible === "depot_initial"
+                            ? Number(o.montant_depot_initial_par_ha || 0)
+                            : Number(o.montant_total_par_ha || 0);
+                          const reduction = base * (parseInt(formData.pourcentage_reduction || "0") / 100);
+                          const apres = base - reduction;
+                          return (
+                            <tr key={o.code} className="border-b last:border-0">
+                              <td className="py-2 pr-2">{o.nom}</td>
+                              <td className="py-2 pr-2 text-right font-mono">{base.toLocaleString('fr-FR')} F</td>
+                              <td className="py-2 pr-2 text-right font-mono text-destructive">-{reduction.toLocaleString('fr-FR')} F</td>
+                              <td className="py-2 text-right font-mono font-semibold text-primary">{apres.toLocaleString('fr-FR')} F</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground italic">
+                    Les montants sont par hectare. Pour un souscripteur, multiplier par le nombre d'hectares de la souscription.
+                  </p>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
