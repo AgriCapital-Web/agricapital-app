@@ -46,31 +46,30 @@ const Profil = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Always use user_id for update to match RLS policy
-      const filterValue = profile.user_id || user?.id;
-      if (!filterValue) throw new Error("Profil introuvable");
-      const filterField = 'user_id';
-      
+      if (!user?.id) throw new Error("Session invalide");
+      const payload: any = {
+        id: profile.id || user.id,
+        user_id: user.id,
+        email: profile.email || user.email,
+        nom_complet: profile.nom_complet || (user.email || '').split('@')[0],
+        telephone: profile.telephone || null,
+        telephone_secondaire: profile.telephone_secondaire || null,
+        adresse_mail_secondaire: profile.adresse_mail_secondaire || null,
+        ville: profile.ville || null,
+        quartier: profile.quartier || null,
+        type_piece_identite: profile.type_piece_identite || null,
+        numero_piece_identite: profile.numero_piece_identite || null,
+        contact_urgence_nom: profile.contact_urgence_nom || null,
+        contact_urgence_prenom: profile.contact_urgence_prenom || null,
+        contact_urgence_telephone1: profile.contact_urgence_telephone1 || null,
+        contact_urgence_telephone2: profile.contact_urgence_telephone2 || null,
+        actif: true,
+      };
       const { error } = await (supabase as any)
         .from('profiles')
-        .update({
-          nom_complet: profile.nom_complet,
-          telephone: profile.telephone,
-          telephone_secondaire: profile.telephone_secondaire,
-          email: profile.email,
-          adresse_mail_secondaire: profile.adresse_mail_secondaire,
-          ville: profile.ville,
-          quartier: profile.quartier,
-          type_piece_identite: profile.type_piece_identite,
-          numero_piece_identite: profile.numero_piece_identite,
-          contact_urgence_nom: profile.contact_urgence_nom,
-          contact_urgence_prenom: profile.contact_urgence_prenom,
-          contact_urgence_telephone1: profile.contact_urgence_telephone1,
-          contact_urgence_telephone2: profile.contact_urgence_telephone2,
-        })
-        .eq(filterField, filterValue);
-
+        .upsert(payload, { onConflict: 'id' });
       if (error) throw error;
+      await fetchProfile();
       toast({ title: "Profil mis à jour", description: "Vos informations ont été enregistrées." });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message });
@@ -83,17 +82,18 @@ const Profil = () => {
     if (!file) return;
     setUploading(true);
     try {
+      if (!user?.id) throw new Error("Session invalide");
       const ext = file.name.split('.').pop();
       const path = `${user?.id}/${field}-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('photos-profils').upload(path, file);
+      const { error: uploadError } = await supabase.storage.from('photos-profils').upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('photos-profils').getPublicUrl(path);
 
-      const filterValue = profile.user_id || user?.id;
-      if (!filterValue) throw new Error("Profil introuvable");
-
-      await (supabase as any).from('profiles').update({ [field]: publicUrl }).eq('user_id', filterValue);
+      await (supabase as any).from('profiles').upsert(
+        { id: profile.id || user.id, user_id: user.id, email: profile.email || user.email, nom_complet: profile.nom_complet || (user.email || '').split('@')[0], [field]: publicUrl, actif: true },
+        { onConflict: 'id' }
+      );
       setProfile({ ...profile, [field]: publicUrl });
       toast({ title: "Photo mise à jour" });
     } catch (error: any) {
