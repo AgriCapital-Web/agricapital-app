@@ -74,7 +74,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      // Stale/invalid refresh token → clean local storage so ProtectedRoute redirects to /login
+      if (error && /refresh.*token/i.test(error.message || '')) {
+        try { await supabase.auth.signOut(); } catch {}
+        setSession(null); setUser(null); setProfile(null); setUserRoles([]);
+        setLoading(false);
+        return;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       
