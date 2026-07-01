@@ -58,7 +58,6 @@ const UtilisateurForm = ({ utilisateur, onSuccess, onCancel }: UtilisateurFormPr
             email: data.email,
             telephone: data.telephone,
             equipe_id: data.equipe_id || null,
-            role: selectedRoles[0] || 'user',
           })
           .eq("id", utilisateur.id);
 
