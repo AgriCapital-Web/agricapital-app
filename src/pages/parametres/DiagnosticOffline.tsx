@@ -180,24 +180,19 @@ const DiagnosticOffline = () => {
         </Card>
       </div>
 
-      {/* Actions */}
+      {/* Actions — Sync se fait en arrière-plan automatiquement */}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={syncNow} disabled={isSyncing || !isOnline} size="sm">
-          <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
-          {isSyncing ? "Synchronisation..." : "Forcer la synchronisation"}
-        </Button>
         <Button onClick={loadStats} variant="outline" size="sm" disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Rafraîchir les stats
-        </Button>
-        <Button onClick={handleClearAll} variant="destructive" size="sm">
-          <Trash2 className="h-4 w-4 mr-2" />
-          Vider tout le cache
         </Button>
         <Button onClick={handleExportAll} variant="secondary" size="sm" disabled={exporting}>
           <Download className={`h-4 w-4 mr-2 ${exporting ? "animate-pulse" : ""}`} />
           {exporting ? "Export en cours..." : "Exporter tout en CSV"}
         </Button>
+        <p className="text-xs text-muted-foreground self-center ml-2">
+          {isSyncing ? "Synchronisation en cours..." : isOnline ? "Synchronisation automatique active" : "Hors ligne — les modifications seront synchronisées automatiquement au retour du réseau"}
+        </p>
       </div>
 
       {/* CSV Export */}
@@ -258,13 +253,8 @@ const DiagnosticOffline = () => {
                     <TableCell className="text-right">
                       <Badge variant={count > 0 ? "default" : "secondary"}>{count}</Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-sm text-muted-foreground" colSpan={2}>
                       {formatDate(lastSyncTimes[storeKey] || null)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleClearCache(storeKey)} title="Vider">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
                     </TableCell>
                   </TableRow>
                 );

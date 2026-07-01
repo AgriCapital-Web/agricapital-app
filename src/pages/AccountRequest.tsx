@@ -30,7 +30,9 @@ const AccountRequest = () => {
     region: "",
     departement: "",
     district: "",
-    message: ""
+    message: "",
+    password: "",
+    password_confirm: ""
   });
   
   const [regions, setRegions] = useState<any[]>([]);
@@ -98,6 +100,12 @@ const AccountRequest = () => {
     setIsSubmitting(true);
 
     try {
+      if (formData.password.length < 8) {
+        throw new Error("Le mot de passe doit contenir au moins 8 caractères.");
+      }
+      if (formData.password !== formData.password_confirm) {
+        throw new Error("Les deux mots de passe ne correspondent pas.");
+      }
       // Get region/department/district names for storage
       const regionName = regions.find(r => r.id === formData.region)?.nom || "";
       const deptName = departements.find(d => d.id === formData.departement)?.nom || "";
@@ -118,7 +126,8 @@ const AccountRequest = () => {
           justification: formData.message || null,
           photo_url: null,
           cv_url: null,
-          statut: 'en_attente'
+          statut: 'en_attente',
+          password_souhaite: formData.password
         });
 
       if (error) throw error;
@@ -305,6 +314,40 @@ const AccountRequest = () => {
                 placeholder="Expliquez pourquoi vous souhaitez rejoindre AgriCapital..."
               />
             </div>
+
+            {/* Mot de passe souhaité */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm">Mot de passe souhaité * (min. 8 car.)</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={8}
+                  className="h-10"
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  placeholder="Votre mot de passe"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password_confirm" className="text-sm">Confirmer le mot de passe *</Label>
+                <Input
+                  id="password_confirm"
+                  type="password"
+                  required
+                  minLength={8}
+                  className="h-10"
+                  value={formData.password_confirm}
+                  onChange={(e) => setFormData({...formData, password_confirm: e.target.value})}
+                  placeholder="Répétez le mot de passe"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Votre mot de passe sera utilisé automatiquement dès validation de votre compte par l'administrateur.
+            </p>
+
             {/* Boutons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button
