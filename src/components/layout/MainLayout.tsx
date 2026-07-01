@@ -64,6 +64,12 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        {visibleMenuItems.length === 0 && (
+          <div className="rounded-md bg-primary-foreground/10 px-3 py-4 text-xs text-primary-foreground/90">
+            Aucun rôle attribué à votre compte. Contactez un administrateur ou reconnectez-vous.
+            <Button variant="secondary" size="sm" className="mt-3 w-full" onClick={handleLogout}>Se reconnecter</Button>
+          </div>
+        )}
         {visibleMenuItems.map((item) => {
           const active = location.pathname === item.path;
           return (
