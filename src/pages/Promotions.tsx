@@ -30,6 +30,7 @@ const Promotions = () => {
     applique_toutes_offres: true,
     type_promotion: "depot_initial" as string,
     cible: "depot_initial" as string,
+    montant_fixe_reduction: "",
   });
 
   const { data: promotions, isLoading } = useQuery({
@@ -59,15 +60,19 @@ const Promotions = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      const isSpecial = data.cible === "special";
       const promoData = {
         nom: data.nom,
-        pourcentage_reduction: parseInt(data.pourcentage_reduction),
+        pourcentage_reduction: isSpecial ? 0 : parseInt(data.pourcentage_reduction || "0"),
+        montant_fixe_reduction: isSpecial ? parseFloat(data.montant_fixe_reduction || "0") : null,
         date_debut: new Date(data.date_debut).toISOString(),
         date_fin: new Date(data.date_fin).toISOString(),
         description: data.description,
         active: true,
         applique_toutes_offres: data.applique_toutes_offres,
-        type_promotion: data.cible === "total_contrat" ? "cout_global" : "depot_initial",
+        type_promotion:
+          data.cible === "total_contrat" ? "cout_global" :
+          data.cible === "special" ? "special" : "depot_initial",
         cible: data.cible,
       };
 
@@ -127,6 +132,7 @@ const Promotions = () => {
       applique_toutes_offres: true,
       type_promotion: "depot_initial",
       cible: "depot_initial",
+      montant_fixe_reduction: "",
     });
     setEditingPromo(null);
   };
@@ -142,6 +148,7 @@ const Promotions = () => {
       applique_toutes_offres: promo.applique_toutes_offres ?? true,
       type_promotion: promo.type_promotion || "depot_initial",
       cible: promo.cible || (promo.type_promotion === "cout_global" ? "total_contrat" : "depot_initial"),
+      montant_fixe_reduction: promo.montant_fixe_reduction?.toString() || "",
     });
     setIsDialogOpen(true);
   };
@@ -159,9 +166,9 @@ const Promotions = () => {
 
   const getTypeBadge = (promo: any) => {
     const cible = promo.cible || (promo.type_promotion === "cout_global" ? "total_contrat" : "depot_initial");
-    return cible === "total_contrat"
-      ? <Badge className="bg-amber-500">Total du Contrat</Badge>
-      : <Badge className="bg-blue-500">Dépôt Initial</Badge>;
+    if (cible === "total_contrat") return <Badge className="bg-amber-500">Total du Contrat</Badge>;
+    if (cible === "special")      return <Badge className="bg-purple-500">Spéciale</Badge>;
+    return <Badge className="bg-blue-500">Dépôt Initial</Badge>;
   };
 
   const calculateReducedAmount = (percentage: number) => {
@@ -208,7 +215,7 @@ const Promotions = () => {
                 <RadioGroup
                   value={formData.cible}
                   onValueChange={(v) => setFormData({...formData, cible: v, type_promotion: v === "total_contrat" ? "cout_global" : "depot_initial"})}
-                  className="grid gap-3 sm:grid-cols-2"
+                  className="grid gap-3 sm:grid-cols-3"
                 >
                   <label
                     htmlFor="cible-di"
@@ -234,9 +241,22 @@ const Promotions = () => {
                       </p>
                     </div>
                   </label>
+                  <label
+                    htmlFor="cible-special"
+                    className={`flex cursor-pointer items-start gap-3 rounded-md border-2 p-3 transition ${formData.cible === "special" ? "border-primary bg-background shadow-sm" : "border-muted bg-background/50 hover:border-primary/50"}`}
+                  >
+                    <RadioGroupItem value="special" id="cible-special" className="mt-1" />
+                    <div className="space-y-1">
+                      <div className="font-semibold">Spéciale (montant fixe)</div>
+                      <p className="text-xs text-muted-foreground">
+                        Remise en FCFA, quelconque (ex : bon d'achat, remise commerciale).
+                      </p>
+                    </div>
+                  </label>
                 </RadioGroup>
               </div>
 
+              {formData.cible !== "special" ? (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="pourcentage">Pourcentage de réduction (%) *</Label>
@@ -268,6 +288,23 @@ const Promotions = () => {
                   </p>
                 </div>
               </div>
+              ) : (
+              <div className="space-y-2">
+                <Label htmlFor="montant_fixe">Montant de la remise (FCFA) *</Label>
+                <Input
+                  id="montant_fixe"
+                  type="number"
+                  min="1"
+                  value={formData.montant_fixe_reduction}
+                  onChange={(e) => setFormData({...formData, montant_fixe_reduction: e.target.value})}
+                  placeholder="Ex: 500000"
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  Cette remise fixe sera à appliquer manuellement lors de la souscription (bon commercial, geste, etc.).
+                </p>
+              </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
