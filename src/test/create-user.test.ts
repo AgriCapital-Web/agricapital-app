@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import createUserSource from "../../supabase/functions/create-user/index.ts?raw";
 
 /**
  * Sanity-check: la fonction edge create-user ne doit JAMAIS insérer une colonne `role`
@@ -35,11 +35,9 @@ describe("create-user edge function contract", () => {
   });
 
   it("ne bloque pas un email déjà existant: le flux est idempotent", () => {
-    const source = readFileSync("supabase/functions/create-user/index.ts", "utf8");
-
-    expect(source).not.toContain('error: "Un utilisateur avec cet email existe déjà"');
-    expect(source).toContain("updateUserById");
-    expect(source).toContain("user_already_existed");
-    expect(source).toContain("user_roles");
+    expect(createUserSource).not.toContain('error: "Un utilisateur avec cet email existe déjà"');
+    expect(createUserSource).toContain("updateUserById");
+    expect(createUserSource).toContain("user_already_existed");
+    expect(createUserSource).toContain("user_roles");
   });
 });
