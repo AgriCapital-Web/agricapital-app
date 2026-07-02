@@ -150,6 +150,12 @@ const UtilisateurFormNew = ({ utilisateur, onSuccess, onCancel }: UtilisateurFor
             nom_complet: data.nom_complet,
             email: data.email,
             telephone: data.telephone || null,
+            whatsapp: data.whatsapp || null,
+            departement: data.departement || null,
+            relation_rh: data.relation_rh || null,
+            taux_commission: data.taux_commission ? Number(data.taux_commission) : null,
+            district_id: data.district_id || null,
+            region_id: data.region_id || null,
             equipe_id: data.equipe_id || null,
             photo_url: photoUrl || null,
           })
@@ -158,11 +164,12 @@ const UtilisateurFormNew = ({ utilisateur, onSuccess, onCancel }: UtilisateurFor
         if (profileError) throw profileError;
 
         // Update roles
-        await (supabase as any).from("user_roles").delete().eq("user_id", utilisateur.id);
+        const uid = utilisateur.user_id || utilisateur.id;
+        await (supabase as any).from("user_roles").delete().eq("user_id", uid);
         
         for (const role of selectedRoles) {
           await (supabase as any).from("user_roles").insert({
-            user_id: utilisateur.id,
+            user_id: uid,
             role: role,
           });
         }
