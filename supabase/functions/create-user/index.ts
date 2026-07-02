@@ -73,7 +73,14 @@ serve(async (req) => {
       equipe_id,
       photo_url,
       roles,
-      username
+      username,
+      whatsapp,
+      departement,
+      relation_rh,
+      taux_commission,
+      district_id,
+      region_id,
+      poste
     } = await req.json();
     const email = String(rawEmail || "").trim().toLowerCase();
     const requestedRoles = Array.isArray(roles) ? roles : [];
@@ -209,6 +216,13 @@ serve(async (req) => {
         email,
         nom_complet,
         telephone: telephone || null,
+        whatsapp: whatsapp || null,
+        departement: departement || null,
+        relation_rh: relation_rh || 'Employé',
+        taux_commission: taux_commission ? Number(taux_commission) : null,
+        district_id: district_id || null,
+        region_id: region_id || null,
+        poste: poste || null,
         equipe_id: equipe_id || null,
         photo_url: photo_url || null,
         username: username || email.split('@')[0],

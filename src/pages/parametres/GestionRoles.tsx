@@ -110,7 +110,7 @@ const GestionRoles = () => {
     try {
       const { data: profilesData } = await supabase
         .from("profiles")
-        .select("id, nom_complet, email, role, actif")
+        .select("id, user_id, nom_complet, email, actif")
         .eq("actif", true)
         .order("nom_complet");
 
@@ -118,7 +118,8 @@ const GestionRoles = () => {
         .from("user_roles")
         .select("*");
 
-      setProfiles(profilesData || []);
+      // Normalise: user_id = clé pour user_roles (fallback sur id)
+      setProfiles((profilesData || []).map((p: any) => ({ ...p, user_id: p.user_id || p.id })));
       setUserRoles(rolesData || []);
     } catch (error: any) {
       toast({
@@ -136,7 +137,9 @@ const GestionRoles = () => {
   }, []);
 
   const getUserRoles = (profileId: string) => {
-    return userRoles.filter(ur => ur.user_id === profileId);
+    const profile = profiles.find(p => p.id === profileId);
+    const uid = profile?.user_id || profileId;
+    return userRoles.filter(ur => ur.user_id === uid);
   };
 
   const handleAssignRole = async () => {
@@ -153,7 +156,8 @@ const GestionRoles = () => {
     try {
       // Vérifier si le rôle existe déjà
       const existing = userRoles.find(
-        ur => ur.user_id === selectedProfile && ur.role === selectedRole
+        ur => ur.user_id === (profiles.find(p => p.id === selectedProfile)?.user_id || selectedProfile)
+              && ur.role === selectedRole
       );
 
       if (existing) {
@@ -168,7 +172,7 @@ const GestionRoles = () => {
       const { error } = await (supabase as any)
         .from("user_roles")
         .insert({
-          user_id: selectedProfile,
+          user_id: profiles.find(p => p.id === selectedProfile)?.user_id || selectedProfile,
           role: selectedRole
         });
 
