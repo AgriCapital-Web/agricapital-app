@@ -119,16 +119,18 @@ serve(async (req) => {
 
     // Check if a profile already exists by email. If it exists, the operation is idempotent:
     // update the Auth password/profile/roles instead of returning a blocking duplicate error.
-    const { data: existingProfile, error: existingProfileError } = await supabase
+    const { data: existingProfiles, error: existingProfileError } = await supabase
       .from("profiles")
       .select("id,user_id,email")
       .ilike("email", email)
-      .maybeSingle();
+      .limit(1);
 
     if (existingProfileError) {
       console.error("Existing profile lookup error:", existingProfileError);
       throw new Error("Impossible de vérifier l'existence du profil utilisateur");
     }
+
+    const existingProfile = existingProfiles?.[0] || null;
 
     let authUser = null;
     let userAlreadyExisted = false;
