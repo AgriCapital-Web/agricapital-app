@@ -98,10 +98,10 @@ serve(async (req) => {
 
     console.log("User authentication record created:", authData.user.id);
 
-    // Create profile
+    // Upsert profile (handle_new_user trigger may have already created a base row)
     const { error: profileError } = await supabase
       .from("profiles")
-      .insert({
+      .upsert({
         id: authData.user.id,
         user_id: authData.user.id,
         email,
@@ -111,7 +111,7 @@ serve(async (req) => {
         photo_url: photo_url || null,
         username: username || email.split('@')[0],
         actif: true,
-      });
+      }, { onConflict: 'id' });
 
     if (profileError) {
       console.error("Profile error:", profileError);
