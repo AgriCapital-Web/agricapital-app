@@ -135,6 +135,20 @@ const Offres = () => {
     }
   });
 
+  const deleteOffreMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('offres').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: 'Offre supprimée' });
+      queryClient.invalidateQueries({ queryKey: ['offres'] });
+    },
+    onError: (err: any) => {
+      toast({ variant: 'destructive', title: 'Suppression impossible', description: err?.message });
+    },
+  });
+
   // Save promotion
   const savePromoMutation = useMutation({
     mutationFn: async (data: typeof promoFormData) => {
