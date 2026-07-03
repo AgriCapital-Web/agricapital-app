@@ -428,6 +428,19 @@ const Offres = () => {
                             Modifier
                           </Button>
                         </DialogTrigger>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="ml-2"
+                          onClick={() => {
+                            if (confirm(`Supprimer définitivement l'offre "${offre.nom}" ? Cette action est irréversible.`)) {
+                              deleteOffreMutation.mutate(offre.id);
+                            }
+                          }}
+                          disabled={deleteOffreMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>Modifier l'offre {editOffre?.nom}</DialogTitle>
