@@ -25,6 +25,10 @@ export const ROLES = {
   SERVICE_CLIENT: 'service_client',
   OPERATIONS: 'operations',
   USER: 'user',
+  RESPONSABLE_COMMERCIAL: 'responsable_commercial',
+  RESPONSABLE_TECHNIQUE_AGRO: 'responsable_technique_agronomique',
+  CHEF_EQUIPE_COMMERCIAL: 'chef_equipe_commercial',
+  CHEF_EQUIPE_TECHNIQUE: 'chef_equipe_technique',
 } as const;
 
 export type AppRole = typeof ROLES[keyof typeof ROLES];
