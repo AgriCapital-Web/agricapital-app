@@ -15,7 +15,7 @@ import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
 import {
   LayoutDashboard, Users, Sprout, CreditCard, LogOut, Menu, Receipt,
   BarChart3, Ticket, Wallet, FileText, Settings, UserCircle, Wifi, WifiOff, RefreshCw, Signal,
-  LandPlot, Layers, Search
+  LandPlot, Layers, Search, Target
 } from "lucide-react";
 
 interface MainLayoutProps { children: ReactNode; }
@@ -30,6 +30,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Tableau de bord", path: "/dashboard", permission: PERMISSIONS.VIEW_DASHBOARD },
+    { icon: Target, label: "Prospects", path: "/leads", permission: PERMISSIONS.VIEW_LEADS },
     { icon: Users, label: "Souscripteurs", path: "/souscriptions", permission: PERMISSIONS.VIEW_SOUSCRIPTIONS },
     { icon: LandPlot, label: "Propriétaires", path: "/proprietaires-terres", permission: PERMISSIONS.VIEW_SOUSCRIPTIONS },
     { icon: Layers, label: "Parcelles", path: "/parcelles", permission: PERMISSIONS.VIEW_PLANTATIONS },
@@ -41,7 +42,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     { icon: BarChart3, label: "Rapports techniques", path: "/rapports-techniques", permission: PERMISSIONS.VIEW_RAPPORTS_TECHNIQUES },
     { icon: FileText, label: "Rapports financiers", path: "/rapports-financiers", permission: PERMISSIONS.VIEW_RAPPORTS_FINANCIERS },
     { icon: Ticket, label: "Tickets", path: "/tickets", permission: PERMISSIONS.VIEW_TICKETS },
-    { icon: Settings, label: "Paramètres", path: "/parametres", permission: PERMISSIONS.VIEW_PARAMETRES },
   ];
 
   const visibleMenuItems = menuItems.filter(item => hasPermission(userRoles, item.permission));
@@ -99,6 +99,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           <Button variant="ghost" className={cn("h-10 w-full justify-start gap-3 rounded-md text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground", location.pathname === "/profil" && "bg-primary-foreground/15 text-primary-foreground")} onClick={() => { navigate("/profil"); setOpen(false); }}>
             <UserCircle className="h-4 w-4" /><span className="text-sm font-medium">Profil</span>
           </Button>
+          {hasPermission(userRoles, PERMISSIONS.VIEW_PARAMETRES) && (
+            <Button variant="ghost" className={cn("h-10 w-full justify-start gap-3 rounded-md text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground", location.pathname === "/parametres" && "bg-primary-foreground/15 text-primary-foreground")} onClick={() => { navigate("/parametres"); setOpen(false); }}>
+              <Settings className="h-4 w-4" /><span className="text-sm font-medium">Paramètres</span>
+            </Button>
+          )}
           <Button variant="ghost" className="h-10 w-full justify-start gap-3 rounded-md text-primary-foreground/80 hover:bg-destructive hover:text-destructive-foreground" onClick={handleLogout}>
             <LogOut className="h-4 w-4" /><span className="text-sm font-medium">Déconnexion</span>
           </Button>

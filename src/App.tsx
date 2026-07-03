@@ -27,6 +27,8 @@ import Tickets from "./pages/Tickets";
 import ProprietairesTerres from "./pages/ProprietairesTerres";
 import Parcelles from "./pages/Parcelles";
 import Documents from "./pages/Documents";
+import Leads from "./pages/Leads";
+import PublicLead from "./pages/PublicLead";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,8 +43,13 @@ const DomainRouter = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/account-request" element={<AccountRequest />} />
 
+      {/* Formulaire public prospects */}
+      <Route path="/leads/public" element={<PublicLead />} />
+      <Route path="/prospect" element={<PublicLead />} />
+
       {/* Protected routes */}
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/leads" element={<Leads />} />
       <Route path="/souscriptions" element={<Souscriptions />} />
       <Route path="/planteur/:id" element={<PlanteurDetail />} />
       <Route path="/planteur/:id/historique" element={<HistoriqueComplet />} />
