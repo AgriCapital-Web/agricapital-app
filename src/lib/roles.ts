@@ -46,6 +46,14 @@ export const ROLE_LABELS: Record<string, string> = {
   user: 'Utilisateur',
 };
 
+// Extend labels for new roles
+Object.assign(ROLE_LABELS, {
+  responsable_commercial: 'Responsable Commercial',
+  responsable_technique_agronomique: 'Responsable Technique et Agronomique',
+  chef_equipe_commercial: "Chef d'Équipe Commercial",
+  chef_equipe_technique: "Chef d'Équipe Technique",
+});
+
 export const ROLE_SHORT_LABELS: Record<string, string> = {
   super_admin: 'Admin',
   directeur_tc: 'DTC',
@@ -59,6 +67,15 @@ export const ROLE_SHORT_LABELS: Record<string, string> = {
   user: 'User',
 };
 
+Object.assign(ROLE_SHORT_LABELS, {
+  responsable_commercial: 'RCom',
+  responsable_technique_agronomique: 'RTA',
+  chef_equipe_commercial: 'CEC',
+  chef_equipe_technique: 'CET',
+  commercial: 'Comm',
+  technicien: 'Tech',
+});
+
 export const ROLE_COLORS: Record<string, string> = {
   super_admin: 'bg-red-100 text-red-800',
   directeur_tc: 'bg-purple-100 text-purple-800',
@@ -71,6 +88,13 @@ export const ROLE_COLORS: Record<string, string> = {
   operations: 'bg-orange-100 text-orange-800',
   user: 'bg-gray-100 text-gray-800',
 };
+
+Object.assign(ROLE_COLORS, {
+  responsable_commercial: 'bg-purple-100 text-purple-800',
+  responsable_technique_agronomique: 'bg-blue-100 text-blue-800',
+  chef_equipe_commercial: 'bg-indigo-100 text-indigo-800',
+  chef_equipe_technique: 'bg-teal-100 text-teal-800',
+});
 
 // Permission matrix
 export const PERMISSIONS = {
