@@ -45,9 +45,9 @@ const AccountRequests = () => {
 
     try {
       if (actionType === 'approve') {
-        // Use the password the requester provided, else generate a temporary one
-        const chosenPassword = selectedRequest.password_souhaite
-          || (crypto.randomUUID().replace(/-/g, '').slice(0, 16) + 'A1!');
+        // Always generate a temporary password (no plaintext password is stored on the request)
+        const chosenPassword =
+          crypto.randomUUID().replace(/-/g, '').slice(0, 16) + 'A1!';
         const { data, error } = await supabase.functions.invoke('create-user', {
           body: {
             username: selectedRequest.email.split('@')[0],
@@ -61,14 +61,13 @@ const AccountRequests = () => {
 
         if (error) throw error;
 
-        // Update request status AND scrub the stored password
+        // Update request status
         await (supabase as any)
           .from('account_requests')
           .update({
             statut: 'approuve',
             traite_par: user.id,
             traite_le: new Date().toISOString(),
-            password_souhaite: null
           })
           .eq('id', selectedRequest.id);
 
@@ -79,17 +78,15 @@ const AccountRequests = () => {
               email: selectedRequest.email,
               nom_complet: selectedRequest.nom_complet,
               login_url: `${window.location.origin}/login`,
-              used_own_password: !!selectedRequest.password_souhaite,
-              temp_password: selectedRequest.password_souhaite ? null : chosenPassword
+              used_own_password: false,
+              temp_password: chosenPassword
             }
           });
         } catch (e) { console.log('notif email fail (non-blocking)', e); }
 
         toast({
           title: "Demande approuvée",
-          description: selectedRequest.password_souhaite
-            ? `Compte créé. L'utilisateur peut se connecter avec le mot de passe qu'il a choisi.`
-            : `Compte créé. Mot de passe temporaire (à transmettre en privé) : ${chosenPassword}`,
+          description: `Compte créé. Mot de passe temporaire (à transmettre en privé) : ${chosenPassword}`,
           duration: 20000,
         });
       } else if (actionType === 'reject') {
