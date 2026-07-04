@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, Loader2 } from "lucide-react";
-import logoWhite from "@/assets/logo-white.png";
+import logoV2 from "@/assets/logo-agricapital-v2.png";
 
 const REGIONS_CI = [
   "Abidjan","Agnéby-Tiassa","Bafing","Bagoué","Bélier","Béré","Bounkani","Cavally","Folon",
@@ -91,9 +91,7 @@ export default function PublicLead() {
     <div className="min-h-screen bg-muted/30 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-6">
-          <div className="inline-block bg-primary rounded-lg p-4 mb-3">
-            <img src={logoWhite} alt="AgriCapital" className="h-14 w-auto" />
-          </div>
+          <img src={logoV2} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="h-24 md:h-28 w-auto mx-auto mb-4" />
           <h1 className="text-3xl font-bold">Devenir Souscripteur AgriCapital</h1>
           <p className="text-muted-foreground mt-2">Remplissez ce formulaire, un conseiller vous rappellera.</p>
         </div>
