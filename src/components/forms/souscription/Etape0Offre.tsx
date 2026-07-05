@@ -206,7 +206,7 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
                             DI: {formatMontant(offre.montant_depot_initial_par_ha)}F/ha · Cash: {formatMontant(offre.montant_cash_par_ha)}F/ha
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {offre.gestion_type === 'deleguee' ? 'Gestion déléguée · 75% revenus' : 'Gestion propre · 100% revenus'}
+                            {offre.gestion_type === 'deleguee' ? 'Gestion déléguée · 70% revenus' : 'Gestion propre · 100% revenus'}
                           </div>
                         </div>
                       )}
