@@ -16,6 +16,9 @@ const TABLES = [
   'documents_souscription',
   'parcelles',
   'proprietaires_terres',
+  'offres',
+  'promotions',
+  'leads',
 ];
 
 export const useGlobalRealtime = () => {
