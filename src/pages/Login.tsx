@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import logoGreen from "@/assets/logo-green.png";
+import logoV2 from "@/assets/logo-agricapital-v2.png";
 import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -59,11 +59,11 @@ const Login = () => {
         </div>
         
         <div className="relative z-10 text-center max-w-md">
-          <div className="bg-white rounded-2xl p-8 mb-8 shadow-2xl inline-block">
-            <img src={logoGreen} alt="AgriCapital" className="h-28 w-auto mx-auto" />
-          </div>
-          
-          <h1 className="text-3xl font-bold text-white mb-3">AgriCapital</h1>
+          <img
+            src={logoV2}
+            alt="AgriCapital"
+            className="w-full max-w-md h-auto mx-auto mb-8 drop-shadow-2xl"
+          />
           <p className="text-white/80 text-lg mb-8">
             Plateforme de Gestion des Planteurs & Plantations
           </p>
@@ -93,13 +93,16 @@ const Login = () => {
 
       {/* Panneau droit - Formulaire de connexion */}
       <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 bg-background min-h-screen lg:min-h-0">
-        {/* Logo mobile */}
-        <div className="lg:hidden mb-8 text-center">
-          <div className="bg-card rounded-2xl p-5 inline-block shadow-lg mb-4 border border-border">
-            <img src={logoGreen} alt="AgriCapital" className="h-20 w-auto" />
-          </div>
-          <h1 className="text-xl font-bold text-primary">AgriCapital CRM</h1>
-          <p className="text-muted-foreground text-sm mt-1">Gestion des Planteurs & Plantations</p>
+        {/* Logo mobile — sans cadre */}
+        <div className="lg:hidden mb-8 w-full flex flex-col items-center">
+          <img
+            src={logoV2}
+            alt="AgriCapital"
+            className="w-full max-w-[280px] sm:max-w-xs h-auto"
+          />
+          <p className="text-muted-foreground text-sm mt-3 text-center">
+            Gestion des Planteurs & Plantations
+          </p>
         </div>
 
         <div className="w-full max-w-sm">
