@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { offlineInsert, offlineUpdate } from "@/lib/offlineWrite";
+import { getCachedItems, STORES } from "@/lib/offlineDb";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -47,6 +49,10 @@ export default function Leads() {
   const { data: leads = [] } = useQuery({
     queryKey: ["leads"],
     queryFn: async () => {
+      if (!navigator.onLine) {
+        const cached = await getCachedItems(STORES.LEADS);
+        return cached.sort((a: any, b: any) => (b.created_at || '').localeCompare(a.created_at || ''));
+      }
       const { data, error } = await (supabase as any).from("leads").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
@@ -57,6 +63,10 @@ export default function Leads() {
     queryKey: ["lead_relances", selected?.id],
     enabled: !!selected?.id,
     queryFn: async () => {
+      if (!navigator.onLine) {
+        const cached = await getCachedItems(STORES.LEAD_RELANCES);
+        return cached.filter((r: any) => r.lead_id === selected.id);
+      }
       const { data } = await (supabase as any).from("lead_relances").select("*").eq("lead_id", selected.id).order("date_relance", { ascending: false });
       return data || [];
     },
@@ -64,7 +74,7 @@ export default function Leads() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, statut }: any) => {
-      const { error } = await (supabase as any).from("leads").update({ statut }).eq("id", id);
+      const { error } = await offlineUpdate("leads", id, { statut });
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["leads"] }); toast({ title: "Statut mis à jour" }); },
@@ -73,7 +83,7 @@ export default function Leads() {
   const addRelance = useMutation({
     mutationFn: async () => {
       const user = (await supabase.auth.getUser()).data.user;
-      const { error } = await (supabase as any).from("lead_relances").insert({
+      const { error } = await offlineInsert("lead_relances", {
         lead_id: selected.id,
         commercial_id: user?.id || null,
         ...relance,
@@ -81,7 +91,7 @@ export default function Leads() {
       });
       if (error) throw error;
       if (relance.prochaine_relance) {
-        await (supabase as any).from("leads").update({ prochaine_relance_at: relance.prochaine_relance }).eq("id", selected.id);
+        await offlineUpdate("leads", selected.id, { prochaine_relance_at: relance.prochaine_relance });
       }
     },
     onSuccess: () => {
