@@ -62,11 +62,15 @@ export default function PublicLead() {
       commentaire: f.commentaire || null,
       source: "formulaire_public",
     };
-    const { error } = await (supabase as any).from("leads").insert(payload);
+    const { offlineInsert } = await import("@/lib/offlineWrite");
+    const { error, offline } = await offlineInsert("leads", payload);
     setLoading(false);
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: error.message });
       return;
+    }
+    if (offline) {
+      toast({ title: "Enregistré hors ligne", description: "Votre demande sera synchronisée dès le retour d'internet." });
     }
     setDone(true);
   };

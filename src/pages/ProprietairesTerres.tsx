@@ -18,6 +18,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Plus, Users, MapPin, Layers, Upload, FileText } from "lucide-react";
 import { useUserZones } from "@/hooks/useUserZones";
 import { uploadFile as uploadToStorage } from "@/utils/storage";
+import { offlineInsert } from "@/lib/offlineWrite";
+import { getCachedItems, STORES, addToSyncQueue } from "@/lib/offlineDb";
 
 const ANNEXES_CONVENTION = [
   { field: "annexe_1_pv_delimitation_croquis", label: "Annexe 1 — Procès-verbal de délimitation / croquis parcellaire" },
@@ -76,6 +78,12 @@ const ProprietairesTerres = () => {
 
   const fetchData = async () => {
     try {
+      if (!navigator.onLine) {
+        const cached = await getCachedItems(STORES.PROPRIETAIRES_TERRES);
+        setProprietaires(cached);
+        setLoading(false);
+        return;
+      }
       const { data, error } = await (supabase as any)
         .from("proprietaires_terres")
         .select("*, districts(nom), regions(nom), departements(nom), sous_prefectures(nom)")
@@ -121,14 +129,18 @@ const ProprietairesTerres = () => {
       if (missingAnnex) throw new Error(`${missingAnnex.label}: fichier obligatoire si “Joint” est coché`);
 
       let photo_profil_url = null, fichier_piece_recto_url = null, fichier_piece_verso_url = null;
-      if (files.photo_profil) photo_profil_url = await uploadFile('photos-profils', files.photo_profil, user.id);
-      if (files.cni_recto) fichier_piece_recto_url = await uploadFile('pieces-identite', files.cni_recto, `proprietaires/${user.id}/pieces`);
-      if (files.cni_verso) fichier_piece_verso_url = await uploadFile('pieces-identite', files.cni_verso, `proprietaires/${user.id}/pieces`);
-
       const annexUploads: Record<string, string | null> = {};
-      for (const annexe of ANNEXES_CONVENTION) {
-        const file = files[annexe.field];
-        annexUploads[annexe.field] = file ? await uploadFile('documents-fonciers', file, `conventions/${user.id}/annexes`) : null;
+      const isOnline = navigator.onLine;
+      if (isOnline) {
+        if (files.photo_profil) photo_profil_url = await uploadFile('photos-profils', files.photo_profil, user.id);
+        if (files.cni_recto) fichier_piece_recto_url = await uploadFile('pieces-identite', files.cni_recto, `proprietaires/${user.id}/pieces`);
+        if (files.cni_verso) fichier_piece_verso_url = await uploadFile('pieces-identite', files.cni_verso, `proprietaires/${user.id}/pieces`);
+        for (const annexe of ANNEXES_CONVENTION) {
+          const file = files[annexe.field];
+          annexUploads[annexe.field] = file ? await uploadFile('documents-fonciers', file, `conventions/${user.id}/annexes`) : null;
+        }
+      } else {
+        for (const annexe of ANNEXES_CONVENTION) annexUploads[annexe.field] = null;
       }
 
       const nomComplet = formData.type_proprietaire === 'personne_morale' 
@@ -142,7 +154,7 @@ const ProprietairesTerres = () => {
       const partAgriHa = surfaceTotale ? surfaceTotale / 2 : null;
       const cautionTotale = partAgriHa ? partAgriHa * 50000 : null;
 
-      const { data: proprietaire, error } = await (supabase as any).from("proprietaires_terres").insert({
+      const propPayload: any = {
         nom_complet: nomComplet,
         nom: formData.nom || nomComplet,
         type_proprietaire: formData.type_proprietaire,
@@ -203,12 +215,13 @@ const ProprietairesTerres = () => {
         created_by: user.id,
         updated_by: user.id,
         statut: "actif",
-      }).select().single();
+      };
+      const { data: proprietaire, error } = await offlineInsert("proprietaires_terres", propPayload);
       if (error) throw error;
 
       let parcelleId: string | null = null;
       if (surfaceTotale) {
-        const { data: parcelle, error: parcelleError } = await (supabase as any).from("parcelles").insert({
+        const { data: parcelle, error: parcelleError } = await offlineInsert("parcelles", {
           proprietaire_id: proprietaire.id,
           nom: `${nomComplet} — ${formData.village || "Parcelle PP"}`,
           surface_totale_ha: surfaceTotale,
@@ -224,12 +237,12 @@ const ProprietairesTerres = () => {
           notes: formData.notes || null,
           created_by: user.id,
           updated_by: user.id,
-        }).select().single();
+        });
         if (parcelleError) throw parcelleError;
-        parcelleId = parcelle.id;
+        parcelleId = parcelle?.id || null;
       }
 
-      const { data: convention, error: conventionError } = await (supabase as any).from("conventions_foncieres").insert({
+      const conventionPayload = {
         proprietaire_id: proprietaire.id,
         parcelle_id: parcelleId,
         sous_prefecture_id: formData.sous_prefecture_id || null,
@@ -247,8 +260,15 @@ const ProprietairesTerres = () => {
         statut: "active",
         notes: formData.notes || null,
         created_by: user.id,
-      }).select().single();
-      if (conventionError) throw conventionError;
+      };
+      let conventionRef: any = null;
+      if (isOnline) {
+        const { data: convention, error: conventionError } = await (supabase as any).from("conventions_foncieres").insert(conventionPayload).select().single();
+        if (conventionError) throw conventionError;
+        conventionRef = convention;
+      } else {
+        await addToSyncQueue({ table: 'conventions_foncieres', operation: 'insert', record_id: proprietaire.id + '-conv', data: conventionPayload, timestamp: Date.now() });
+      }
 
       const documents = ANNEXES_CONVENTION.map((a) => ({
         proprietaire_id: proprietaire.id,
@@ -258,11 +278,22 @@ const ProprietairesTerres = () => {
         statut: annexStatuses[a.field],
         fichier_url: annexUploads[a.field],
         uploaded_by: annexUploads[a.field] ? user.id : null,
-        notes: convention?.id ? `Convention ${convention.reference || convention.id}` : null,
+        notes: conventionRef?.id ? `Convention ${conventionRef.reference || conventionRef.id}` : null,
       }));
-      const { error: docsError } = await (supabase as any).from("documents_convention").insert(documents);
-      if (docsError) throw docsError;
-      toast({ title: "Succès", description: `Propriétaire ${proprietaire.id_unique || proprietaire.id} enregistré` });
+      if (isOnline) {
+        const { error: docsError } = await (supabase as any).from("documents_convention").insert(documents);
+        if (docsError) throw docsError;
+      } else {
+        for (const d of documents) {
+          await addToSyncQueue({ table: 'documents_convention', operation: 'insert', record_id: proprietaire.id + '-' + d.type_document, data: d, timestamp: Date.now() });
+        }
+      }
+      toast({
+        title: isOnline ? "Succès" : "Enregistré hors ligne",
+        description: isOnline
+          ? `Propriétaire ${proprietaire.id_unique || proprietaire.id} enregistré`
+          : "Propriétaire, parcelle et convention en attente de synchronisation. Les documents nécessitent une connexion.",
+      });
       setIsFormOpen(false);
       resetForm();
       fetchData();

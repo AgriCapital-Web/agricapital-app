@@ -70,26 +70,27 @@ export function useOfflineSync() {
   const pullData = useCallback(async () => {
     if (!navigator.onLine || !user) return;
     try {
-      // Souscripteurs
-      const lastSyncSous = await getLastSyncTime(STORES.SOUSCRIPTEURS);
-      let sousQuery = (supabase as any).from('souscripteurs').select('*');
-      if (lastSyncSous) sousQuery = sousQuery.gte('updated_at', lastSyncSous);
-      const { data: souscripteurs } = await sousQuery.order('updated_at', { ascending: false }).limit(1000);
-      if (souscripteurs?.length) await cacheSouscripteurs(souscripteurs);
-
-      // Plantations
-      const lastSyncPlant = await getLastSyncTime(STORES.PLANTATIONS);
-      let plantQuery = (supabase as any).from('plantations').select('*');
-      if (lastSyncPlant) plantQuery = plantQuery.gte('updated_at', lastSyncPlant);
-      const { data: plantations } = await plantQuery.order('updated_at', { ascending: false }).limit(1000);
-      if (plantations?.length) await cachePlantations(plantations);
-
-      // Paiements
-      const lastSyncPaie = await getLastSyncTime(STORES.PAIEMENTS);
-      let paieQuery = (supabase as any).from('paiements').select('*');
-      if (lastSyncPaie) paieQuery = paieQuery.gte('updated_at', lastSyncPaie);
-      const { data: paiements } = await paieQuery.order('updated_at', { ascending: false }).limit(1000);
-      if (paiements?.length) await cacheReferenceData(STORES.PAIEMENTS, paiements);
+      // Field-team essentials (incremental by updated_at)
+      const MAIN_TABLES: Array<{ store: string; table: string }> = [
+        { store: STORES.SOUSCRIPTEURS, table: 'souscripteurs' },
+        { store: STORES.PLANTATIONS, table: 'plantations' },
+        { store: STORES.PAIEMENTS, table: 'paiements' },
+        { store: STORES.LEADS, table: 'leads' },
+        { store: STORES.LEAD_RELANCES, table: 'lead_relances' },
+        { store: STORES.PROPRIETAIRES_TERRES, table: 'proprietaires_terres' },
+        { store: STORES.PARCELLES, table: 'parcelles' },
+      ];
+      for (const { store, table } of MAIN_TABLES) {
+        try {
+          const lastSync = await getLastSyncTime(store);
+          let q = (supabase as any).from(table).select('*');
+          if (lastSync) q = q.gte('updated_at', lastSync);
+          const { data } = await q.order('updated_at', { ascending: false }).limit(1000);
+          if (data?.length) await cacheReferenceData(store, data);
+        } catch (err) {
+          console.warn(`[OfflineSync] Pull ${table} failed`, err);
+        }
+      }
 
       // Reference tables (full cache)
       await pullReferenceData();
