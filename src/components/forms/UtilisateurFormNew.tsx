@@ -235,7 +235,7 @@ const UtilisateurFormNew = ({ utilisateur, onSuccess, onCancel }: UtilisateurFor
 
           <div className="space-y-2">
             <Label>Username *</Label>
-            <Input {...register("username", { required: true })} disabled={!!utilisateur} />
+            <Input {...register("username", { required: true })} />
             {errors.username?.message && <p className="text-sm text-destructive">{String(errors.username.message)}</p>}
           </div>
 
