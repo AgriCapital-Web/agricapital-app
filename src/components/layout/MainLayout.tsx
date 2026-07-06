@@ -8,7 +8,7 @@ import { NotificationCenter } from "@/components/common/NotificationCenter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import AIAssistant from "@/components/ai/AIAssistant";
-import logoWhite from "@/assets/logo-white.png";
+import logoV2 from "@/assets/logo-agricapital-v2.png";
 import { cn } from "@/lib/utils";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
@@ -56,9 +56,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-primary text-primary-foreground">
-      <div className="border-b border-primary-foreground/10 px-5 py-5">
-        <button onClick={() => navigate('/dashboard')} className="flex w-full items-center gap-3 text-left">
-          <img src={logoWhite} alt="AgriCapital" className="h-16 w-auto object-contain" />
+      <div className="border-b border-primary-foreground/10 px-4 py-6 bg-white">
+        <button onClick={() => navigate('/dashboard')} className="flex w-full items-center justify-center">
+          <img src={logoV2} alt="AgriCapital" className="w-full max-w-[220px] h-auto object-contain" />
           <span className="sr-only">AgriCapital</span>
         </button>
       </div>
