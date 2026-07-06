@@ -40,10 +40,10 @@ const Parametres = () => {
   const tabs: TabConfig[] = [
     { value: 'utilisateurs', label: 'Utilisateurs', mobileLabel: 'Users', icon: Users, permission: PERMISSIONS.MANAGE_USERS, component: Utilisateurs },
     { value: 'equipes', label: 'Équipes', icon: UsersRound, permission: PERMISSIONS.MANAGE_TEAMS, component: Equipes },
+    { value: 'roles', label: 'Rôles', icon: Shield, permission: PERMISSIONS.MANAGE_ROLES, component: GestionRoles },
     { value: 'demandes', label: 'Demandes', icon: UserPlus, permission: PERMISSIONS.MANAGE_USERS, component: AccountRequests },
     { value: 'zones', label: 'Zones', icon: MapPinned, permission: PERMISSIONS.MANAGE_TEAMS, component: GestionZones },
     { value: 'offres', label: 'Offres', icon: Package, permission: PERMISSIONS.MANAGE_OFFERS, component: Offres },
-    { value: 'roles', label: 'Rôles', icon: Shield, permission: PERMISSIONS.MANAGE_ROLES, component: GestionRoles },
     { value: 'districts', label: 'Districts', icon: Map, permission: PERMISSIONS.MANAGE_GEO, component: GestionDistricts },
     { value: 'regions', label: 'Régions', icon: MapPin, permission: PERMISSIONS.MANAGE_GEO, component: GestionRegions },
     { value: 'departements', label: 'Départements', icon: Building, permission: PERMISSIONS.MANAGE_GEO, component: GestionDepartements },

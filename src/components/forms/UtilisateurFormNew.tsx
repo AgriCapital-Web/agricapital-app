@@ -135,11 +135,10 @@ const UtilisateurFormNew = ({ utilisateur, onSuccess, onCancel }: UtilisateurFor
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
+        const { data: signed } = await supabase.storage
           .from('photos-profils')
-          .getPublicUrl(fileName);
-
-        photoUrl = publicUrl;
+          .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 5);
+        photoUrl = signed?.signedUrl || supabase.storage.from('photos-profils').getPublicUrl(fileName).data.publicUrl;
       }
 
       if (utilisateur) {
@@ -148,6 +147,7 @@ const UtilisateurFormNew = ({ utilisateur, onSuccess, onCancel }: UtilisateurFor
           .from("profiles")
           .update({
             nom_complet: data.nom_complet,
+            username: data.username,
             email: data.email,
             telephone: data.telephone || null,
             whatsapp: data.whatsapp || null,
@@ -235,7 +235,7 @@ const UtilisateurFormNew = ({ utilisateur, onSuccess, onCancel }: UtilisateurFor
 
           <div className="space-y-2">
             <Label>Username *</Label>
-            <Input {...register("username", { required: true })} disabled={!!utilisateur} />
+            <Input {...register("username", { required: true })} />
             {errors.username?.message && <p className="text-sm text-destructive">{String(errors.username.message)}</p>}
           </div>
 

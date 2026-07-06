@@ -221,13 +221,24 @@ const Offres = () => {
 
   const handleSaveOffre = () => {
     if (!editOffre) return;
+    const di = Number(editOffre.montant_da_par_ha) || 0;
+    const mensuel = Number(editOffre.contribution_mensuelle_par_ha) || 0;
+    const duree = Number((editOffre as any).duree_paiement_mois) || 34;
+    const total = di + mensuel * duree;
+    const tranches = mensuel > 0
+      ? [{ annee: 1, mois: duree, mensualite_par_ha: mensuel }]
+      : (editOffre as any).tranches_paiement;
     updateOffreMutation.mutate({
       id: editOffre.id,
       updates: {
         nom: editOffre.nom,
         description: editOffre.description,
-        montant_da_par_ha: editOffre.montant_da_par_ha,
-        contribution_mensuelle_par_ha: editOffre.contribution_mensuelle_par_ha,
+        montant_da_par_ha: di,
+        montant_depot_initial_par_ha: di,
+        contribution_mensuelle_par_ha: mensuel,
+        montant_total_par_ha: total,
+        duree_paiement_mois: duree,
+        tranches_paiement: tranches as any,
         couleur: editOffre.couleur,
         avantages: editOffre.avantages
       }
