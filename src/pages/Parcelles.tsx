@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Search, Plus, Layers, MapPin, BarChart3 } from "lucide-react";
 import { useUserZones } from "@/hooks/useUserZones";
+import { offlineInsert } from "@/lib/offlineWrite";
+import { getCachedItems, STORES } from "@/lib/offlineDb";
 
 const Parcelles = () => {
   const [parcelles, setParcelles] = useState<any[]>([]);
@@ -37,6 +39,16 @@ const Parcelles = () => {
 
   const fetchData = async () => {
     try {
+      if (!navigator.onLine) {
+        const [pCached, oCached] = await Promise.all([
+          getCachedItems(STORES.PARCELLES),
+          getCachedItems(STORES.PROPRIETAIRES_TERRES),
+        ]);
+        setParcelles(pCached);
+        setProprietaires(oCached.filter((p: any) => p.statut === 'actif'));
+        setLoading(false);
+        return;
+      }
       const [{ data: parcellesData }, { data: propsData }] = await Promise.all([
         (supabase as any).from("parcelles")
           .select("*, proprietaires_terres(nom_complet, id_unique), districts(nom), regions(nom), departements(nom), sous_prefectures(nom)")
@@ -71,7 +83,7 @@ const Parcelles = () => {
     try {
       const surfTotale = parseFloat(formData.surface_totale_ha);
       if (surfTotale < 2) throw new Error("La surface minimale est de 2 hectares");
-      const { error } = await (supabase as any).from("parcelles").insert({
+      const { error, offline } = await offlineInsert("parcelles", {
         nom: formData.nom || "Parcelle PP",
         proprietaire_id: formData.proprietaire_id || null,
         surface_totale_ha: surfTotale,
@@ -80,7 +92,7 @@ const Parcelles = () => {
         village: formData.village, date_convention: formData.date_convention || null, notes: formData.notes,
       });
       if (error) throw error;
-      toast({ title: "Succès", description: "Parcelle créée" });
+      toast({ title: offline ? "Enregistré hors ligne" : "Succès", description: offline ? "Parcelle en attente de synchronisation" : "Parcelle créée" });
       setIsFormOpen(false);
       setFormData({ proprietaire_id: "", nom: "", surface_totale_ha: "", district_id: "", region_id: "", departement_id: "", sous_prefecture_id: "", village: "", date_convention: "", notes: "" });
       fetchData();
