@@ -148,6 +148,7 @@ const UtilisateurFormNew = ({ utilisateur, onSuccess, onCancel }: UtilisateurFor
           .from("profiles")
           .update({
             nom_complet: data.nom_complet,
+            username: data.username,
             email: data.email,
             telephone: data.telephone || null,
             whatsapp: data.whatsapp || null,
