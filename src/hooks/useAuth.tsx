@@ -129,16 +129,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Online: resolve username to email
       if (!usernameOrEmail.includes('@')) {
-        const { data: profileData, error: profileError } = await (supabase as any)
-          .from('profiles')
-          .select('email')
-          .eq('username', usernameOrEmail)
-          .maybeSingle();
+        const { data: resolved, error: rpcError } = await (supabase as any)
+          .rpc('resolve_username_email', { _username: usernameOrEmail });
 
-        if (profileError || !profileData) {
-          return { error: { message: 'Nom d\'utilisateur introuvable' } };
+        if (rpcError || !resolved) {
+          toast({
+            variant: 'destructive',
+            title: 'Connexion impossible',
+            description: "Nom d'utilisateur introuvable",
+          });
+          return { error: { message: "Nom d'utilisateur introuvable" } };
         }
-        email = profileData.email;
+        email = resolved as string;
       }
 
       const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
