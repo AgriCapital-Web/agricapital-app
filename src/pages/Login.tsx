@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import logoV2 from "@/assets/logo-agricapital-v2.png";
+import logoWhite from "@/assets/logo-white.png";
 import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -60,7 +61,7 @@ const Login = () => {
         
         <div className="relative z-10 text-center max-w-md">
           <img
-            src={logoV2}
+            src={logoWhite}
             alt="AgriCapital"
             className="w-full max-w-md h-auto mx-auto mb-8 drop-shadow-2xl"
           />
