@@ -140,6 +140,7 @@ const AccountRequests = () => {
                 <TableHead>Date</TableHead>
                 <TableHead>Nom</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Identifiant</TableHead>
                 <TableHead>Poste</TableHead>
                 <TableHead>Rôle</TableHead>
                 <TableHead>Statut</TableHead>
@@ -154,6 +155,7 @@ const AccountRequests = () => {
                   </TableCell>
                   <TableCell>{request.nom_complet}</TableCell>
                   <TableCell>{request.email}</TableCell>
+                  <TableCell className="font-mono text-xs">{request.username || '—'}</TableCell>
                   <TableCell>{request.poste_souhaite}</TableCell>
                   <TableCell>{request.role_souhaite}</TableCell>
                   <TableCell>{getStatusBadge(request.statut)}</TableCell>
@@ -178,6 +180,7 @@ const AccountRequests = () => {
                             onClick={() => {
                               setSelectedRequest(request);
                               setActionType('approve');
+                              setRoleOverride(request.role_souhaite || "");
                               setDialogOpen(true);
                             }}
                           >
@@ -196,6 +199,17 @@ const AccountRequests = () => {
                           </Button>
                         </>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setActionType('delete');
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -210,7 +224,8 @@ const AccountRequests = () => {
           <DialogHeader>
             <DialogTitle>
               {actionType === 'approve' ? 'Approuver la demande' : 
-               actionType === 'reject' ? 'Rejeter la demande' : 
+               actionType === 'reject' ? 'Rejeter la demande' :
+               actionType === 'delete' ? 'Supprimer la demande' :
                'Détails de la demande'}
             </DialogTitle>
           </DialogHeader>
@@ -239,6 +254,10 @@ const AccountRequests = () => {
                   <p className="text-sm">{selectedRequest.role_souhaite}</p>
                 </div>
                 <div>
+                  <Label>Identifiant de connexion</Label>
+                  <p className="text-sm font-mono">{selectedRequest.username || '—'}</p>
+                </div>
+                <div>
                   <Label>Département</Label>
                   <p className="text-sm">{selectedRequest.departement || 'N/A'}</p>
                 </div>
@@ -260,6 +279,27 @@ const AccountRequests = () => {
                 </div>
               )}
 
+              {actionType === 'approve' && (
+                <div>
+                  <Label>Rôle à attribuer *</Label>
+                  <Select value={roleOverride || selectedRequest.role_souhaite} onValueChange={setRoleOverride}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Le rôle est écrit dans user_roles. Modifiable à tout moment ensuite.
+                  </p>
+                </div>
+              )}
+
+              {actionType === 'delete' && (
+                <p className="text-sm text-destructive">
+                  Cette demande sera définitivement supprimée (ainsi que le compte non validé associé).
+                </p>
+              )}
+
               {actionType === 'reject' && (
                 <div>
                   <Label>Motif du rejet *</Label>
@@ -279,10 +319,10 @@ const AccountRequests = () => {
                   </Button>
                   <Button
                     onClick={handleAction}
-                    disabled={actionType === 'reject' && !rejectReason}
+                    disabled={busy || (actionType === 'reject' && !rejectReason)}
                     variant={actionType === 'approve' ? 'default' : 'destructive'}
                   >
-                    {actionType === 'approve' ? 'Approuver' : 'Rejeter'}
+                    {busy ? '...' : actionType === 'approve' ? 'Approuver' : actionType === 'reject' ? 'Rejeter' : 'Supprimer'}
                   </Button>
                 </div>
               )}
