@@ -9,6 +9,8 @@ import {
   STORES, type SyncOperation,
 } from '@/lib/offlineDb';
 import { useToast } from '@/hooks/use-toast';
+import { resolveUpdateConflict } from '@/lib/offlineConflict';
+import { flushFileQueue, countQueuedFiles } from '@/lib/offlineFiles';
 
 const SYNC_INTERVAL = 3 * 60 * 1000; // 3 minutes
 const SLOW_NET_THRESHOLD = 1500; // ms
@@ -30,6 +32,7 @@ export function useOfflineSync() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingFiles, setPendingFiles] = useState(0);
   const [networkQuality, setNetworkQuality] = useState<'good' | 'slow' | 'offline'>('good');
   const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const syncLockRef = useRef(false);
@@ -109,6 +112,7 @@ export function useOfflineSync() {
 
     setIsSyncing(true);
     let syncedCount = 0;
+    let conflictCount = 0;
 
     for (const op of pendingOps) {
       try {
@@ -118,7 +122,15 @@ export function useOfflineSync() {
         if (op.operation === 'insert') {
           result = await (supabase as any).from(op.table).insert(op.data);
         } else if (op.operation === 'update') {
-          result = await (supabase as any).from(op.table).update(op.data).eq('id', op.record_id);
+          // Résolution de conflit multi-appareils (merge par champ / last-write-wins)
+          const res = await resolveUpdateConflict(op.table, op.record_id, op.data, op.timestamp);
+          if (res.conflicted) conflictCount++;
+          if (res.skipped) {
+            await markOpStatus(op.id!, 'synced');
+            syncedCount++;
+            continue;
+          }
+          result = await (supabase as any).from(op.table).update(res.payload).eq('id', op.record_id);
         } else if (op.operation === 'delete') {
           result = await (supabase as any).from(op.table).delete().eq('id', op.record_id);
         }
@@ -136,14 +148,23 @@ export function useOfflineSync() {
     }
 
     await clearSyncedOps();
+    // Upload des pièces jointes mises en file
+    const uploadedFiles = await flushFileQueue();
+    setPendingFiles(await countQueuedFiles());
     const stats = await getSyncQueueStats();
     setPendingCount(stats.pending + stats.error);
     setIsSyncing(false);
 
-    if (syncedCount > 0) {
+    if (syncedCount > 0 || uploadedFiles > 0) {
+      // Rafraîchissement des listes/pages concernées sans rechargement
+      window.dispatchEvent(new CustomEvent('offline-sync-complete', {
+        detail: { synced: syncedCount, files: uploadedFiles, conflicts: conflictCount },
+      }));
       toast({
         title: 'Synchronisation terminée',
-        description: `${syncedCount} modification(s) synchronisée(s)${stats.error > 0 ? `, ${stats.error} erreur(s)` : ''}`,
+        description: `${syncedCount} modification(s), ${uploadedFiles} fichier(s) envoyé(s)`
+          + `${conflictCount > 0 ? `, ${conflictCount} conflit(s) fusionné(s)` : ''}`
+          + `${stats.error > 0 ? `, ${stats.error} erreur(s)` : ''}`,
       });
     }
   }, [toast]);
@@ -236,6 +257,7 @@ export function useOfflineSync() {
 
     // Load pending count
     getSyncQueueStats().then(s => setPendingCount(s.pending + s.error));
+    countQueuedFiles().then(setPendingFiles);
 
     syncIntervalRef.current = setInterval(async () => {
       if (navigator.onLine && user && !syncLockRef.current) {
@@ -260,6 +282,7 @@ export function useOfflineSync() {
     isSyncing,
     lastSync,
     pendingCount,
+    pendingFiles,
     networkQuality,
     syncNow,
     queueMutation,
