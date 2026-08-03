@@ -397,7 +397,7 @@ const AccountRequest = () => {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Après validation par l'administrateur, un mot de passe temporaire vous sera transmis en privé. Vous pourrez le changer à votre première connexion.
+              Après validation par l'administrateur, votre accès est activé selon le rôle demandé. Vous pouvez alors vous connecter immédiatement.
             </p>
 
             {/* Boutons */}
