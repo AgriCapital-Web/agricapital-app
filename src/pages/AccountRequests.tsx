@@ -9,14 +9,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle, Eye } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle, XCircle, Eye, Trash2 } from "lucide-react";
+
+const ROLES = [
+  "commercial", "technicien", "chef_equipe_commercial", "chef_equipe_technique",
+  "responsable_commercial", "responsable_technique_agronomique", "responsable_zone",
+  "comptable", "service_client", "operations", "super_admin",
+];
 
 const AccountRequests = () => {
   const [requests, setRequests] = useState<any[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
-  const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
+  const [actionType, setActionType] = useState<"approve" | "reject" | "delete" | null>(null);
+  const [roleOverride, setRoleOverride] = useState<string>("");
+  const [busy, setBusy] = useState(false);
   const { hasRole, user } = useAuth();
   const { toast } = useToast();
 
@@ -42,76 +51,54 @@ const AccountRequests = () => {
 
   const handleAction = async () => {
     if (!selectedRequest || !user) return;
-
+    setBusy(true);
     try {
+      const { data, error } = await supabase.functions.invoke('approve-account-request', {
+        body: {
+          request_id: selectedRequest.id,
+          action: actionType,
+          role: actionType === 'approve' ? (roleOverride || selectedRequest.role_souhaite) : undefined,
+          motif_rejet: actionType === 'reject' ? rejectReason : undefined,
+        },
+      });
+      const payload: any = data;
+      if (error || payload?.error) throw new Error(payload?.error || error?.message);
+
       if (actionType === 'approve') {
-        // Always generate a temporary password (no plaintext password is stored on the request)
-        const chosenPassword =
-          crypto.randomUUID().replace(/-/g, '').slice(0, 16) + 'A1!';
-        const { data, error } = await supabase.functions.invoke('create-user', {
-          body: {
-            username: selectedRequest.email.split('@')[0],
-            email: selectedRequest.email,
-            password: chosenPassword,
-            nom_complet: selectedRequest.nom_complet,
-            telephone: selectedRequest.telephone,
-            roles: [selectedRequest.role_souhaite]
-          }
-        });
-
-        if (error) throw error;
-
-        // Update request status
-        await (supabase as any)
-          .from('account_requests')
-          .update({
-            statut: 'approuve',
-            traite_par: user.id,
-            traite_le: new Date().toISOString(),
-          })
-          .eq('id', selectedRequest.id);
-
-        // Email notification (best-effort)
         try {
           await supabase.functions.invoke('send-account-approved-notification', {
             body: {
               email: selectedRequest.email,
               nom_complet: selectedRequest.nom_complet,
               login_url: `${window.location.origin}/login`,
-              used_own_password: false,
-              temp_password: chosenPassword
-            }
+              used_own_password: !payload?.temp_password,
+              temp_password: payload?.temp_password || undefined,
+            },
           });
         } catch (e) { console.log('notif email fail (non-blocking)', e); }
 
         toast({
           title: "Demande approuvée",
-          description: `Compte créé. Mot de passe temporaire (à transmettre en privé) : ${chosenPassword}`,
-          duration: 20000,
+          description: payload?.temp_password
+            ? `Compte créé. Mot de passe temporaire : ${payload.temp_password}`
+            : `Accès activé (rôle : ${payload?.role}). L'utilisateur peut se connecter avec son identifiant.`,
+          duration: 15000,
         });
       } else if (actionType === 'reject') {
-        await (supabase as any)
-          .from('account_requests')
-          .update({
-            statut: 'rejete',
-            motif_rejet: rejectReason,
-            traite_par: user.id,
-            traite_le: new Date().toISOString()
-          })
-          .eq('id', selectedRequest.id);
-
-        toast({
-          title: "Demande rejetée",
-          description: "La demande a été rejetée",
-        });
+        toast({ title: "Demande rejetée", description: "La demande a été rejetée." });
+      } else {
+        toast({ title: "Demande supprimée" });
       }
 
       fetchRequests();
       setDialogOpen(false);
       setRejectReason("");
+      setRoleOverride("");
       setActionType(null);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message });
+    } finally {
+      setBusy(false);
     }
   };
 
