@@ -9,13 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import logoGreen from "@/assets/logo-green.png";
-import { User, Mail, Phone, Briefcase, MapPin, FileText } from "lucide-react";
+import { User, Mail, Phone, Briefcase, MapPin, FileText, KeyRound, AtSign } from "lucide-react";
 
 const ROLES = [
-  { value: "commercial", label: "Commercial / Technico-commercial" },
-  { value: "chef_equipe", label: "Chef d'équipe" },
+  { value: "commercial", label: "Commercial (Comm)" },
+  { value: "technicien", label: "Technicien (Tech)" },
+  { value: "chef_equipe_commercial", label: "Chef d'Équipe Commercial (CEC)" },
+  { value: "chef_equipe_technique", label: "Chef d'Équipe Technique (CET)" },
+  { value: "responsable_commercial", label: "Responsable Commercial (RCom)" },
+  { value: "responsable_technique_agronomique", label: "Responsable Technique & Agronomique (RTA)" },
   { value: "responsable_zone", label: "Responsable de zone" },
-  { value: "technicien", label: "Technicien / Agent terrain" },
   { value: "comptable", label: "Comptable" },
   { value: "service_client", label: "Service client / Support" },
   { value: "operations", label: "Opérations" }
@@ -31,7 +34,11 @@ const AccountRequest = () => {
     departement: "",
     district: "",
     message: "",
+    username: "",
+    password: "",
+    password_confirm: "",
   });
+  const [ownerInfo, setOwnerInfo] = useState<any>(null);
   
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
@@ -94,6 +101,16 @@ const AccountRequest = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setOwnerInfo(null);
+
+    if (formData.password !== formData.password_confirm) {
+      toast({ variant: "destructive", title: "Erreur", description: "Les mots de passe ne correspondent pas." });
+      return;
+    }
+    if (formData.password.length < 8) {
+      toast({ variant: "destructive", title: "Erreur", description: "Le mot de passe doit contenir au moins 8 caractères." });
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -102,13 +119,14 @@ const AccountRequest = () => {
       const regionName = regions.find(r => r.id === formData.region)?.nom || "";
       const deptName = departements.find(d => d.id === formData.departement)?.nom || "";
 
-      // Create account request
-      const { error } = await (supabase as any)
-        .from('account_requests')
-        .insert({
+      // Création de la demande + du compte (inactif jusqu'à validation admin)
+      const { data, error } = await supabase.functions.invoke('submit-account-request', {
+        body: {
           nom_complet: formData.nom_complet,
           email: formData.email,
           telephone: formData.telephone,
+          username: formData.username,
+          password: formData.password,
           poste_souhaite: ROLES.find((role) => role.value === formData.poste)?.label || formData.poste,
           role_souhaite: formData.poste,
           region_id: formData.region || null,
@@ -116,12 +134,14 @@ const AccountRequest = () => {
           district_id: formData.district || null,
           departement: deptName || null,
           justification: formData.message || null,
-          photo_url: null,
-          cv_url: null,
-          statut: 'en_attente',
-        });
+        },
+      });
 
-      if (error) throw error;
+      const payload: any = data;
+      if (error || payload?.error) {
+        if (payload?.owner) setOwnerInfo(payload.owner);
+        throw new Error(payload?.message || payload?.error || error?.message || "Envoi impossible");
+      }
 
       // Try to send notification (non-blocking)
       try {
@@ -134,7 +154,7 @@ const AccountRequest = () => {
 
       toast({
         title: "Demande envoyée",
-        description: "Votre demande sera examinée par l'administrateur.",
+        description: "Dès validation par l'administrateur, connectez-vous avec votre identifiant et votre mot de passe.",
       });
 
       navigate('/login');
@@ -291,6 +311,76 @@ const AccountRequest = () => {
               </div>
             </div>
 
+            {/* Identifiants de connexion */}
+            <div className="space-y-3 rounded-lg border-2 border-primary/30 bg-primary/5 p-4">
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                <KeyRound className="h-4 w-4" /> Identifiants de connexion *
+              </Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="username" className="text-xs flex items-center gap-1">
+                    <AtSign className="h-3 w-3" /> Nom d'utilisateur *
+                  </Label>
+                  <Input
+                    id="username"
+                    required
+                    className="h-10"
+                    autoComplete="username"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
+                    placeholder="ex: kouassi.jean"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-xs">Mot de passe *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    minLength={8}
+                    className="h-10"
+                    autoComplete="new-password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder="8 caractères minimum"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password_confirm" className="text-xs">Confirmer *</Label>
+                  <Input
+                    id="password_confirm"
+                    type="password"
+                    required
+                    className="h-10"
+                    autoComplete="new-password"
+                    value={formData.password_confirm}
+                    onChange={(e) => setFormData({ ...formData, password_confirm: e.target.value })}
+                    placeholder="Répéter le mot de passe"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Votre compte est créé immédiatement mais reste inactif. Dès validation par l'administrateur,
+                vous vous connectez directement avec ces identifiants.
+              </p>
+            </div>
+
+            {ownerInfo && (
+              <div className="rounded-lg border-2 border-destructive/40 bg-destructive/5 p-4 space-y-2">
+                <p className="text-sm font-semibold text-destructive">Cet email est déjà attribué</p>
+                <div className="flex items-center gap-3">
+                  {ownerInfo.photo_url && (
+                    <img src={ownerInfo.photo_url} alt={ownerInfo.nom_complet} className="h-14 w-14 rounded-full object-cover" />
+                  )}
+                  <div className="text-sm">
+                    <p className="font-medium">{ownerInfo.nom_complet}</p>
+                    <p className="text-muted-foreground text-xs">{ownerInfo.email} • {ownerInfo.telephone || '—'}</p>
+                    <p className="text-muted-foreground text-xs">{ownerInfo.poste || ''} {ownerInfo.username ? `(@${ownerInfo.username})` : ''}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Message / Justification */}
             <div className="space-y-1.5">
               <Label htmlFor="message" className="text-sm flex items-center gap-2">
@@ -307,7 +397,7 @@ const AccountRequest = () => {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Après validation par l'administrateur, un mot de passe temporaire vous sera transmis en privé. Vous pourrez le changer à votre première connexion.
+              Après validation par l'administrateur, votre accès est activé selon le rôle demandé. Vous pouvez alors vous connecter immédiatement.
             </p>
 
             {/* Boutons */}

@@ -28,6 +28,7 @@ import ProprietairesTerres from "./pages/ProprietairesTerres";
 import Parcelles from "./pages/Parcelles";
 import Documents from "./pages/Documents";
 import Leads from "./pages/Leads";
+import SyncQueue from "./pages/SyncQueue";
 import PublicLead from "./pages/PublicLead";
 import NotFound from "./pages/NotFound";
 
@@ -50,6 +51,7 @@ const DomainRouter = () => {
       {/* Protected routes */}
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/leads" element={<Leads />} />
+      <Route path="/synchronisation" element={<SyncQueue />} />
       <Route path="/souscriptions" element={<Souscriptions />} />
       <Route path="/planteur/:id" element={<PlanteurDetail />} />
       <Route path="/planteur/:id/historique" element={<HistoriqueComplet />} />

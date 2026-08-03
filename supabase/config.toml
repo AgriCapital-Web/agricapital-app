@@ -32,3 +32,12 @@ verify_jwt = false
 
 [functions.payment-reminders]
 verify_jwt = false
+
+[functions.submit-account-request]
+verify_jwt = false
+
+[functions.approve-account-request]
+verify_jwt = false
+
+[functions.seed-demo-account]
+verify_jwt = false
