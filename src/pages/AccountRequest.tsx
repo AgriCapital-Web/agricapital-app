@@ -101,6 +101,16 @@ const AccountRequest = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setOwnerInfo(null);
+
+    if (formData.password !== formData.password_confirm) {
+      toast({ variant: "destructive", title: "Erreur", description: "Les mots de passe ne correspondent pas." });
+      return;
+    }
+    if (formData.password.length < 8) {
+      toast({ variant: "destructive", title: "Erreur", description: "Le mot de passe doit contenir au moins 8 caractères." });
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -109,13 +119,14 @@ const AccountRequest = () => {
       const regionName = regions.find(r => r.id === formData.region)?.nom || "";
       const deptName = departements.find(d => d.id === formData.departement)?.nom || "";
 
-      // Create account request
-      const { error } = await (supabase as any)
-        .from('account_requests')
-        .insert({
+      // Création de la demande + du compte (inactif jusqu'à validation admin)
+      const { data, error } = await supabase.functions.invoke('submit-account-request', {
+        body: {
           nom_complet: formData.nom_complet,
           email: formData.email,
           telephone: formData.telephone,
+          username: formData.username,
+          password: formData.password,
           poste_souhaite: ROLES.find((role) => role.value === formData.poste)?.label || formData.poste,
           role_souhaite: formData.poste,
           region_id: formData.region || null,
@@ -123,12 +134,14 @@ const AccountRequest = () => {
           district_id: formData.district || null,
           departement: deptName || null,
           justification: formData.message || null,
-          photo_url: null,
-          cv_url: null,
-          statut: 'en_attente',
-        });
+        },
+      });
 
-      if (error) throw error;
+      const payload: any = data;
+      if (error || payload?.error) {
+        if (payload?.owner) setOwnerInfo(payload.owner);
+        throw new Error(payload?.message || payload?.error || error?.message || "Envoi impossible");
+      }
 
       // Try to send notification (non-blocking)
       try {
@@ -141,7 +154,7 @@ const AccountRequest = () => {
 
       toast({
         title: "Demande envoyée",
-        description: "Votre demande sera examinée par l'administrateur.",
+        description: "Dès validation par l'administrateur, connectez-vous avec votre identifiant et votre mot de passe.",
       });
 
       navigate('/login');
