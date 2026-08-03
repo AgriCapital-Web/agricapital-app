@@ -9,13 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import logoGreen from "@/assets/logo-green.png";
-import { User, Mail, Phone, Briefcase, MapPin, FileText } from "lucide-react";
+import { User, Mail, Phone, Briefcase, MapPin, FileText, KeyRound, AtSign } from "lucide-react";
 
 const ROLES = [
-  { value: "commercial", label: "Commercial / Technico-commercial" },
-  { value: "chef_equipe", label: "Chef d'équipe" },
+  { value: "commercial", label: "Commercial (Comm)" },
+  { value: "technicien", label: "Technicien (Tech)" },
+  { value: "chef_equipe_commercial", label: "Chef d'Équipe Commercial (CEC)" },
+  { value: "chef_equipe_technique", label: "Chef d'Équipe Technique (CET)" },
+  { value: "responsable_commercial", label: "Responsable Commercial (RCom)" },
+  { value: "responsable_technique_agronomique", label: "Responsable Technique & Agronomique (RTA)" },
   { value: "responsable_zone", label: "Responsable de zone" },
-  { value: "technicien", label: "Technicien / Agent terrain" },
   { value: "comptable", label: "Comptable" },
   { value: "service_client", label: "Service client / Support" },
   { value: "operations", label: "Opérations" }
@@ -31,7 +34,11 @@ const AccountRequest = () => {
     departement: "",
     district: "",
     message: "",
+    username: "",
+    password: "",
+    password_confirm: "",
   });
+  const [ownerInfo, setOwnerInfo] = useState<any>(null);
   
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
