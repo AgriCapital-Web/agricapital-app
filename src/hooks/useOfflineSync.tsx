@@ -202,6 +202,10 @@ export function useOfflineSync() {
       souscripteurs: STORES.SOUSCRIPTEURS,
       plantations: STORES.PLANTATIONS,
       paiements: STORES.PAIEMENTS,
+      leads: STORES.LEADS,
+      lead_relances: STORES.LEAD_RELANCES,
+      proprietaires_terres: STORES.PROPRIETAIRES_TERRES,
+      parcelles: STORES.PARCELLES,
     };
     const store = storeMap[table];
     if (store && operation !== 'delete') {
