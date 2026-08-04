@@ -12,12 +12,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, DollarSign, TrendingUp, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useAuth } from "@/hooks/useAuth";
+import { PERMISSIONS, hasPermission } from "@/lib/roles";
 
 const Commissions = () => {
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const { userRoles } = useAuth();
+  const canManage = hasPermission(userRoles, PERMISSIONS.VALIDATE_PAYMENTS);
 
   const fetchCommissions = async () => {
     try {
