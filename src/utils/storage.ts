@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { uploadOrQueueFile } from '@/lib/offlineFiles';
 
 export const uploadFile = async (
   bucket: string,
@@ -12,24 +13,16 @@ export const uploadFile = async (
     const defaultFolder = user?.id || 'public';
     const filePath = path ? `${path}/${fileName}` : `${defaultFolder}/${fileName}`;
 
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Upload error:', error);
-      throw error;
-    }
+    const result = await uploadOrQueueFile({ bucket, path: filePath, file });
+    if (result.error) throw result.error;
+    if (result.queued) return { url: result.path, path: result.path };
 
     const { data: bucketInfo } = await supabase.storage.getBucket(bucket);
     const publicUrl = bucketInfo?.public
-      ? supabase.storage.from(bucket).getPublicUrl(data.path).data.publicUrl
-      : (await supabase.storage.from(bucket).createSignedUrl(data.path, 60 * 60 * 24 * 365)).data?.signedUrl || data.path;
+      ? supabase.storage.from(bucket).getPublicUrl(result.path).data.publicUrl
+      : (await supabase.storage.from(bucket).createSignedUrl(result.path, 60 * 60 * 24 * 365)).data?.signedUrl || result.path;
 
-    return { url: publicUrl, path: data.path };
+    return { url: publicUrl, path: result.path };
   } catch (error) {
     console.error('Error uploading file:', error);
     return null;

@@ -110,6 +110,8 @@ export default function SyncQueue() {
                     <TableCell>
                       <SyncStatusBadge state={f.status === "error" ? "error" : "queued"} />
                       {f.error && <p className="text-xs text-destructive mt-1">{f.error}</p>}
+                      {f.retries > 0 && <p className="text-xs text-muted-foreground mt-1">Tentative {f.retries} • reprise automatique</p>}
+                      {(f.form_id || f.field) && <p className="text-xs text-muted-foreground mt-1">Formulaire {f.form_id || "—"} • {f.field || "pièce jointe"}</p>}
                     </TableCell>
                   </TableRow>
                 ))}

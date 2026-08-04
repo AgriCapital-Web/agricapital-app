@@ -140,7 +140,15 @@ const AccountRequest = () => {
       const payload: any = data;
       if (error || payload?.error) {
         if (payload?.owner) setOwnerInfo(payload.owner);
-        throw new Error(payload?.message || payload?.error || error?.message || "Envoi impossible");
+        let functionMessage = error?.message;
+        if (error && typeof (error as any).context?.json === "function") {
+          try {
+            const contextPayload = await (error as any).context.json();
+            functionMessage = contextPayload?.message || contextPayload?.error || functionMessage;
+            if (contextPayload?.owner) setOwnerInfo(contextPayload.owner);
+          } catch { /* la réponse n'est pas JSON */ }
+        }
+        throw new Error(payload?.message || payload?.error || functionMessage || "Envoi impossible");
       }
 
       // Try to send notification (non-blocking)

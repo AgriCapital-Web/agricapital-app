@@ -18,7 +18,8 @@ import { getCachedItems, STORES } from "@/lib/offlineDb";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Target, TrendingUp, Users, MapPin, PhoneCall, ArrowRight, Copy } from "lucide-react";
+import { Target, TrendingUp, Users, MapPin, PhoneCall, ArrowRight, Copy, Plus } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const STATUTS = [
   { v: "nouveau", l: "Nouveau", color: "bg-blue-100 text-blue-800" },
@@ -42,7 +43,10 @@ export default function Leads() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [selected, setSelected] = useState<any>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [leadForm, setLeadForm] = useState({ nom: "", prenoms: "", telephone: "", whatsapp: "", email: "", region_residence: "", commentaire: "" });
   const [relanceOpen, setRelanceOpen] = useState(false);
   const [relance, setRelance] = useState<any>({ canal: "appel", resultat: "interesse", commentaire: "", prochaine_relance: "" });
 
@@ -78,6 +82,32 @@ export default function Leads() {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["leads"] }); toast({ title: "Statut mis à jour" }); },
+  });
+
+  const createLead = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Non authentifié");
+      const { error } = await offlineInsert("leads", {
+        ...leadForm,
+        email: leadForm.email || null,
+        whatsapp: leadForm.whatsapp || null,
+        commentaire: leadForm.commentaire || null,
+        statut: "nouveau",
+        source: "commercial_terrain",
+        created_by: user.id,
+        assigned_to: user.id,
+        est_diaspora: false,
+        dispose_terrain: false,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      setLeadForm({ nom: "", prenoms: "", telephone: "", whatsapp: "", email: "", region_residence: "", commentaire: "" });
+      setCreateOpen(false);
+      toast({ title: navigator.onLine ? "Lead créé" : "Lead enregistré hors ligne" });
+    },
+    onError: (e: any) => toast({ variant: "destructive", title: "Création impossible", description: e.message }),
   });
 
   const addRelance = useMutation({
@@ -138,9 +168,12 @@ export default function Leads() {
             <h1 className="text-2xl font-bold flex items-center gap-2"><Target className="h-6 w-6 text-primary" />Prospects / Leads</h1>
             <p className="text-muted-foreground text-sm">Suivi commercial jusqu'à la conversion en souscripteur.</p>
           </div>
-          <Button variant="outline" onClick={() => { navigator.clipboard.writeText(publicUrl); toast({ title: "Lien copié", description: publicUrl }); }}>
-            <Copy className="h-4 w-4 mr-2" />Lien public
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4 mr-2" />Créer un lead</Button>
+            <Button variant="outline" onClick={() => { navigator.clipboard.writeText(publicUrl); toast({ title: "Lien copié", description: publicUrl }); }}>
+              <Copy className="h-4 w-4 mr-2" />Lien public
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
@@ -231,6 +264,28 @@ export default function Leads() {
                 </Tabs>
               </>
             )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader><DialogTitle>Créer un lead</DialogTitle></DialogHeader>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div><Label>Nom *</Label><Input value={leadForm.nom} onChange={(e) => setLeadForm({ ...leadForm, nom: e.target.value })} /></div>
+              <div><Label>Prénom(s) *</Label><Input value={leadForm.prenoms} onChange={(e) => setLeadForm({ ...leadForm, prenoms: e.target.value })} /></div>
+              <div><Label>Téléphone *</Label><Input type="tel" value={leadForm.telephone} onChange={(e) => setLeadForm({ ...leadForm, telephone: e.target.value })} /></div>
+              <div><Label>WhatsApp</Label><Input type="tel" value={leadForm.whatsapp} onChange={(e) => setLeadForm({ ...leadForm, whatsapp: e.target.value })} /></div>
+              <div><Label>Email</Label><Input type="email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} /></div>
+              <div><Label>Région *</Label><Input value={leadForm.region_residence} onChange={(e) => setLeadForm({ ...leadForm, region_residence: e.target.value })} /></div>
+              <div className="sm:col-span-2"><Label>Note</Label><Textarea value={leadForm.commentaire} onChange={(e) => setLeadForm({ ...leadForm, commentaire: e.target.value })} /></div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCreateOpen(false)}>Annuler</Button>
+              <Button
+                onClick={() => createLead.mutate()}
+                disabled={createLead.isPending || !leadForm.nom.trim() || !leadForm.prenoms.trim() || !leadForm.telephone.trim() || !leadForm.region_residence.trim()}
+              >{createLead.isPending ? "Enregistrement…" : "Enregistrer"}</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

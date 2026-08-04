@@ -1761,7 +1761,6 @@ export type Database = {
           quartier: string | null
           region_id: string | null
           relation_rh: string | null
-          role: string | null
           taux_commission: number | null
           telephone: string | null
           telephone_secondaire: string | null
@@ -1794,7 +1793,6 @@ export type Database = {
           quartier?: string | null
           region_id?: string | null
           relation_rh?: string | null
-          role?: string | null
           taux_commission?: number | null
           telephone?: string | null
           telephone_secondaire?: string | null
@@ -1827,7 +1825,6 @@ export type Database = {
           quartier?: string | null
           region_id?: string | null
           relation_rh?: string | null
-          role?: string | null
           taux_commission?: number | null
           telephone?: string | null
           telephone_secondaire?: string | null
@@ -3008,6 +3005,7 @@ export type Database = {
     }
     Functions: {
       assign_sp_code: { Args: { _sp_id: string }; Returns: string }
+      can_supervise_leads: { Args: { _user_id: string }; Returns: boolean }
       cleanup_expired_otp: { Args: never; Returns: undefined }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       compute_commission_for_paiement: {
