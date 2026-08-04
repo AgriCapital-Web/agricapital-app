@@ -280,7 +280,7 @@ const Commissions = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {commission.statut === "en_attente" && (
+                        {canManage && commission.statut === "en_attente" && (
                           <div className="flex gap-2">
                             <Button
                               variant="ghost"

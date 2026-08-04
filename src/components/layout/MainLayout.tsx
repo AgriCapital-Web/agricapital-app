@@ -15,7 +15,7 @@ import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
 import {
   LayoutDashboard, Users, Sprout, CreditCard, LogOut, Menu, Receipt,
   BarChart3, Ticket, Wallet, FileText, Settings, UserCircle, Wifi, WifiOff, RefreshCw, Signal,
-  LandPlot, Layers, Search, Target
+  LandPlot, Layers, Search, Target, CloudUpload
 } from "lucide-react";
 
 interface MainLayoutProps { children: ReactNode; }
@@ -42,6 +42,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     { icon: BarChart3, label: "Rapports techniques", path: "/rapports-techniques", permission: PERMISSIONS.VIEW_RAPPORTS_TECHNIQUES },
     { icon: FileText, label: "Rapports financiers", path: "/rapports-financiers", permission: PERMISSIONS.VIEW_RAPPORTS_FINANCIERS },
     { icon: Ticket, label: "Tickets", path: "/tickets", permission: PERMISSIONS.VIEW_TICKETS },
+    { icon: CloudUpload, label: "Synchronisation", path: "/synchronisation", permission: PERMISSIONS.VIEW_DASHBOARD },
   ];
 
   const visibleMenuItems = menuItems.filter(item => hasPermission(userRoles, item.permission));
