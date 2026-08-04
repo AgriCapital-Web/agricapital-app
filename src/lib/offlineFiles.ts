@@ -17,7 +17,34 @@ export interface QueuedFile {
   column?: string;
   status: 'pending' | 'error' | 'uploading';
   error?: string;
+  retries: number;
+  nextRetryAt: number;
+  form_id?: string;
+  field?: string;
   createdAt: number;
+}
+
+const MAX_IMAGE_SIZE = 1920;
+const IMAGE_QUALITY = 0.78;
+
+/** Compresse les photos terrain avant stockage local et envoi. Les PDF restent intacts. */
+export async function compressAttachment(file: File | Blob): Promise<Blob> {
+  if (!file.type.startsWith('image/') || file.type === 'image/svg+xml') return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const ratio = Math.min(1, MAX_IMAGE_SIZE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
+    canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', IMAGE_QUALITY));
+    return blob && blob.size < file.size ? blob : file;
+  } catch {
+    return file;
+  }
 }
 
 function genId() {
@@ -34,13 +61,16 @@ export async function uploadOrQueueFile(opts: {
   table?: string;
   record_id?: string;
   column?: string;
+  form_id?: string;
+  field?: string;
 }): Promise<{ path: string; queued: boolean; error: any | null }> {
-  const contentType = (opts.file as File).type || 'application/octet-stream';
+  const preparedFile = await compressAttachment(opts.file);
+  const contentType = preparedFile.type || (opts.file as File).type || 'application/octet-stream';
 
   if (navigator.onLine) {
     const { error } = await supabase.storage
       .from(opts.bucket)
-      .upload(opts.path, opts.file, { upsert: true, contentType });
+      .upload(opts.path, preparedFile, { upsert: true, contentType });
     if (!error) return { path: opts.path, queued: false, error: null };
     // Échec réseau → on met en file
   }
@@ -49,12 +79,16 @@ export async function uploadOrQueueFile(opts: {
     id: genId(),
     bucket: opts.bucket,
     path: opts.path,
-    blob: opts.file,
+    blob: preparedFile,
     contentType,
     table: opts.table,
     record_id: opts.record_id,
     column: opts.column,
+    form_id: opts.form_id,
+    field: opts.field,
     status: 'pending',
+    retries: 0,
+    nextRetryAt: 0,
     createdAt: Date.now(),
   };
   await putItem(STORES.FILES, entry);
@@ -73,7 +107,7 @@ export async function countQueuedFiles(): Promise<number> {
 /** Vide la file d'attente des fichiers. Retourne le nombre d'uploads réussis. */
 export async function flushFileQueue(): Promise<number> {
   if (!navigator.onLine) return 0;
-  const files = await getQueuedFiles();
+  const files = (await getQueuedFiles()).filter((f) => !f.nextRetryAt || f.nextRetryAt <= Date.now());
   let ok = 0;
 
   for (const f of files) {
@@ -95,7 +129,15 @@ export async function flushFileQueue(): Promise<number> {
       await deleteItem(STORES.FILES, f.id);
       ok++;
     } catch (e: any) {
-      await putItem(STORES.FILES, { ...f, status: 'error', error: e?.message || 'Upload échoué' });
+      const retries = (f.retries || 0) + 1;
+      const delay = Math.min(60 * 60 * 1000, 15_000 * 2 ** Math.min(retries, 8));
+      await putItem(STORES.FILES, {
+        ...f,
+        status: 'error',
+        retries,
+        nextRetryAt: Date.now() + delay,
+        error: e?.message || 'Upload échoué',
+      });
     }
   }
   return ok;

@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileUploadVisual } from "@/components/ui/file-upload-visual";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Etape5Props {
   formData: any;
@@ -9,13 +10,13 @@ interface Etape5Props {
 }
 
 export const ANNEXES_SOUSCRIPTION = [
-  { field: "annexe1_plan_bloc", label: "Annexe 1 — Plan du bloc / zone de plantation", required: true },
-  { field: "annexe2_carto_lot", label: "Annexe 2 — Plan cartographique du lot Hxx (GPS)", required: true },
-  { field: "annexe3_piece_souscripteur", label: "Annexe 3 — Pièce d'identité du souscripteur", required: true },
-  { field: "annexe4_piece_cotitulaire", label: "Annexe 4 — Pièce d'identité du co-titulaire", required: true },
-  { field: "annexe5_procuration", label: "Annexe 5 — Procuration / mandat (si applicable)", required: false },
-  { field: "annexe6_recu_versement", label: "Annexe 6 — Reçu du 1er versement", required: false },
-  { field: "annexe7_calendrier", label: "Annexe 7 — Calendrier de versements signé", required: true },
+  { field: "annexe1_plan_bloc", label: "Annexe 1 — Plan du bloc / zone de plantation" },
+  { field: "annexe2_carto_lot", label: "Annexe 2 — Plan cartographique du lot Hxx (GPS)" },
+  { field: "annexe3_piece_souscripteur", label: "Annexe 3 — Pièce d'identité du souscripteur" },
+  { field: "annexe4_piece_cotitulaire", label: "Annexe 4 — Pièce d'identité du co-titulaire" },
+  { field: "annexe5_procuration", label: "Annexe 5 — Procuration / mandat (si applicable)" },
+  { field: "annexe6_recu_versement", label: "Annexe 6 — Reçu du premier versement" },
+  { field: "annexe7_calendrier", label: "Annexe 7 — Échéancier de versements signé" },
 ];
 
 export const Etape5Documents = ({ formData, updateFormData }: Etape5Props) => {
@@ -64,23 +65,32 @@ export const Etape5Documents = ({ formData, updateFormData }: Etape5Props) => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Annexes du contrat (Article 8 — Contrat V3)</CardTitle>
+          <CardTitle>Annexes du contrat V1</CardTitle>
           <CardDescription>
-            Liste exacte des annexes obligatoires remises au souscripteur dès le 1ᵉʳ versement.
+            Indiquez pour chaque annexe si elle est jointe maintenant ou sera fournie plus tard.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {ANNEXES_SOUSCRIPTION.map((a) => (
-            <div key={a.field} className="space-y-1">
-              <FileUploadVisual
-                label={`${a.label}${a.required ? " *" : ""}`}
+            <div key={a.field} className="space-y-3 rounded-md border p-3">
+              <Label>{a.label}</Label>
+              <RadioGroup
+                value={formData[`${a.field}_status`] || "plus_tard"}
+                onValueChange={(status) => updateFormData({ [`${a.field}_status`]: status })}
+                className="flex gap-5"
+              >
+                <div className="flex items-center gap-2"><RadioGroupItem value="joint" id={`${a.field}-joint`} /><Label htmlFor={`${a.field}-joint`}>Joint</Label></div>
+                <div className="flex items-center gap-2"><RadioGroupItem value="plus_tard" id={`${a.field}-later`} /><Label htmlFor={`${a.field}-later`}>À fournir plus tard</Label></div>
+              </RadioGroup>
+              {(formData[`${a.field}_status`] || "plus_tard") === "joint" && <FileUploadVisual
+                label="Fichier *"
                 field={a.field}
                 accept=".pdf,image/*"
-                required={a.required}
+                required
                 currentFile={formData[`${a.field}_file`] || null}
                 currentPreview={formData[`${a.field}_preview`] || ""}
                 onFileChange={handleFileChange}
-              />
+              />}
             </div>
           ))}
         </CardContent>

@@ -23,7 +23,7 @@ const NouvelleSouscription = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Étapes du contrat V3 — Souscription uniquement (sans parcelle, sans enquête)
+  // Étapes du contrat V1 — Souscription uniquement (sans parcelle, sans enquête)
   // La conversion en plantation se fait depuis la page Plantations.
   const etapes = useMemo(() => {
     return [
@@ -137,7 +137,7 @@ const NouvelleSouscription = () => {
         throw new Error("Veuillez remplir tous les champs obligatoires (identité, coordonnées et offre)");
       }
 
-      // Validation V3 — type_souscripteur_foncier (EXT/OWN) + cohérence convention/lot
+      // Validation V1 — type_souscripteur_foncier (EXT/OWN) + cohérence convention/lot
       const typeFoncier = formData.type_souscripteur_foncier || (formData.type_souscripteur === "avec_terre" ? "OWN" : "EXT");
       if (typeFoncier === "EXT") {
         if (!formData.convention_id || !formData.lot_id) {
@@ -203,8 +203,8 @@ const NouvelleSouscription = () => {
 
       if (errorSous) throw errorSous;
 
-      const requiredMissing = ANNEXES_SOUSCRIPTION.find((a) => a.required && !formData[`${a.field}_file`]);
-      if (requiredMissing) throw new Error(`${requiredMissing.label}: fichier obligatoire`);
+      const requiredMissing = ANNEXES_SOUSCRIPTION.find((a) => formData[`${a.field}_status`] === "joint" && !formData[`${a.field}_file`]);
+      if (requiredMissing) throw new Error(`${requiredMissing.label}: fichier obligatoire lorsque “Joint” est coché`);
 
       const documentsPayload: any[] = [];
       if (formData.contrat_file) {
@@ -270,7 +270,7 @@ const NouvelleSouscription = () => {
         <div>
           <h1 className="text-3xl font-bold">Nouvelle Souscription</h1>
           <p className="text-muted-foreground">
-            Contrat de Souscription V3 — Sauvegarde automatique
+            Contrat de Souscription V1 — Sauvegarde automatique
           </p>
         </div>
 

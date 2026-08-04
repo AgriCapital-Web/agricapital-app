@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, X, Upload, FileText } from "lucide-react";
+import { Eye, X, Upload, FileText, Camera } from "lucide-react";
 
 
 interface FileUploadVisualProps {
@@ -66,12 +66,13 @@ export const FileUploadVisual = ({
             onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
             className="hidden"
             id={`upload-${field}`}
+            capture={accept.includes("image") ? "environment" : undefined}
           />
           <Label htmlFor={`upload-${field}`} className="cursor-pointer">
             <div className="space-y-2">
-              <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
+              {accept.includes("image") ? <Camera className="h-10 w-10 mx-auto text-muted-foreground" /> : <Upload className="h-10 w-10 mx-auto text-muted-foreground" />}
               <p className="text-sm text-muted-foreground">
-                Cliquer pour sélectionner un fichier
+                Prendre une photo ou sélectionner un fichier
               </p>
               <p className="text-xs text-muted-foreground">
                 JPG, PNG, PDF max 10MB
