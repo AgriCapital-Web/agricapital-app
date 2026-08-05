@@ -100,6 +100,69 @@ export async function getQueuedFiles(): Promise<QueuedFile[]> {
   return (all as QueuedFile[]).filter(f => f.status !== 'uploading');
 }
 
+/** Toutes les entrées de la file, y compris celles en cours (écran de suivi détaillé). */
+export async function getAllQueuedFiles(): Promise<QueuedFile[]> {
+  return (await getAllItems(STORES.FILES)) as QueuedFile[];
+}
+
+/** Remet une pièce jointe en attente immédiate (reprise manuelle). */
+export async function retryQueuedFile(id: string): Promise<void> {
+  const all = await getAllQueuedFiles();
+  const f = all.find((x) => x.id === id);
+  if (!f) return;
+  await putItem(STORES.FILES, { ...f, status: 'pending', nextRetryAt: 0, error: undefined });
+}
+
+/** Relance toutes les pièces jointes en erreur. */
+export async function retryAllQueuedFiles(): Promise<number> {
+  const all = await getAllQueuedFiles();
+  const failed = all.filter((f) => f.status === 'error' || f.nextRetryAt > Date.now());
+  for (const f of failed) {
+    await putItem(STORES.FILES, { ...f, status: 'pending', nextRetryAt: 0, error: undefined });
+  }
+  return failed.length;
+}
+
+/** Abandonne définitivement une pièce jointe. */
+export async function discardQueuedFile(id: string): Promise<void> {
+  await deleteItem(STORES.FILES, id);
+}
+
+/**
+ * Rattache les fichiers déjà mis en file à l'enregistrement créé (association durable
+ * conservée même après fermeture de l'app : elle est persistée dans IndexedDB).
+ */
+export async function bindQueuedFilesToRecord(opts: {
+  form_id: string;
+  table: string;
+  record_id: string;
+  columnByField?: Record<string, string>;
+}): Promise<number> {
+  const all = await getAllQueuedFiles();
+  const mine = all.filter((f) => f.form_id === opts.form_id);
+  for (const f of mine) {
+    await putItem(STORES.FILES, {
+      ...f,
+      table: opts.table,
+      record_id: opts.record_id,
+      column: (f.field && opts.columnByField?.[f.field]) || f.column,
+    });
+  }
+  return mine.length;
+}
+
+/** Statistiques de la file de fichiers (suivi des échecs / reprises). */
+export async function getFileQueueStats(): Promise<{ pending: number; error: number; waiting: number; total: number }> {
+  const all = await getAllQueuedFiles();
+  const now = Date.now();
+  return {
+    total: all.length,
+    error: all.filter((f) => f.status === 'error').length,
+    waiting: all.filter((f) => f.nextRetryAt > now).length,
+    pending: all.filter((f) => f.status === 'pending' && (!f.nextRetryAt || f.nextRetryAt <= now)).length,
+  };
+}
+
 export async function countQueuedFiles(): Promise<number> {
   return (await getQueuedFiles()).length;
 }
@@ -141,4 +204,21 @@ export async function flushFileQueue(): Promise<number> {
     }
   }
   return ok;
+}
+
+let resumeTimer: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Reprise automatique persistante : relance la file au démarrage de l'app,
+ * au retour du réseau et périodiquement — sans aucune action de l'utilisateur.
+ */
+export function startFileQueueResume(intervalMs = 60_000): () => void {
+  const run = () => { flushFileQueue().catch(() => {}); };
+  run();
+  window.addEventListener('online', run);
+  if (!resumeTimer) resumeTimer = setInterval(run, intervalMs);
+  return () => {
+    window.removeEventListener('online', run);
+    if (resumeTimer) { clearInterval(resumeTimer); resumeTimer = null; }
+  };
 }
