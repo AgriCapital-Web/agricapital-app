@@ -161,8 +161,10 @@ const AccountRequest = () => {
       }
 
       toast({
-        title: "Demande envoyée",
-        description: "Dès validation par l'administrateur, connectez-vous avec votre identifiant et votre mot de passe.",
+        title: payload?.immediate_access ? "Compte créé" : "Demande envoyée",
+        description: payload?.immediate_access
+          ? "Votre accès est actif : connectez-vous dès maintenant avec votre identifiant et votre mot de passe."
+          : "Dès validation par l'administrateur, connectez-vous avec votre identifiant et votre mot de passe.",
       });
 
       navigate('/login');
@@ -368,8 +370,8 @@ const AccountRequest = () => {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Votre compte est créé immédiatement mais reste inactif. Dès validation par l'administrateur,
-                vous vous connectez directement avec ces identifiants.
+                Commerciaux et techniciens : l'accès est activé immédiatement après l'envoi du formulaire.
+                Les autres rôles restent en attente de validation par l'administrateur.
               </p>
             </div>
 
