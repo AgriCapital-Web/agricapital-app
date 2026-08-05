@@ -20,6 +20,7 @@ import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Target, TrendingUp, Users, MapPin, PhoneCall, ArrowRight, Copy, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { hasPermission } from "@/lib/roles";
 
 const STATUTS = [
   { v: "nouveau", l: "Nouveau", color: "bg-blue-100 text-blue-800" },
@@ -43,12 +44,18 @@ export default function Leads() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { user } = useAuth();
+  const { user, userRoles } = useAuth();
+  const canSupervise = (userRoles || []).some((r: string) =>
+    ["super_admin", "directeur_tc", "superviseur_tc", "responsable_zone", "responsable_commercial",
+     "chef_equipe", "chef_equipe_commercial"].includes(r));
   const [selected, setSelected] = useState<any>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [leadForm, setLeadForm] = useState({ nom: "", prenoms: "", telephone: "", whatsapp: "", email: "", region_residence: "", commentaire: "" });
   const [relanceOpen, setRelanceOpen] = useState(false);
   const [relance, setRelance] = useState<any>({ canal: "appel", resultat: "interesse", commentaire: "", prochaine_relance: "" });
+  const [reassignOpen, setReassignOpen] = useState(false);
+  const [reassignTo, setReassignTo] = useState("");
+  const [reassignMotif, setReassignMotif] = useState("");
 
   const { data: leads = [] } = useQuery({
     queryKey: ["leads"],
@@ -74,6 +81,46 @@ export default function Leads() {
       const { data } = await (supabase as any).from("lead_relances").select("*").eq("lead_id", selected.id).order("date_relance", { ascending: false });
       return data || [];
     },
+  });
+
+  // Traçabilité complète du lead (création, modifications, conversion, réaffectations)
+  const { data: historique = [] } = useQuery({
+    queryKey: ["lead_historique", selected?.id],
+    enabled: !!selected?.id && navigator.onLine,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("lead_historique").select("*").eq("lead_id", selected.id)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  // Annuaire des acteurs (auteur / affectation / historique)
+  const { data: acteurs = [] } = useQuery({
+    queryKey: ["profiles_acteurs"],
+    enabled: navigator.onLine,
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("profiles").select("id,user_id,nom_complet").eq("actif", true);
+      return data || [];
+    },
+  });
+  const nameOf = (id?: string | null) =>
+    (!id ? "—" : acteurs.find((a: any) => a.user_id === id || a.id === id)?.nom_complet || String(id).slice(0, 8) + "…");
+
+  const reassign = useMutation({
+    mutationFn: async () => {
+      const { error } = await (supabase as any).rpc("reassign_lead", {
+        _lead_id: selected.id, _new_owner: reassignTo, _motif: reassignMotif || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["lead_historique", selected?.id] });
+      setReassignOpen(false); setReassignTo(""); setReassignMotif("");
+      toast({ title: "Prospect réaffecté" });
+    },
+    onError: (e: any) => toast({ variant: "destructive", title: "Réaffectation refusée", description: e.message }),
   });
 
   const updateStatus = useMutation({
@@ -135,6 +182,11 @@ export default function Leads() {
   });
 
   const convertToSouscripteur = (lead: any) => {
+    const isOwner = lead.assigned_to === user?.id || lead.created_by === user?.id;
+    if (!isOwner && !canSupervise) {
+      toast({ variant: "destructive", title: "Conversion refusée", description: "Ce prospect appartient à un autre commercial." });
+      return;
+    }
     // Pré-remplir souscription via query params
     const params = new URLSearchParams({
       lead_id: lead.id,
