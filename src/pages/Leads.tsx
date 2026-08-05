@@ -292,7 +292,11 @@ export default function Leads() {
               <>
                 <DialogHeader><DialogTitle>{selected.nom} {selected.prenoms} — {selected.id_unique}</DialogTitle></DialogHeader>
                 <Tabs defaultValue="info">
-                  <TabsList><TabsTrigger value="info">Informations</TabsTrigger><TabsTrigger value="relances">Relances ({relances.length})</TabsTrigger></TabsList>
+                  <TabsList>
+                    <TabsTrigger value="info">Informations</TabsTrigger>
+                    <TabsTrigger value="relances">Relances ({relances.length})</TabsTrigger>
+                    <TabsTrigger value="historique">Historique ({historique.length})</TabsTrigger>
+                  </TabsList>
                   <TabsContent value="info" className="space-y-2 text-sm">
                     <p><b>Téléphone:</b> {selected.telephone} • <b>WhatsApp:</b> {selected.whatsapp || "—"}</p>
                     <p><b>Email:</b> {selected.email || "—"}</p>
@@ -301,6 +305,10 @@ export default function Leads() {
                     <p><b>Délai:</b> {selected.delai_demarrage || "—"} • <b>Créneau:</b> {selected.creneau_prefere || "—"} • <b>Mode:</b> {selected.mode_contact_prefere}</p>
                     <p><b>Source:</b> {selected.source}</p>
                     <p><b>Message:</b> {selected.commentaire || "—"}</p>
+                    <p><b>Créé par:</b> {nameOf(selected.created_by)} • <b>Commercial affecté:</b> {nameOf(selected.assigned_to)}</p>
+                    {canSupervise && (
+                      <Button size="sm" variant="outline" onClick={() => setReassignOpen(true)}>Réaffecter à un commercial</Button>
+                    )}
                   </TabsContent>
                   <TabsContent value="relances" className="space-y-3">
                     <Button size="sm" onClick={() => setRelanceOpen(true)}>+ Nouvelle relance</Button>
@@ -313,9 +321,52 @@ export default function Leads() {
                       </CardContent></Card>
                     ))}
                   </TabsContent>
+                  <TabsContent value="historique" className="space-y-2">
+                    {historique.length === 0 && <p className="text-sm text-muted-foreground">Aucun événement enregistré.</p>}
+                    {historique.map((h: any) => (
+                      <Card key={h.id}><CardContent className="p-3 text-sm">
+                        <div className="flex justify-between gap-3">
+                          <Badge variant="outline">{h.action}</Badge>
+                          <span className="text-xs text-muted-foreground">{format(new Date(h.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}</span>
+                        </div>
+                        <p className="mt-1"><b>Par:</b> {nameOf(h.acteur_id)}</p>
+                        {h.champ && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {h.champ} : {h.champ === "assigned_to" ? nameOf(h.ancienne_valeur) : (h.ancienne_valeur || "—")}
+                            {" → "}
+                            {h.champ === "assigned_to" ? nameOf(h.nouvelle_valeur) : (h.nouvelle_valeur || "—")}
+                          </p>
+                        )}
+                        {h.commentaire && <p className="text-xs mt-1">{h.commentaire}</p>}
+                      </CardContent></Card>
+                    ))}
+                  </TabsContent>
                 </Tabs>
               </>
             )}
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={reassignOpen} onOpenChange={setReassignOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Réaffecter le prospect</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <Label>Nouveau commercial</Label>
+                <Select value={reassignTo} onValueChange={setReassignTo}>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                  <SelectContent>
+                    {acteurs.map((a: any) => (
+                      <SelectItem key={a.id} value={a.user_id || a.id}>{a.nom_complet}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Motif</Label><Textarea value={reassignMotif} onChange={(e) => setReassignMotif(e.target.value)} /></div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => reassign.mutate()} disabled={!reassignTo || reassign.isPending}>Réaffecter</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
