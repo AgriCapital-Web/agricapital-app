@@ -20,7 +20,7 @@ import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Target, TrendingUp, Users, MapPin, PhoneCall, ArrowRight, Copy, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { hasPermission } from "@/lib/roles";
+
 
 const STATUTS = [
   { v: "nouveau", l: "Nouveau", color: "bg-blue-100 text-blue-800" },
