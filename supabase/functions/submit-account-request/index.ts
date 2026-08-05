@@ -15,6 +15,9 @@ const VALID_ROLES = [
   "comptable", "service_client", "operations",
 ];
 
+// Rôles terrain autorisés à s'inscrire directement (accès immédiat, sans validation admin)
+const SELF_SERVICE_ROLES = ["commercial", "technicien"];
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -121,7 +124,37 @@ serve(async (req) => {
       return json({ error: reqErr.message }, 400);
     }
 
-    return json({ success: true, user_id: userId, username: cleanUsername });
+    // Inscription directe pour les rôles terrain : rôle attribué + profil actif immédiatement
+    const immediate = SELF_SERVICE_ROLES.includes(String(role_souhaite));
+    if (immediate) {
+      const { error: roleErr } = await admin
+        .from("user_roles")
+        .upsert({ user_id: userId, role: role_souhaite }, { onConflict: "user_id,role" });
+
+      if (roleErr) {
+        console.error("role assignment error", roleErr);
+        return json({
+          success: true,
+          user_id: userId,
+          username: cleanUsername,
+          immediate_access: false,
+          warning: "Compte créé mais rôle non attribué : contactez l'administrateur.",
+        });
+      }
+
+      await admin.from("profiles").update({ actif: true }).eq("id", userId);
+      await admin
+        .from("account_requests")
+        .update({ statut: "approuve", traite_le: new Date().toISOString() })
+        .eq("auth_user_id", userId);
+    }
+
+    return json({
+      success: true,
+      user_id: userId,
+      username: cleanUsername,
+      immediate_access: immediate,
+    });
   } catch (e) {
     console.error("submit-account-request error", e);
     return json({ error: (e as Error).message }, 500);

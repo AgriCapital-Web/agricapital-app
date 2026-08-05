@@ -10,7 +10,7 @@ import {
 } from '@/lib/offlineDb';
 import { useToast } from '@/hooks/use-toast';
 import { resolveUpdateConflict } from '@/lib/offlineConflict';
-import { flushFileQueue, countQueuedFiles } from '@/lib/offlineFiles';
+import { flushFileQueue, countQueuedFiles, startFileQueueResume } from '@/lib/offlineFiles';
 
 const SYNC_INTERVAL = 3 * 60 * 1000; // 3 minutes
 const SLOW_NET_THRESHOLD = 1500; // ms
@@ -230,6 +230,8 @@ export function useOfflineSync() {
 
   // Network status monitoring
   useEffect(() => {
+    // Reprise persistante des pièces jointes (au démarrage, au retour réseau, périodiquement)
+    const stopResume = startFileQueueResume();
     const handleOnline = async () => {
       setIsOnline(true);
       const quality = await checkNetworkQuality();
@@ -247,6 +249,7 @@ export function useOfflineSync() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     return () => {
+      stopResume();
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };

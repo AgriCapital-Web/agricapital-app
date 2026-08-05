@@ -808,6 +808,50 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_historique: {
+        Row: {
+          acteur_id: string | null
+          action: string
+          ancienne_valeur: string | null
+          champ: string | null
+          commentaire: string | null
+          created_at: string
+          id: string
+          lead_id: string
+          nouvelle_valeur: string | null
+        }
+        Insert: {
+          acteur_id?: string | null
+          action: string
+          ancienne_valeur?: string | null
+          champ?: string | null
+          commentaire?: string | null
+          created_at?: string
+          id?: string
+          lead_id: string
+          nouvelle_valeur?: string | null
+        }
+        Update: {
+          acteur_id?: string | null
+          action?: string
+          ancienne_valeur?: string | null
+          champ?: string | null
+          commentaire?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string
+          nouvelle_valeur?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_historique_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_relances: {
         Row: {
           canal: string
@@ -3033,6 +3077,10 @@ export type Database = {
           p_title: string
           p_type: string
         }
+        Returns: undefined
+      }
+      reassign_lead: {
+        Args: { _lead_id: string; _motif?: string; _new_owner: string }
         Returns: undefined
       }
       recompute_contrat_totaux: {
