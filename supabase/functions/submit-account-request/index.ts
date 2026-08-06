@@ -21,6 +21,7 @@ const SELF_SERVICE_ROLES = ["commercial", "technicien"];
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let step = "init";
   try {
     const admin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -35,16 +36,16 @@ serve(async (req) => {
     } = body ?? {};
 
     if (!username || !password || !email || !nom_complet || !telephone || !role_souhaite) {
-      return json({ error: "Champs obligatoires manquants (identifiant, mot de passe, email, nom, téléphone, rôle)." }, 400);
+      return json({ error: "Champs obligatoires manquants (identifiant, mot de passe, email, nom, téléphone, rôle).", step: "validate_body" }, 400);
     }
     if (String(password).length < 8) {
-      return json({ error: "Le mot de passe doit contenir au moins 8 caractères." }, 400);
+      return json({ error: "Le mot de passe doit contenir au moins 8 caractères.", step: "validate_password" }, 400);
     }
     if (!/^[a-zA-Z0-9._-]{3,30}$/.test(String(username))) {
-      return json({ error: "Identifiant invalide (3 à 30 caractères : lettres, chiffres, . _ -)." }, 400);
+      return json({ error: "Identifiant invalide (3 à 30 caractères : lettres, chiffres, . _ -).", step: "validate_username" }, 400);
     }
     if (!VALID_ROLES.includes(String(role_souhaite))) {
-      return json({ error: `Rôle invalide: ${role_souhaite}` }, 400);
+      return json({ error: `Rôle invalide: ${role_souhaite}`, step: "validate_role" }, 400);
     }
 
     const cleanUsername = String(username).trim().toLowerCase();
@@ -53,7 +54,7 @@ serve(async (req) => {
     // Username déjà pris ?
     const { data: available } = await admin.rpc("username_available", { _username: cleanUsername });
     if (available === false) {
-      return json({ error: "Cet identifiant est déjà utilisé. Choisissez-en un autre." }, 409);
+      return json({ error: "Cet identifiant est déjà utilisé. Choisissez-en un autre.", step: "username_available" }, 409);
     }
 
     // Email déjà existant ?
@@ -68,6 +69,7 @@ serve(async (req) => {
         error: "email_exists",
         message: `Cet email est déjà attribué à ${existingProfile.nom_complet}.`,
         owner: existingProfile,
+        step: "email_exists",
       }, 409);
     }
 
@@ -82,9 +84,9 @@ serve(async (req) => {
     if (createErr) {
       const msg = String(createErr.message || "");
       if (/already/i.test(msg)) {
-        return json({ error: "email_exists", message: "Un compte existe déjà avec cet email." }, 409);
+        return json({ error: "email_exists", message: "Un compte existe déjà avec cet email.", step: "create_auth_user" }, 409);
       }
-      return json({ error: msg }, 400);
+      return json({ error: msg, step: "create_auth_user" }, 400);
     }
 
     const userId = created.user!.id;
@@ -121,7 +123,8 @@ serve(async (req) => {
 
     if (reqErr) {
       await admin.auth.admin.deleteUser(userId).catch(() => {});
-      return json({ error: reqErr.message }, 400);
+      console.error("insert account_requests failed", reqErr);
+      return json({ error: reqErr.message, step: "insert_account_request", details: reqErr }, 400);
     }
 
     // Inscription directe pour les rôles terrain : rôle attribué + profil actif immédiatement
@@ -157,6 +160,6 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("submit-account-request error", e);
-    return json({ error: (e as Error).message }, 500);
+    return json({ error: (e as Error).message, step }, 500);
   }
 });
