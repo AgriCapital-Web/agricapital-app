@@ -39,6 +39,7 @@ const AccountRequest = () => {
     password_confirm: "",
   });
   const [ownerInfo, setOwnerInfo] = useState<any>(null);
+  const [errorDetail, setErrorDetail] = useState<any>(null);
   
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
@@ -102,6 +103,7 @@ const AccountRequest = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setOwnerInfo(null);
+    setErrorDetail(null);
 
     if (formData.password !== formData.password_confirm) {
       toast({ variant: "destructive", title: "Erreur", description: "Les mots de passe ne correspondent pas." });
@@ -141,13 +143,31 @@ const AccountRequest = () => {
       if (error || payload?.error) {
         if (payload?.owner) setOwnerInfo(payload.owner);
         let functionMessage = error?.message;
+        let contextPayload: any = null;
         if (error && typeof (error as any).context?.json === "function") {
           try {
-            const contextPayload = await (error as any).context.json();
+            contextPayload = await (error as any).context.json();
             functionMessage = contextPayload?.message || contextPayload?.error || functionMessage;
             if (contextPayload?.owner) setOwnerInfo(contextPayload.owner);
           } catch { /* la réponse n'est pas JSON */ }
         }
+        const detail = contextPayload || payload || {};
+        setErrorDetail({
+          etape: detail?.step || "inconnue",
+          raison: detail?.message || detail?.error || functionMessage || "Erreur inconnue",
+          statut_http: (error as any)?.context?.status ?? null,
+          donnees_envoyees: {
+            username: formData.username,
+            email: formData.email,
+            telephone: formData.telephone,
+            role_souhaite: formData.poste,
+            region_id: formData.region || null,
+            departement_geo_id: formData.departement || null,
+            district_id: formData.district || null,
+          },
+          horodatage: new Date().toISOString(),
+        });
+        console.error("[demande-compte] échec", detail);
         throw new Error(payload?.message || payload?.error || functionMessage || "Envoi impossible");
       }
 
@@ -388,6 +408,27 @@ const AccountRequest = () => {
                     <p className="text-muted-foreground text-xs">{ownerInfo.poste || ''} {ownerInfo.username ? `(@${ownerInfo.username})` : ''}</p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {errorDetail && (
+              <div className="rounded-lg border-2 border-destructive/40 bg-destructive/5 p-4 space-y-2">
+                <p className="text-sm font-semibold text-destructive">
+                  Échec de la demande — journal de diagnostic
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Étape :</span> {errorDetail.etape}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Raison :</span> {errorDetail.raison}
+                </p>
+                {errorDetail.statut_http && (
+                  <p className="text-sm"><span className="font-medium">Code HTTP :</span> {errorDetail.statut_http}</p>
+                )}
+                <pre className="text-[10px] overflow-x-auto rounded bg-muted p-2">
+{JSON.stringify(errorDetail.donnees_envoyees, null, 2)}
+                </pre>
+                <p className="text-[10px] text-muted-foreground">{errorDetail.horodatage}</p>
               </div>
             )}
 
