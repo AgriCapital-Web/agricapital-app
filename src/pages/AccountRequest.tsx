@@ -411,6 +411,27 @@ const AccountRequest = () => {
               </div>
             )}
 
+            {errorDetail && (
+              <div className="rounded-lg border-2 border-destructive/40 bg-destructive/5 p-4 space-y-2">
+                <p className="text-sm font-semibold text-destructive">
+                  Échec de la demande — journal de diagnostic
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Étape :</span> {errorDetail.etape}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Raison :</span> {errorDetail.raison}
+                </p>
+                {errorDetail.statut_http && (
+                  <p className="text-sm"><span className="font-medium">Code HTTP :</span> {errorDetail.statut_http}</p>
+                )}
+                <pre className="text-[10px] overflow-x-auto rounded bg-muted p-2">
+{JSON.stringify(errorDetail.donnees_envoyees, null, 2)}
+                </pre>
+                <p className="text-[10px] text-muted-foreground">{errorDetail.horodatage}</p>
+              </div>
+            )}
+
             {/* Message / Justification */}
             <div className="space-y-1.5">
               <Label htmlFor="message" className="text-sm flex items-center gap-2">
