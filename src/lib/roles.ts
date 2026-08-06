@@ -29,6 +29,7 @@ export const ROLES = {
   RESPONSABLE_TECHNIQUE_AGRO: 'responsable_technique_agronomique',
   CHEF_EQUIPE_COMMERCIAL: 'chef_equipe_commercial',
   CHEF_EQUIPE_TECHNIQUE: 'chef_equipe_technique',
+  RESPONSABLE_ZONE: 'responsable_zone',
 } as const;
 
 export type AppRole = typeof ROLES[keyof typeof ROLES];
@@ -52,6 +53,7 @@ Object.assign(ROLE_LABELS, {
   responsable_technique_agronomique: 'Responsable Technique et Agronomique',
   chef_equipe_commercial: "Chef d'Équipe Commercial",
   chef_equipe_technique: "Chef d'Équipe Technique",
+  responsable_zone: 'Responsable de Zone',
 });
 
 export const ROLE_SHORT_LABELS: Record<string, string> = {
@@ -76,6 +78,8 @@ Object.assign(ROLE_SHORT_LABELS, {
   technicien: 'Tech',
 });
 
+Object.assign(ROLE_SHORT_LABELS, { responsable_zone: 'RZ' });
+
 export const ROLE_COLORS: Record<string, string> = {
   super_admin: 'bg-red-100 text-red-800',
   directeur_tc: 'bg-purple-100 text-purple-800',
@@ -94,6 +98,7 @@ Object.assign(ROLE_COLORS, {
   responsable_technique_agronomique: 'bg-blue-100 text-blue-800',
   chef_equipe_commercial: 'bg-indigo-100 text-indigo-800',
   chef_equipe_technique: 'bg-teal-100 text-teal-800',
+  responsable_zone: 'bg-blue-100 text-blue-800',
 });
 
 // Permission matrix
