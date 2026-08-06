@@ -15,8 +15,13 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Users, Plus, Search, Edit, Shield, MoreHorizontal, UserCheck, UserX, Archive } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Users, Plus, Search, Edit, Shield, MoreHorizontal, UserCheck, UserX, KeyRound, AtSign } from "lucide-react";
 import UtilisateurFormNew from "@/components/forms/UtilisateurFormNew";
+import { ROLES as ROLE_KEYS, ROLE_LABELS } from "@/lib/roles";
+
+const ALL_ROLES = Object.values(ROLE_KEYS);
 
 const Utilisateurs = () => {
   const [utilisateurs, setUtilisateurs] = useState<any[]>([]);
@@ -24,8 +29,15 @@ const Utilisateurs = () => {
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [adminAction, setAdminAction] = useState<null | "roles" | "password" | "username">(null);
+  const [adminTarget, setAdminTarget] = useState<any>(null);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [newPassword, setNewPassword] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [busy, setBusy] = useState(false);
   const { hasRole } = useAuth();
   const { toast } = useToast();
+  const isSuperAdmin = hasRole("super_admin");
 
   const fetchUtilisateurs = async () => {
     try {
@@ -72,6 +84,50 @@ const Utilisateurs = () => {
 
   const getRoles = (user: any) => {
     return user.user_roles?.map((r: any) => r.role) || [];
+  };
+
+  const openAdminAction = (user: any, action: "roles" | "password" | "username") => {
+    setAdminTarget(user);
+    setAdminAction(action);
+    setSelectedRoles(getRoles(user));
+    setNewPassword("");
+    setNewUsername(user.username || "");
+  };
+
+  const runAdminAction = async () => {
+    if (!adminTarget || !adminAction) return;
+    setBusy(true);
+    try {
+      const body: any = { user_id: adminTarget.user_id || adminTarget.id };
+      if (adminAction === "roles") { body.action = "set_roles"; body.roles = selectedRoles; }
+      if (adminAction === "password") { body.action = "set_password"; body.password = newPassword; }
+      if (adminAction === "username") { body.action = "set_username"; body.username = newUsername; }
+
+      const { data, error } = await supabase.functions.invoke("admin-manage-user", { body });
+      let payload: any = data;
+      if (error && typeof (error as any).context?.json === "function") {
+        try { payload = await (error as any).context.json(); } catch { /* non JSON */ }
+      }
+      if (payload?.error || (error && !payload?.success)) {
+        throw new Error(`${payload?.error || error?.message} (étape : ${payload?.step || "inconnue"})`);
+      }
+
+      toast({
+        title: "Modification appliquée",
+        description: adminAction === "roles"
+          ? `Rôles : ${(payload?.roles || selectedRoles).join(", ")}`
+          : adminAction === "password"
+            ? "Mot de passe mis à jour."
+            : `Identifiant : ${payload?.username || newUsername}`,
+      });
+      setAdminAction(null);
+      setAdminTarget(null);
+      fetchUtilisateurs();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Erreur", description: e.message });
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleStatusChange = async (userId: string, newStatus: boolean) => {
@@ -148,6 +204,7 @@ const Utilisateurs = () => {
               <TableRow>
                 <TableHead>Nom Complet</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Identifiant</TableHead>
                 <TableHead>Téléphone</TableHead>
                 <TableHead>Rôles</TableHead>
                 <TableHead>Statut</TableHead>
@@ -159,14 +216,18 @@ const Utilisateurs = () => {
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.nom_complet}</TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell className="font-mono text-xs">{user.username || "—"}</TableCell>
                   <TableCell>{user.telephone || "N/A"}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
                       {getRoles(user).map((role: string, idx: number) => (
                         <Badge key={idx} variant="outline" className="text-xs">
-                          {role.replace("_", " ")}
+                          {ROLE_LABELS[role] || role.replace(/_/g, " ")}
                         </Badge>
                       ))}
+                      {getRoles(user).length === 0 && (
+                        <Badge variant="destructive" className="text-xs">Aucun rôle</Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -189,6 +250,22 @@ const Utilisateurs = () => {
                           <Edit className="h-4 w-4 mr-2" />
                           Modifier
                         </DropdownMenuItem>
+                        {isSuperAdmin && (
+                          <>
+                            <DropdownMenuItem onClick={() => openAdminAction(user, "roles")}>
+                              <Shield className="h-4 w-4 mr-2" />
+                              Gérer les rôles
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openAdminAction(user, "password")}>
+                              <KeyRound className="h-4 w-4 mr-2" />
+                              Changer le mot de passe
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openAdminAction(user, "username")}>
+                              <AtSign className="h-4 w-4 mr-2" />
+                              Changer l'identifiant
+                            </DropdownMenuItem>
+                          </>
+                        )}
                         {user.actif ? (
                           <DropdownMenuItem 
                             onClick={() => handleStatusChange(user.id, false)}
@@ -215,6 +292,53 @@ const Utilisateurs = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!adminAction} onOpenChange={(o) => !o && setAdminAction(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {adminAction === "roles" && `Rôles de ${adminTarget?.nom_complet}`}
+              {adminAction === "password" && `Nouveau mot de passe — ${adminTarget?.nom_complet}`}
+              {adminAction === "username" && `Identifiant — ${adminTarget?.nom_complet}`}
+            </DialogTitle>
+          </DialogHeader>
+
+          {adminAction === "roles" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {ALL_ROLES.map((r) => (
+                <label key={r} className="flex items-center gap-2 text-sm rounded border p-2 cursor-pointer">
+                  <Checkbox
+                    checked={selectedRoles.includes(r)}
+                    onCheckedChange={(c) =>
+                      setSelectedRoles((prev) => (c ? [...prev, r] : prev.filter((x) => x !== r)))
+                    }
+                  />
+                  {ROLE_LABELS[r] || r}
+                </label>
+              ))}
+            </div>
+          )}
+
+          {adminAction === "password" && (
+            <div className="space-y-2">
+              <Label>Mot de passe (8 caractères minimum)</Label>
+              <Input type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </div>
+          )}
+
+          {adminAction === "username" && (
+            <div className="space-y-2">
+              <Label>Identifiant de connexion</Label>
+              <Input value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setAdminAction(null)}>Annuler</Button>
+            <Button onClick={runAdminAction} disabled={busy}>{busy ? "..." : "Enregistrer"}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
