@@ -72,6 +72,19 @@ serve(async (req) => {
       return json({ success: true, action, roles: (check ?? []).map((r: any) => r.role) });
     }
 
+    if (action === "delete_user") {
+      step = "delete_user";
+      if (user_id === caller.user.id) {
+        return json({ error: "Impossible de supprimer votre propre compte", step }, 400);
+      }
+      await admin.from("user_roles").delete().eq("user_id", user_id);
+      await admin.from("account_requests").delete().eq("auth_user_id", user_id);
+      await admin.from("profiles").delete().eq("id", user_id);
+      const { error } = await admin.auth.admin.deleteUser(user_id);
+      if (error) return json({ error: error.message, step }, 400);
+      return json({ success: true, action });
+    }
+
     return json({ error: `Action inconnue: ${action}`, step }, 400);
   } catch (e) {
     console.error("admin-manage-user error", step, e);
