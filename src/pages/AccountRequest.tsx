@@ -39,6 +39,7 @@ const AccountRequest = () => {
     password_confirm: "",
   });
   const [ownerInfo, setOwnerInfo] = useState<any>(null);
+  const [errorDetail, setErrorDetail] = useState<any>(null);
   
   const [regions, setRegions] = useState<any[]>([]);
   const [departements, setDepartements] = useState<any[]>([]);
