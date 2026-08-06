@@ -102,6 +102,7 @@ const AccountRequest = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setOwnerInfo(null);
+    setErrorDetail(null);
 
     if (formData.password !== formData.password_confirm) {
       toast({ variant: "destructive", title: "Erreur", description: "Les mots de passe ne correspondent pas." });
@@ -141,13 +142,31 @@ const AccountRequest = () => {
       if (error || payload?.error) {
         if (payload?.owner) setOwnerInfo(payload.owner);
         let functionMessage = error?.message;
+        let contextPayload: any = null;
         if (error && typeof (error as any).context?.json === "function") {
           try {
-            const contextPayload = await (error as any).context.json();
+            contextPayload = await (error as any).context.json();
             functionMessage = contextPayload?.message || contextPayload?.error || functionMessage;
             if (contextPayload?.owner) setOwnerInfo(contextPayload.owner);
           } catch { /* la réponse n'est pas JSON */ }
         }
+        const detail = contextPayload || payload || {};
+        setErrorDetail({
+          etape: detail?.step || "inconnue",
+          raison: detail?.message || detail?.error || functionMessage || "Erreur inconnue",
+          statut_http: (error as any)?.context?.status ?? null,
+          donnees_envoyees: {
+            username: formData.username,
+            email: formData.email,
+            telephone: formData.telephone,
+            role_souhaite: formData.poste,
+            region_id: formData.region || null,
+            departement_geo_id: formData.departement || null,
+            district_id: formData.district || null,
+          },
+          horodatage: new Date().toISOString(),
+        });
+        console.error("[demande-compte] échec", detail);
         throw new Error(payload?.message || payload?.error || functionMessage || "Envoi impossible");
       }
 
