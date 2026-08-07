@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Users, Plus, Search, Edit, Shield, MoreHorizontal, UserCheck, UserX, KeyRound, AtSign } from "lucide-react";
+import { Users, Plus, Search, Edit, Shield, MoreHorizontal, UserCheck, UserX, KeyRound, AtSign, Trash2 } from "lucide-react";
 import UtilisateurFormNew from "@/components/forms/UtilisateurFormNew";
 import { ROLES as ROLE_KEYS, ROLE_LABELS } from "@/lib/roles";
 
@@ -35,6 +35,7 @@ const Utilisateurs = () => {
   const [newPassword, setNewPassword] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [busy, setBusy] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const { hasRole } = useAuth();
   const { toast } = useToast();
   const isSuperAdmin = hasRole("super_admin");
@@ -147,6 +148,20 @@ const Utilisateurs = () => {
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erreur", description: error.message });
     }
+  };
+
+  const deleteUser = async () => {
+    if (!deleteTarget) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-manage-user", { body: { action: "delete_user", user_id: deleteTarget.user_id || deleteTarget.id } });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      toast({ title: "Utilisateur supprimé définitivement" });
+      setDeleteTarget(null);
+      fetchUtilisateurs();
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Suppression impossible", description: e.message });
+    } finally { setBusy(false); }
   };
 
   return (
@@ -264,6 +279,9 @@ const Utilisateurs = () => {
                               <AtSign className="h-4 w-4 mr-2" />
                               Changer l'identifiant
                             </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(user)}>
+                              <Trash2 className="h-4 w-4 mr-2" />Supprimer définitivement
+                            </DropdownMenuItem>
                           </>
                         )}
                         {user.actif ? (
@@ -337,6 +355,13 @@ const Utilisateurs = () => {
             <Button variant="outline" onClick={() => setAdminAction(null)}>Annuler</Button>
             <Button onClick={runAdminAction} disabled={busy}>{busy ? "..." : "Enregistrer"}</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Supprimer définitivement cet utilisateur ?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Le compte Auth, le profil, ses rôles et sa demande de compte seront supprimés. Cette action est irréversible.</p>
+          <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setDeleteTarget(null)}>Annuler</Button><Button variant="destructive" onClick={deleteUser} disabled={busy}>Supprimer</Button></div>
         </DialogContent>
       </Dialog>
     </div>

@@ -144,7 +144,7 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
             <span>🎉 Promotion en cours: {promotionActive.nom}</span>
           </div>
           <p className="text-sm text-amber-600">
-            -{promotionActive.pourcentage_reduction}% sur {(promotionActive as any).cible === 'total_contrat' ? 'le total du contrat (34 mois)' : 'le Dépôt Initial'}
+             {(promotionActive as any).cible === 'special' ? `${(promotionActive as any).montant_fixe_reduction || 0} F de remise spéciale` : `-${promotionActive.pourcentage_reduction}% sur ${(promotionActive as any).cible === 'total_contrat' ? 'le total du contrat (35 mois)' : 'le Dépôt Initial'}`}
           </p>
         </div>
       )}
@@ -200,7 +200,7 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
                         <div className="space-y-1">
                           <div className="flex items-baseline gap-1">
                             <span className="text-lg font-bold">{formatMontant(offre.montant_total_par_ha)}F</span>
-                            <span className="text-xs text-muted-foreground">/ha (total 34 mois)</span>
+                             <span className="text-xs text-muted-foreground">/ha (total 35 mois)</span>
                           </div>
                           <div className="text-xs text-muted-foreground">
                             DI: {formatMontant(offre.montant_depot_initial_par_ha)}F/ha · Cash: {formatMontant(offre.montant_cash_par_ha)}F/ha
@@ -260,7 +260,7 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
               </div>
               {calculs.tranches.length > 0 && (
                 <div className="border-t pt-2 space-y-1 text-sm">
-                  <div className="font-medium mb-1">Échéances mensuelles (34 mois) :</div>
+                   <div className="font-medium mb-1">Échéances mensuelles (35 mois) :</div>
                   {calculs.tranches.map((t: any, i: number) => (
                     <div key={i} className="flex justify-between text-xs text-muted-foreground">
                       <span>An {t.annee} — {t.mois} mois</span>
@@ -270,7 +270,7 @@ export const Etape0Offre = ({ formData, updateFormData }: Etape0Props) => {
                 </div>
               )}
               <div className="border-t pt-2 flex justify-between">
-                <span className="font-semibold">Total contrat (34 mois){calculs.promoCible === 'total_contrat' ? ' (promo)' : ''}:</span>
+                 <span className="font-semibold">Total contrat (35 mois){calculs.promoCible === 'total_contrat' ? ' (promo)' : ''}:</span>
                 <span className="text-lg font-bold text-primary">{formatMontant(calculs.totalFinal)} F</span>
               </div>
               {calculs.promotionAppliquee && (

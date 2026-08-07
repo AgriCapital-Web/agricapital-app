@@ -19,7 +19,7 @@ import GestionStatuts from "@/pages/parametres/GestionStatuts";
 import ConfigurationSysteme from "@/pages/parametres/ConfigurationSysteme";
 import GestionNotifications from "@/pages/parametres/GestionNotifications";
 import GestionBaseDonnees from "@/pages/parametres/GestionBaseDonnees";
-import DiagnosticOffline from "@/pages/parametres/DiagnosticOffline";
+import SyncQueue from "@/pages/SyncQueue";
 import GestionZones from "@/pages/parametres/GestionZones";
 import { useSearchParams } from "react-router-dom";
 
@@ -54,7 +54,7 @@ const Parametres = () => {
     { value: 'notifications', label: 'Notifs', icon: Bell, permission: PERMISSIONS.MANAGE_SYSTEM, component: GestionNotifications },
     { value: 'database', label: 'BDD', icon: Database, permission: PERMISSIONS.MANAGE_SYSTEM, component: GestionBaseDonnees },
     { value: 'systeme', label: 'Système', icon: Globe, permission: PERMISSIONS.MANAGE_SYSTEM, component: ConfigurationSysteme },
-    { value: 'offline', label: 'Hors ligne', icon: HardDrive, permission: PERMISSIONS.MANAGE_SYSTEM, component: DiagnosticOffline },
+    { value: 'offline', label: 'Hors ligne', icon: HardDrive, permission: PERMISSIONS.MANAGE_SYSTEM, component: SyncQueue },
   ];
 
   const visibleTabs = tabs.filter(tab => hasPermission(userRoles, tab.permission));

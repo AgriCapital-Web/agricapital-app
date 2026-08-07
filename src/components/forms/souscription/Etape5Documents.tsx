@@ -10,13 +10,12 @@ interface Etape5Props {
 }
 
 export const ANNEXES_SOUSCRIPTION = [
-  { field: "annexe1_plan_bloc", label: "Annexe 1 — Plan du bloc / zone de plantation" },
-  { field: "annexe2_carto_lot", label: "Annexe 2 — Plan cartographique du lot Hxx (GPS)" },
-  { field: "annexe3_piece_souscripteur", label: "Annexe 3 — Pièce d'identité du souscripteur" },
-  { field: "annexe4_piece_cotitulaire", label: "Annexe 4 — Pièce d'identité du co-titulaire" },
-  { field: "annexe5_procuration", label: "Annexe 5 — Procuration / mandat (si applicable)" },
-  { field: "annexe6_recu_versement", label: "Annexe 6 — Reçu du premier versement" },
-  { field: "annexe7_calendrier", label: "Annexe 7 — Échéancier de versements signé" },
+  { field: "annexe1_plan_bloc", label: "Annexe 1 — Plan du bloc ou de la zone de plantation", condition: () => true },
+  { field: "annexe2_plan_individuel", label: "Annexe 2 — Fiche d’identification et plan individuel (polygonal GPS)", condition: () => true },
+  { field: "annexe3_acte_remise", label: "Annexe 3 — Acte de Remise de Plantation", condition: () => true },
+  { field: "annexe4_avenant_plus", label: "Annexe 4 — Avenant Formules +", condition: (data: any) => Boolean(data.formule_deleguee) },
+  { field: "annexe5_procuration", label: "Annexe 5 — Procuration du cotitulaire ou mandataire", condition: (data: any) => Boolean(data.has_cotitulaire) },
+  { field: "annexe6_securisation", label: "Annexe 6 — Document complémentaire de sécurisation", condition: () => true },
 ];
 
 export const Etape5Documents = ({ formData, updateFormData }: Etape5Props) => {
@@ -71,7 +70,7 @@ export const Etape5Documents = ({ formData, updateFormData }: Etape5Props) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {ANNEXES_SOUSCRIPTION.map((a) => (
+          {ANNEXES_SOUSCRIPTION.filter((a) => a.condition(formData)).map((a) => (
             <div key={a.field} className="space-y-3 rounded-md border p-3">
               <Label>{a.label}</Label>
               <RadioGroup
