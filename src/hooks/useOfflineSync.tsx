@@ -42,9 +42,9 @@ export function useOfflineSync() {
     if (!navigator.onLine) { setNetworkQuality('offline'); return 'offline' as const; }
     try {
       const start = performance.now();
-      await fetch(`https://rfzfsmpsuempafhkqhra.supabase.co/rest/v1/`, {
+       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/`, {
         method: 'HEAD',
-        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmemZzbXBzdWVtcGFmaGtxaHJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExNDE5NjcsImV4cCI6MjA4NjcxNzk2N30.v3sQGr7QHdDqkg4EVHf8l702KKbcOZ8XiP9ALisJFl4' },
+         headers: { 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
         signal: AbortSignal.timeout(5000),
       });
       const latency = performance.now() - start;

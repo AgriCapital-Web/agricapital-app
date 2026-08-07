@@ -52,7 +52,7 @@ const Promotions = () => {
       const { data } = await (supabase as any)
         .from('offres')
         .select('code, nom, montant_depot_initial_par_ha, montant_total_par_ha')
-        .eq('active', true)
+        .eq('actif', true)
         .order('montant_total_par_ha', { ascending: true });
       return data || [];
     }
@@ -68,7 +68,7 @@ const Promotions = () => {
         date_debut: new Date(data.date_debut).toISOString(),
         date_fin: new Date(data.date_fin).toISOString(),
         description: data.description,
-        active: true,
+          active: true,
         applique_toutes_offres: data.applique_toutes_offres,
         type_promotion:
           data.cible === "total_contrat" ? "cout_global" :
@@ -235,9 +235,9 @@ const Promotions = () => {
                   >
                     <RadioGroupItem value="total_contrat" id="cible-total" className="mt-1" />
                     <div className="space-y-1">
-                      <div className="font-semibold">Total du Contrat (34 mois)</div>
+                       <div className="font-semibold">Total du Contrat (35 mois)</div>
                       <p className="text-xs text-muted-foreground">
-                        Réduction sur le coût total : DI + 34 mensualités.
+                         Réduction sur le coût total : DI + 35 mensualités.
                       </p>
                     </div>
                   </label>

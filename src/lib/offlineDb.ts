@@ -139,6 +139,7 @@ export interface SyncOperation {
   status: 'pending' | 'syncing' | 'synced' | 'error';
   retries: number;
   error_message?: string;
+  next_retry_at?: number;
 }
 
 export async function addToSyncQueue(op: Omit<SyncOperation, 'id' | 'status' | 'retries'>): Promise<void> {
@@ -146,10 +147,11 @@ export async function addToSyncQueue(op: Omit<SyncOperation, 'id' | 'status' | '
 }
 
 export async function getPendingSyncOps(): Promise<SyncOperation[]> {
+  const now = Date.now();
   const all = await getAllItems(STORES.SYNC_QUEUE);
   return all
     .filter(op => op.status === 'pending' || op.status === 'error')
-    .filter(op => (op.retries || 0) < 5)
+    .filter(op => !op.next_retry_at || op.next_retry_at <= now)
     .sort((a, b) => a.timestamp - b.timestamp);
 }
 
@@ -158,7 +160,13 @@ export async function markOpStatus(id: number, status: SyncOperation['status'], 
   if (item) {
     item.status = status;
     if (errorMsg) item.error_message = errorMsg;
-    if (status === 'error') item.retries = (item.retries || 0) + 1;
+    if (status === 'error') {
+      item.retries = (item.retries || 0) + 1;
+      item.next_retry_at = Date.now() + Math.min(60 * 60 * 1000, 15_000 * 2 ** Math.min(item.retries, 8));
+    } else if (status === 'pending' || status === 'synced') {
+      item.next_retry_at = 0;
+      item.error_message = undefined;
+    }
     await putItem(STORES.SYNC_QUEUE, item);
   }
 }
