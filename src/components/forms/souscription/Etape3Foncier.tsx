@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 
 /**
- * Étape Foncier — Contrat V3 (Article 12 + Convention Planter-Partager).
+ * Identification de la plantation — Contrat V1, article 4.
  * - type_souscripteur_foncier : EXT (souscripteur externe — terre AgriCapital) | OWN (propriétaire foncier)
  * - Sélection de la convention PP active et d'un lot Hxx disponible.
  * - La référence finale du contrat est construite côté DB (AGC-SUB-YYYY-SPxxx-NNNN).
@@ -62,7 +62,7 @@ export const Etape3Foncier = ({ formData, updateFormData }: Props) => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Statut foncier (Contrat V3 — Article 12)</CardTitle>
+          <CardTitle>Identification foncière — Contrat V1</CardTitle>
           <CardDescription>
             Le souscripteur est-il externe (terre fournie par AgriCapital) ou propriétaire de la terre ?
           </CardDescription>
@@ -90,7 +90,7 @@ export const Etape3Foncier = ({ formData, updateFormData }: Props) => {
             >
               <div className="font-semibold">OWN — Propriétaire foncier</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Le souscripteur apporte sa propre terre. Une convention PP sera signée séparément.
+                Le souscripteur apporte sa propre terre, enregistrée comme parcelle client.
               </p>
             </button>
           </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +17,7 @@ import { offlineInsert, offlineUpdate } from "@/lib/offlineWrite";
 import { getCachedItems, STORES } from "@/lib/offlineDb";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Target, TrendingUp, Users, MapPin, PhoneCall, ArrowRight, Copy, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -43,6 +43,7 @@ const RESULTATS = [
 export default function Leads() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const qc = useQueryClient();
   const { user, userRoles } = useAuth();
   const canSupervise = (userRoles || []).some((r: string) =>
@@ -56,6 +57,10 @@ export default function Leads() {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [reassignTo, setReassignTo] = useState("");
   const [reassignMotif, setReassignMotif] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get("new") === "1") setCreateOpen(true);
+  }, [searchParams]);
 
   const { data: leads = [] } = useQuery({
     queryKey: ["leads"],
@@ -125,7 +130,10 @@ export default function Leads() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, statut }: any) => {
-      const { error } = await offlineUpdate("leads", id, { statut });
+       const lead = leads.find((item: any) => item.id === id);
+       const isOwner = lead?.assigned_to === user?.id || lead?.created_by === user?.id;
+       if (!isOwner && !canSupervise) throw new Error("Vous ne pouvez modifier que vos propres prospects.");
+       const { error } = await offlineUpdate("leads", id, { statut });
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["leads"] }); toast({ title: "Statut mis à jour" }); },
@@ -356,7 +364,7 @@ export default function Leads() {
                 <Select value={reassignTo} onValueChange={setReassignTo}>
                   <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
                   <SelectContent>
-                    {acteurs.map((a: any) => (
+                    {acteurs.filter((a: any) => a.user_id).map((a: any) => (
                       <SelectItem key={a.id} value={a.user_id || a.id}>{a.nom_complet}</SelectItem>
                     ))}
                   </SelectContent>

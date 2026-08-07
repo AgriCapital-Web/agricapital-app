@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { uploadFile } from "@/utils/storage";
+import { offlineInsert } from "@/lib/offlineWrite";
+import { SyncStatusBadge, type SyncState } from "@/components/offline/SyncStatusBadge";
 
 const NouvelleSouscription = () => {
   const [etapeActuelle, setEtapeActuelle] = useState(0);
@@ -22,6 +24,8 @@ const NouvelleSouscription = () => {
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [syncState, setSyncState] = useState<SyncState>("draft");
 
   // Étapes du contrat V1 — Souscription uniquement (sans parcelle, sans enquête)
   // La conversion en plantation se fait depuis la page Plantations.
@@ -35,6 +39,20 @@ const NouvelleSouscription = () => {
       { num: 6, titre: "Confirmation", component: Etape6Confirmation },
     ];
   }, []);
+
+  useEffect(() => {
+    const leadId = searchParams.get("lead_id");
+    if (!leadId) return;
+    setFormData((prev: any) => ({
+      ...prev,
+      lead_id: leadId,
+      nom_famille: prev.nom_famille || searchParams.get("nom") || "",
+      prenoms: prev.prenoms || searchParams.get("prenoms") || "",
+      telephone: prev.telephone || searchParams.get("telephone") || "",
+      whatsapp: prev.whatsapp || searchParams.get("whatsapp") || "",
+      email: prev.email || searchParams.get("email") || "",
+    }));
+  }, [searchParams]);
 
   // Charger le brouillon existant au montage
   useEffect(() => {
@@ -106,7 +124,9 @@ const NouvelleSouscription = () => {
         title: "Sauvegarde réussie",
         description: "Vos données ont été enregistrées",
       });
+      setSyncState("synced");
     } catch (error: any) {
+      setSyncState("error");
       toast({
         variant: "destructive",
         title: "Erreur de sauvegarde",
@@ -161,9 +181,7 @@ const NouvelleSouscription = () => {
       // Créer le souscripteur
       const nomComplet = `${formData.nom_famille || ''} ${formData.prenoms || ''}`.trim();
       
-      const { data: souscripteur, error: errorSous } = await (supabase as any)
-        .from("souscripteurs")
-        .insert({
+      const { data: souscripteur, error: errorSous, offline } = await offlineInsert("souscripteurs", {
           offre_id: formData.offre_id,
           parcelle_id: formData.parcelle_id || null,
           type_souscripteur: formData.type_souscripteur || "sans_terre",
@@ -197,13 +215,13 @@ const NouvelleSouscription = () => {
           updated_by: user.id,
           statut: 'actif',
           statut_global: 'actif',
-        })
-        .select()
-        .single();
+        });
 
       if (errorSous) throw errorSous;
+      if (!souscripteur) throw new Error("Souscripteur non créé");
+      setSyncState(offline ? "queued" : "syncing");
 
-      const requiredMissing = ANNEXES_SOUSCRIPTION.find((a) => formData[`${a.field}_status`] === "joint" && !formData[`${a.field}_file`]);
+      const requiredMissing = ANNEXES_SOUSCRIPTION.find((a) => a.condition(formData) && formData[`${a.field}_status`] === "joint" && !formData[`${a.field}_file`]);
       if (requiredMissing) throw new Error(`${requiredMissing.label}: fichier obligatoire lorsque “Joint” est coché`);
 
       const documentsPayload: any[] = [];
@@ -212,7 +230,7 @@ const NouvelleSouscription = () => {
         if (!uploaded) throw new Error("Upload impossible du contrat signé");
         documentsPayload.push({ souscripteur_id: souscripteur.id, type_document: "contrat_souscription_signe", fichier_url: uploaded.url, statut: "soumis", uploaded_by: user.id });
       }
-      for (const annexe of ANNEXES_SOUSCRIPTION) {
+      for (const annexe of ANNEXES_SOUSCRIPTION.filter((a) => a.condition(formData))) {
         const file = formData[`${annexe.field}_file`];
         if (!file) continue;
         const uploaded = await uploadFile("documents", file, `${user.id}/souscriptions/${souscripteur.id}/annexes`);
@@ -236,6 +254,14 @@ const NouvelleSouscription = () => {
           .eq("id", formData.lot_id);
       }
 
+      if (formData.lead_id && !offline) {
+        const { error: leadError } = await (supabase as any)
+          .from("leads")
+          .update({ statut: "converti", souscripteur_id: souscripteur.id, converti_at: new Date().toISOString() })
+          .eq("id", formData.lead_id);
+        if (leadError) throw leadError;
+      }
+
       // Supprimer le brouillon
       if (brouillonId) {
         await (supabase as any).from("souscriptions_brouillon").delete().eq("id", brouillonId);
@@ -245,9 +271,11 @@ const NouvelleSouscription = () => {
         title: "✅ Souscription enregistrée",
         description: `N° Contrat: ${souscripteur.numero_contrat || souscripteur.id_unique || souscripteur.id}`,
       });
+      setSyncState(offline ? "queued" : "synced");
 
       navigate("/souscriptions");
     } catch (error: any) {
+      setSyncState("error");
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -272,6 +300,7 @@ const NouvelleSouscription = () => {
           <p className="text-muted-foreground">
             Contrat de Souscription V1 — Sauvegarde automatique
           </p>
+          <SyncStatusBadge state={syncState} className="mt-2" />
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2">

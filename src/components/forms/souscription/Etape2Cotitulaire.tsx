@@ -22,26 +22,26 @@ export const Etape2Cotitulaire = ({ formData, updateFormData }: Etape2Props) => 
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Co-titulaire (OBLIGATOIRE)</CardTitle>
+          <CardTitle>Cotitulaire ou mandataire</CardTitle>
           <CardDescription>
-            Le co-titulaire est obligatoire pour toute souscription
+            Facultatif — à renseigner uniquement lorsque le souscripteur en désigne un.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
             <Checkbox
               id="has_cotitulaire"
-              checked={true}
-              disabled
+              checked={Boolean(formData.has_cotitulaire)}
+              onCheckedChange={(checked) => updateFormData({ has_cotitulaire: Boolean(checked) })}
             />
             <Label htmlFor="has_cotitulaire" className="text-sm font-normal">
-              J'ajoute un co-titulaire (obligatoire)
+              Ajouter un cotitulaire ou mandataire
             </Label>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      {formData.has_cotitulaire && <Card>
         <CardHeader>
           <CardTitle>Identité du co-titulaire</CardTitle>
         </CardHeader>
@@ -118,9 +118,9 @@ export const Etape2Cotitulaire = ({ formData, updateFormData }: Etape2Props) => 
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
-      <Card>
+      {formData.has_cotitulaire && <Card>
         <CardHeader>
           <CardTitle>Pièce d'identité du co-titulaire</CardTitle>
         </CardHeader>
@@ -197,9 +197,9 @@ export const Etape2Cotitulaire = ({ formData, updateFormData }: Etape2Props) => 
             onFileChange={handleFileChange}
           />
         </CardContent>
-      </Card>
+      </Card>}
 
-      <Card>
+      {formData.has_cotitulaire && <Card>
         <CardHeader>
           <CardTitle>Coordonnées du co-titulaire</CardTitle>
         </CardHeader>
@@ -230,7 +230,7 @@ export const Etape2Cotitulaire = ({ formData, updateFormData }: Etape2Props) => 
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   );
 };

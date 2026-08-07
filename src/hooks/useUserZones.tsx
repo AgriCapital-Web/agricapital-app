@@ -9,7 +9,7 @@ interface ZoneAssignment {
 
 /**
  * Hook to get the current user's assigned zones and filter geographic data accordingly.
- * - RCom: assigned districts → sees regions of those districts
+ * - Responsable de zone: une région
  * - Chef d'équipe: assigned départements → sees sous-préfectures of those départements
  * - Commercial: assigned sous-préfectures
  * - Admin/DTC: sees everything
@@ -46,6 +46,7 @@ export function useUserZones() {
     if (isAdmin) return [];
     return assignments.filter(a => a.zone_type === "district").map(a => a.zone_id);
   };
+  const getRegionIds = (): string[] => isAdmin ? [] : assignments.filter(a => a.zone_type === "region").map(a => a.zone_id);
 
   const getDepartementIds = (): string[] => {
     if (isAdmin) return [];
@@ -105,12 +106,15 @@ export function useUserZones() {
   };
 
   const fetchFilteredRegions = async (districtId: string) => {
-    const { data } = await (supabase as any).from("regions").select("*").eq("district_id", districtId).eq("est_active", true).order("nom");
+    let query = (supabase as any).from("regions").select("*").eq("district_id", districtId).eq("est_active", true).order("nom");
+    const regionIds = getRegionIds();
+    if (!isAdmin && regionIds.length > 0) query = query.in("id", regionIds);
+    const { data } = await query;
     return data || [];
   };
 
   const fetchFilteredDepartements = async (regionId: string) => {
-    if (isAdmin || getDistrictIds().length > 0) {
+    if (isAdmin || getDistrictIds().length > 0 || getRegionIds().length > 0) {
       const { data } = await (supabase as any).from("departements").select("*").eq("region_id", regionId).eq("est_actif", true).order("nom");
       return data || [];
     }

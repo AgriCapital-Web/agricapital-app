@@ -11,13 +11,10 @@ interface Etape6Props {
 
 export const Etape6Confirmation = ({ formData, updateFormData }: Etape6Props) => {
   const acceptations = [
-    { id: 'contrat_lu', label: "J'ai lu le contrat (20 articles)" },
+    { id: 'contrat_lu', label: "J'ai lu et approuvé le contrat V1" },
     { id: 'documents_authentiques', label: 'Tous les documents fournis sont authentiques' },
-    { id: 'accept_redevance', label: "J'accepte les conditions de redevance (20%)" },
     { id: 'accept_exclusivite', label: "J'accepte l'exclusivité commerciale" },
-    { id: 'accept_hypothecation', label: 'Je comprends l\'hypothécation de 10 ans' },
     { id: 'autorisation_donnees', label: 'J\'autorise l\'utilisation de mes données personnelles' },
-    { id: 'autorisation_photos', label: 'J\'autorise l\'utilisation des photos de ma parcelle' },
   ];
 
   const allAccepted = acceptations.every(acc => formData[acc.id]);
@@ -40,13 +37,8 @@ export const Etape6Confirmation = ({ formData, updateFormData }: Etape6Props) =>
             </div>
 
             <div className="space-y-2">
-              <h4 className="font-semibold text-sm">Co-titulaire</h4>
-              <p className="text-sm">
-                {formData.cotit_nom_famille} {formData.cotit_prenoms}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Relation: {formData.cotit_relation}
-              </p>
+               <h4 className="font-semibold text-sm">Cotitulaire / mandataire</h4>
+               <p className="text-sm">{formData.has_cotitulaire ? `${formData.cotit_nom_famille || ''} ${formData.cotit_prenoms || ''}` : 'Non désigné'}</p>
             </div>
 
             <div className="space-y-2">
@@ -55,7 +47,7 @@ export const Etape6Confirmation = ({ formData, updateFormData }: Etape6Props) =>
                 {formData.superficie_prevue || 0} ha prévu(s)
               </p>
               <p className="text-xs text-muted-foreground">
-                La parcelle et la plantation seront associées ultérieurement
+                 Paiement progressif sur 35 mois — création de la plantation sur 36 mois
               </p>
             </div>
           </div>

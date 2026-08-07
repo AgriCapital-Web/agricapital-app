@@ -31,9 +31,12 @@ const ZONE_TYPE_LABELS: Record<string, string> = {
 };
 
 const ROLE_ZONE_MAP: Record<string, string> = {
-  responsable_zone: "district",
+  responsable_zone: "region",
   chef_equipe: "departement",
+  chef_equipe_commercial: "departement",
+  chef_equipe_technique: "departement",
   commercial: "sous_prefecture",
+  technicien: "sous_prefecture",
 };
 
 const GestionZones = () => {
@@ -64,7 +67,7 @@ const GestionZones = () => {
       const { data: rolesData } = await (supabase as any)
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["responsable_zone", "chef_equipe", "commercial"]);
+        .in("role", ["responsable_zone", "chef_equipe", "chef_equipe_commercial", "chef_equipe_technique", "commercial", "technicien"]);
 
       // Fetch all zone names
       const [{ data: districts }, { data: regions }, { data: depts }, { data: sps }] = await Promise.all([
@@ -119,7 +122,10 @@ const GestionZones = () => {
     if (!zoneType) return;
 
     let data: any[] = [];
-    if (zoneType === "district") {
+    if (zoneType === "region") {
+      const res = await (supabase as any).from("regions").select("id, nom").eq("est_active", true).order("nom");
+      data = res.data || [];
+    } else if (zoneType === "district") {
       const res = await (supabase as any).from("districts").select("id, nom").eq("est_actif", true).order("nom");
       data = res.data || [];
     } else if (zoneType === "departement") {
@@ -186,7 +192,7 @@ const GestionZones = () => {
             Assignation des Zones de Couverture
           </CardTitle>
           <CardDescription>
-            RCom → Districts (gère les régions du district) • Chef d'équipe → Départements • Commercial → Sous-préfectures
+             Responsable de zone → une région • Chef d'équipe → un département • Commercial/technicien → une ou plusieurs sous-préfectures
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -196,9 +202,12 @@ const GestionZones = () => {
                 <SelectValue placeholder="Filtrer par rôle" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="responsable_zone">RCom - Responsable Commercial</SelectItem>
+                 <SelectItem value="responsable_zone">Responsable de zone</SelectItem>
                 <SelectItem value="chef_equipe">Chef d'Équipe</SelectItem>
+                 <SelectItem value="chef_equipe_commercial">Chef d'Équipe Commercial</SelectItem>
+                 <SelectItem value="chef_equipe_technique">Chef d'Équipe Technique</SelectItem>
                 <SelectItem value="commercial">Commercial</SelectItem>
+                 <SelectItem value="technicien">Technicien</SelectItem>
               </SelectContent>
             </Select>
 
