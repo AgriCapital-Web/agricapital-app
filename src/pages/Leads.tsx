@@ -149,23 +149,35 @@ export default function Leads() {
   const createLead = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Non authentifié");
+      const num = (v: string) => (v === "" || v == null ? null : Number(v));
       const { error } = await offlineInsert("leads", {
-        ...leadForm,
-        email: leadForm.email || null,
+        nom: leadForm.nom,
+        prenoms: leadForm.prenoms,
+        telephone: leadForm.telephone,
         whatsapp: leadForm.whatsapp || null,
+        email: leadForm.email || null,
+        region_residence: leadForm.region_residence,
+        est_diaspora: leadForm.est_diaspora === "oui",
+        pays_diaspora: leadForm.est_diaspora === "oui" ? (leadForm.pays_diaspora || null) : null,
+        dispose_terrain: leadForm.dispose_terrain === "oui",
+        superficie_disponible_ha: leadForm.dispose_terrain === "oui" ? num(leadForm.superficie_disponible_ha) : null,
+        superficie_a_valoriser_ha: leadForm.dispose_terrain === "oui" ? num(leadForm.superficie_a_valoriser_ha) : null,
+        superficie_souhaitee_ha: num(leadForm.superficie_souhaitee_ha),
+        delai_demarrage: leadForm.delai_demarrage || null,
+        date_contact_souhaitee: leadForm.date_contact_souhaitee || null,
+        creneau_prefere: leadForm.creneau_prefere || null,
+        mode_contact_prefere: leadForm.mode_contact_prefere || null,
         commentaire: leadForm.commentaire || null,
-        statut: "nouveau",
-        source: "commercial_terrain",
+        statut: leadForm.statut || "nouveau",
+        source: leadForm.source || "commercial_terrain",
         created_by: user.id,
-        assigned_to: user.id,
-        est_diaspora: false,
-        dispose_terrain: false,
+        assigned_to: (canSupervise && leadForm.assigned_to) ? leadForm.assigned_to : user.id,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["leads"] });
-      setLeadForm({ nom: "", prenoms: "", telephone: "", whatsapp: "", email: "", region_residence: "", commentaire: "" });
+      setLeadForm(emptyLead);
       setCreateOpen(false);
       toast({ title: navigator.onLine ? "Lead créé" : "Lead enregistré hors ligne" });
     },
