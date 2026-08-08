@@ -51,7 +51,14 @@ export default function Leads() {
      "chef_equipe", "chef_equipe_commercial"].includes(r));
   const [selected, setSelected] = useState<any>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [leadForm, setLeadForm] = useState({ nom: "", prenoms: "", telephone: "", whatsapp: "", email: "", region_residence: "", commentaire: "" });
+  const emptyLead = {
+    nom: "", prenoms: "", telephone: "", whatsapp: "", email: "", region_residence: "",
+    est_diaspora: "non", pays_diaspora: "",
+    dispose_terrain: "non", superficie_disponible_ha: "", superficie_a_valoriser_ha: "", superficie_souhaitee_ha: "",
+    delai_demarrage: "", date_contact_souhaitee: "", creneau_prefere: "", mode_contact_prefere: "appel",
+    statut: "nouveau", source: "commercial_terrain", assigned_to: "", commentaire: "",
+  };
+  const [leadForm, setLeadForm] = useState<Record<string, string>>(emptyLead);
   const [relanceOpen, setRelanceOpen] = useState(false);
   const [relance, setRelance] = useState<any>({ canal: "appel", resultat: "interesse", commentaire: "", prochaine_relance: "" });
   const [reassignOpen, setReassignOpen] = useState(false);
