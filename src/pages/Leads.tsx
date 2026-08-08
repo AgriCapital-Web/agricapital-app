@@ -398,7 +398,7 @@ export default function Leads() {
         </Dialog>
 
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Créer un lead</DialogTitle></DialogHeader>
             <div className="grid gap-4 sm:grid-cols-2">
               <div><Label>Nom *</Label><Input value={leadForm.nom} onChange={(e) => setLeadForm({ ...leadForm, nom: e.target.value })} /></div>
@@ -407,7 +407,98 @@ export default function Leads() {
               <div><Label>WhatsApp</Label><Input type="tel" value={leadForm.whatsapp} onChange={(e) => setLeadForm({ ...leadForm, whatsapp: e.target.value })} /></div>
               <div><Label>Email</Label><Input type="email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} /></div>
               <div><Label>Région *</Label><Input value={leadForm.region_residence} onChange={(e) => setLeadForm({ ...leadForm, region_residence: e.target.value })} /></div>
-              <div className="sm:col-span-2"><Label>Note</Label><Textarea value={leadForm.commentaire} onChange={(e) => setLeadForm({ ...leadForm, commentaire: e.target.value })} /></div>
+              <div>
+                <Label>Diaspora ?</Label>
+                <Select value={leadForm.est_diaspora} onValueChange={(v) => setLeadForm({ ...leadForm, est_diaspora: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="non">Non</SelectItem><SelectItem value="oui">Oui</SelectItem></SelectContent>
+                </Select>
+              </div>
+              {leadForm.est_diaspora === "oui" && (
+                <div><Label>Pays de résidence</Label><Input value={leadForm.pays_diaspora} onChange={(e) => setLeadForm({ ...leadForm, pays_diaspora: e.target.value })} /></div>
+              )}
+              <div>
+                <Label>Dispose d'un terrain ?</Label>
+                <Select value={leadForm.dispose_terrain} onValueChange={(v) => setLeadForm({ ...leadForm, dispose_terrain: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="non">Non</SelectItem><SelectItem value="oui">Oui</SelectItem></SelectContent>
+                </Select>
+              </div>
+              {leadForm.dispose_terrain === "oui" ? (
+                <>
+                  <div><Label>Superficie disponible (ha)</Label><Input type="number" min="0" step="0.01" value={leadForm.superficie_disponible_ha} onChange={(e) => setLeadForm({ ...leadForm, superficie_disponible_ha: e.target.value })} /></div>
+                  <div><Label>Superficie à valoriser (ha)</Label><Input type="number" min="0" step="0.01" value={leadForm.superficie_a_valoriser_ha} onChange={(e) => setLeadForm({ ...leadForm, superficie_a_valoriser_ha: e.target.value })} /></div>
+                </>
+              ) : (
+                <div><Label>Superficie souhaitée (ha)</Label><Input type="number" min="0" step="0.01" value={leadForm.superficie_souhaitee_ha} onChange={(e) => setLeadForm({ ...leadForm, superficie_souhaitee_ha: e.target.value })} /></div>
+              )}
+              <div>
+                <Label>Délai de démarrage</Label>
+                <Select value={leadForm.delai_demarrage} onValueChange={(v) => setLeadForm({ ...leadForm, delai_demarrage: v })}>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="immediat">Immédiat</SelectItem>
+                    <SelectItem value="1_mois">Sous 1 mois</SelectItem>
+                    <SelectItem value="3_mois">Sous 3 mois</SelectItem>
+                    <SelectItem value="6_mois">Sous 6 mois</SelectItem>
+                    <SelectItem value="indetermine">Indéterminé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Date de contact souhaitée</Label><Input type="date" value={leadForm.date_contact_souhaitee} onChange={(e) => setLeadForm({ ...leadForm, date_contact_souhaitee: e.target.value })} /></div>
+              <div>
+                <Label>Créneau préféré</Label>
+                <Select value={leadForm.creneau_prefere} onValueChange={(v) => setLeadForm({ ...leadForm, creneau_prefere: v })}>
+                  <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="matin">Matin</SelectItem>
+                    <SelectItem value="apres_midi">Après-midi</SelectItem>
+                    <SelectItem value="soir">Soir</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Mode de contact préféré</Label>
+                <Select value={leadForm.mode_contact_prefere} onValueChange={(v) => setLeadForm({ ...leadForm, mode_contact_prefere: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{CANAUX.map((c) => <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Statut initial</Label>
+                <Select value={leadForm.statut} onValueChange={(v) => setLeadForm({ ...leadForm, statut: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{STATUTS.filter(s => s.v !== "converti").map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Source</Label>
+                <Select value={leadForm.source} onValueChange={(v) => setLeadForm({ ...leadForm, source: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="commercial_terrain">Commercial terrain</SelectItem>
+                    <SelectItem value="formulaire_public">Formulaire public</SelectItem>
+                    <SelectItem value="recommandation">Recommandation</SelectItem>
+                    <SelectItem value="reseaux_sociaux">Réseaux sociaux</SelectItem>
+                    <SelectItem value="salon_evenement">Salon / Événement</SelectItem>
+                    <SelectItem value="appel_entrant">Appel entrant</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {canSupervise && (
+                <div className="sm:col-span-2">
+                  <Label>Affecter à un commercial</Label>
+                  <Select value={leadForm.assigned_to} onValueChange={(v) => setLeadForm({ ...leadForm, assigned_to: v })}>
+                    <SelectTrigger><SelectValue placeholder="Moi-même par défaut" /></SelectTrigger>
+                    <SelectContent>
+                      {acteurs.filter((a: any) => a.user_id).map((a: any) => (
+                        <SelectItem key={a.id} value={a.user_id}>{a.nom_complet}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="sm:col-span-2"><Label>Note / Commentaire</Label><Textarea value={leadForm.commentaire} onChange={(e) => setLeadForm({ ...leadForm, commentaire: e.target.value })} rows={3} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setCreateOpen(false)}>Annuler</Button>
