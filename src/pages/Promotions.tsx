@@ -210,50 +210,26 @@ const Promotions = () => {
                 />
               </div>
 
-              <div className="space-y-3 rounded-lg border-2 border-primary/30 bg-primary/5 p-4">
-                <Label className="text-base font-bold">Sur quoi s'applique la réduction ? *</Label>
-                <RadioGroup
+              <div className="space-y-2 rounded-lg border-2 border-primary/30 bg-primary/5 p-4">
+                <Label className="text-base font-bold">Type de promotion — sur quoi s'applique la réduction ? *</Label>
+                <Select
                   value={formData.cible}
-                  onValueChange={(v) => setFormData({...formData, cible: v, type_promotion: v === "total_contrat" ? "cout_global" : "depot_initial"})}
-                  className="grid gap-3 sm:grid-cols-3"
+                  onValueChange={(v) => setFormData({ ...formData, cible: v, type_promotion: v === "total_contrat" ? "cout_global" : v === "special" ? "special" : "depot_initial" })}
                 >
-                  <label
-                    htmlFor="cible-di"
-                    className={`flex cursor-pointer items-start gap-3 rounded-md border-2 p-3 transition ${formData.cible === "depot_initial" ? "border-primary bg-background shadow-sm" : "border-muted bg-background/50 hover:border-primary/50"}`}
-                  >
-                    <RadioGroupItem value="depot_initial" id="cible-di" className="mt-1" />
-                    <div className="space-y-1">
-                      <div className="font-semibold">Dépôt Initial (DI)</div>
-                      <p className="text-xs text-muted-foreground">
-                        Réduction appliquée uniquement sur le DI au moment du paiement.
-                      </p>
-                    </div>
-                  </label>
-                  <label
-                    htmlFor="cible-total"
-                    className={`flex cursor-pointer items-start gap-3 rounded-md border-2 p-3 transition ${formData.cible === "total_contrat" ? "border-primary bg-background shadow-sm" : "border-muted bg-background/50 hover:border-primary/50"}`}
-                  >
-                    <RadioGroupItem value="total_contrat" id="cible-total" className="mt-1" />
-                    <div className="space-y-1">
-                       <div className="font-semibold">Total du Contrat (35 mois)</div>
-                      <p className="text-xs text-muted-foreground">
-                         Réduction sur le coût total : DI + 35 mensualités.
-                      </p>
-                    </div>
-                  </label>
-                  <label
-                    htmlFor="cible-special"
-                    className={`flex cursor-pointer items-start gap-3 rounded-md border-2 p-3 transition ${formData.cible === "special" ? "border-primary bg-background shadow-sm" : "border-muted bg-background/50 hover:border-primary/50"}`}
-                  >
-                    <RadioGroupItem value="special" id="cible-special" className="mt-1" />
-                    <div className="space-y-1">
-                      <div className="font-semibold">Spéciale (montant fixe)</div>
-                      <p className="text-xs text-muted-foreground">
-                        Remise en FCFA, quelconque (ex : bon d'achat, remise commerciale).
-                      </p>
-                    </div>
-                  </label>
-                </RadioGroup>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Choisir le type de promotion" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="depot_initial">Promotion sur le Dépôt Initial (DI)</SelectItem>
+                    <SelectItem value="total_contrat">Promotion sur le prix global (total du contrat)</SelectItem>
+                    <SelectItem value="special">Promotion spéciale (montant fixe en FCFA)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {formData.cible === "depot_initial" && "La réduction s'applique uniquement sur le dépôt initial (DI) exigé à la souscription."}
+                  {formData.cible === "total_contrat" && "La réduction s'applique sur le prix global : DI + mensualités du contrat. Le DI et la mensualité sont recalculés automatiquement et propagés au portail client."}
+                  {formData.cible === "special" && "Remise fixe en FCFA, appliquée manuellement lors de la souscription (geste commercial, bon d'achat)."}
+                </p>
               </div>
 
               {formData.cible !== "special" ? (
