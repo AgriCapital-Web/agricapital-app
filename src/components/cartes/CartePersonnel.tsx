@@ -90,6 +90,9 @@ export const validiteTexte = (carte: CarteData) => {
   return carte.date_expiration ? `${debut}au ${fdate(carte.date_expiration)}` : "Indéterminée";
 };
 
+export const verificationUrl = (code: string) =>
+  `${typeof window !== "undefined" ? window.location.origin : "https://app.agricapital.ci"}/verifier-carte/${code}`;
+
 
 const initiales = (nom: string) =>
   nom
