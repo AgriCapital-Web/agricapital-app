@@ -129,9 +129,8 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
       style={{ border: `0.4mm solid ${VERT}` }}
     >
       <DecorHaut />
-      <DecorBas />
 
-      <div className="relative flex h-full flex-col px-[3.5mm] pb-[13mm] pt-[3mm]">
+      <div className="relative flex h-full flex-col px-[3.5mm] pb-[4mm] pt-[3mm]">
         <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[11mm] object-contain" />
 
         <div className="mt-[2.5mm] flex items-start gap-[2.5mm]">
