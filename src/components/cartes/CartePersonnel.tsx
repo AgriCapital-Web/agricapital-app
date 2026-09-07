@@ -204,40 +204,29 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
         </div>
 
         <div className="mt-[2.5mm] space-y-[1.4mm]">
-          <Ligne label="Mission" valeur={carte.mission || "…………………………………"} />
-          <Ligne label="Zone d'intervention" valeur={carte.zone_intervention || "…………………………"} />
-          <Ligne
-            label="Période de validité"
-            valeur={`Du ${fdate(carte.date_delivrance)} au ${fdate(carte.date_expiration)}`}
-          />
-          <Ligne label="Identifiant officiel" valeur={carte.matricule} />
+          <Ligne label="Mission" valeur={missionAuto(carte)} />
+          <Ligne label="Pays" valeur="Côte d'Ivoire" />
+          <Ligne label="Validité" valeur={validiteTexte(carte)} />
+          <Ligne label="Identifiant" valeur={carte.matricule} />
         </div>
 
-        <div className="mt-auto flex items-end gap-[2mm]">
+        <div className="mt-[2mm] flex items-end justify-between gap-[2mm]">
           <div className="rounded-[1mm] bg-white p-[0.6mm]" style={{ border: `0.25mm solid #D6D6D6` }}>
-            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={54} includeMargin={false} level="M" />
+            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={56} includeMargin={false} level="M" />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-[1mm] text-[5.5pt] font-bold uppercase" style={{ color: VERT }}>
-              <svg viewBox="0 0 24 24" className="h-[3.2mm] w-[3.2mm]" fill={VERT} aria-hidden>
-                <path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3Zm-1 14-3.5-3.5 1.4-1.4L11 13.2l4.1-4.1 1.4 1.4L11 16Z" />
-              </svg>
-              Vérification
-            </p>
-            <p className="text-[4.8pt] leading-[1.3]" style={{ color: GRIS }}>
-              Scannez ce QR code<br />pour vérifier l'authenticité<br />et la validité de ce badge.
-            </p>
-          </div>
-          <div className="w-[19mm] shrink-0 text-center">
+          <div className="w-[22mm] shrink-0 text-center">
             <p className="text-[5pt] font-bold uppercase" style={{ color: VERT }}>Signature direction</p>
-            <div className="relative h-[7mm]">
-              <img src={signature} alt="Signature de la direction" className="absolute inset-0 mx-auto h-[7mm] object-contain" />
-              <img src={cachet} alt="" className="absolute inset-0 mx-auto h-[7mm] object-contain opacity-70" />
+            <div className="relative h-[8mm]">
+              <img src={signature} alt="Signature de la direction" className="absolute inset-0 mx-auto h-[8mm] object-contain" />
+              <img src={cachet} alt="" className="absolute inset-0 mx-auto h-[8mm] object-contain opacity-70" />
             </div>
             <span className="block h-[0.3mm] w-full" style={{ backgroundColor: "#9A9A9A" }} />
           </div>
         </div>
       </div>
+
+      <DecorBas />
+
     </div>
   );
 });
