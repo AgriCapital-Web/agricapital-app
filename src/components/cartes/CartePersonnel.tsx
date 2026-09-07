@@ -61,10 +61,35 @@ export const contratLabel = (v?: string | null) => CONTRATS.find((c) => c.v === 
 export const statutAgentLabel = (v?: string | null) =>
   STATUTS_AGENT.find((s) => s.v === v)?.l || "EMPLOYÉ";
 
-export const verificationUrl = (code: string) =>
-  `${typeof window !== "undefined" ? window.location.origin : "https://app.agricapital.ci"}/verifier-carte/${code}`;
+/** Mission générée automatiquement selon le rôle / poste de l'agent. */
+const MISSIONS_PAR_ROLE: Record<string, string> = {
+  super_admin: "Direction générale et supervision de la plateforme",
+  responsable_operations: "Pilotage des opérations et du paramétrage métier",
+  directeur_tc: "Direction de l'activité technico-commerciale",
+  responsable_commercial: "Pilotage commercial et suivi des zones",
+  comptable: "Gestion financière, paiements et comptabilité",
+  chef_equipe_commercial: "Encadrement d'une équipe commerciale terrain",
+  chef_equipe_technique: "Encadrement d'une équipe technique terrain",
+  chef_equipe_service_client: "Encadrement de l'équipe service client",
+  commercial: "Prospection, leads et souscriptions",
+  service_client: "Support et assistance des souscripteurs",
+  assistant_administratif: "Appui administratif et gestion documentaire",
+};
+
+export const missionAuto = (carte: CarteData) =>
+  carte.mission ||
+  MISSIONS_PAR_ROLE[carte.role_code || ""] ||
+  (carte.poste ? `Mission : ${carte.poste}` : "Missions professionnelles AgriCapital");
 
 const fdate = (d?: string | null) => (d ? format(new Date(d), "dd/MM/yyyy", { locale: fr }) : "—");
+
+/** Validité : indéterminée en CDI, sinon jusqu'à la date de fin de contrat. */
+export const validiteTexte = (carte: CarteData) => {
+  if (carte.type_contrat === "cdi") return "Indéterminée";
+  const debut = carte.date_delivrance ? `Du ${fdate(carte.date_delivrance)} ` : "";
+  return carte.date_expiration ? `${debut}au ${fdate(carte.date_expiration)}` : "Indéterminée";
+};
+
 
 const initiales = (nom: string) =>
   nom
