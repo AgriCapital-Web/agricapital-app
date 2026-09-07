@@ -114,12 +114,13 @@ const DecorHaut = () => (
   </>
 );
 
-const DecorBas = () => (
-  <svg className="pointer-events-none absolute bottom-0 left-0 h-[13mm] w-full" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden>
+const DecorBas = ({ hauteur = "13mm" }: { hauteur?: string }) => (
+  <svg className="pointer-events-none absolute bottom-0 left-0 w-full" style={{ height: hauteur }} viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden>
     <path d="M0 34 C90 6 210 14 300 2 V60 H0 Z" fill={ORANGE} />
     <path d="M0 44 C90 20 210 26 300 14 V60 H0 Z" fill={VERT} />
   </svg>
 );
+
 
 const Ligne = ({ label, valeur }: { label: string; valeur: string }) => (
   <div className="flex items-center gap-[1.2mm]">
