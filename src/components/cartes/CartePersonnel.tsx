@@ -102,15 +102,22 @@ const Ligne = ({ label, valeur }: { label: string; valeur: string }) => (
       <img src={symbole} alt="" className="h-[2.6mm] w-[2.6mm] object-contain brightness-0 invert" />
     </span>
     <span className="h-[3.6mm] w-[0.5mm] shrink-0" style={{ backgroundColor: ORANGE }} />
-    <span className="text-[5pt] font-bold uppercase leading-none" style={{ color: VERT }}>
+    <span
+      className="w-[13mm] shrink-0 text-[4.6pt] font-bold uppercase leading-[1.15]"
+      style={{ color: VERT }}
+    >
       {label}
     </span>
-    <span className="text-[5pt]" style={{ color: GRIS }}>:</span>
-    <span className="min-w-0 flex-1 truncate border-b text-[5.5pt] leading-none" style={{ color: GRIS, borderColor: "#D6D6D6" }}>
+    <span className="shrink-0 text-[5pt] leading-none" style={{ color: GRIS }}>:</span>
+    <span
+      className="min-w-0 flex-1 truncate border-b pb-[0.3mm] text-[5.2pt] leading-none"
+      style={{ color: GRIS, borderColor: "#D6D6D6" }}
+    >
       {valeur}
     </span>
   </div>
 );
+
 
 /** Recto — maquette officielle CARTE_PRO_AGRICAPITAL_RECTO. */
 export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ carte }, ref) => {
