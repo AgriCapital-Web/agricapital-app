@@ -285,9 +285,10 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
   >
     <DecorBas />
 
-    <div className="relative flex h-full flex-col px-[4mm] pb-[13mm] pt-[3.5mm]">
-      <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[12mm] object-contain" />
-      <span className="mx-auto mt-[1.5mm] h-[0.3mm] w-[12mm]" style={{ backgroundColor: VERT }} />
+    <div className="relative flex h-full flex-col px-[4mm] pb-[16mm] pt-[3mm]">
+      <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[11mm] object-contain" />
+      <span className="mx-auto mt-[1.2mm] h-[0.3mm] w-[12mm]" style={{ backgroundColor: VERT }} />
+
 
       <p className="mt-[2mm] text-center text-[5.4pt] leading-[1.5]" style={{ color: "#333" }}>
         Cette carte est une pièce d'identification professionnelle délivrée par AgriCapital SARL.
