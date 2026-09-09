@@ -1,3 +1,5 @@
+import MainLayout from "@/components/layout/MainLayout";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -174,5 +176,15 @@ export function SyncQueueContent() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+/** Page complète avec menu latéral et contrôle d'accès. */
+export default function SyncQueue() {
+  return (
+    <ProtectedRoute>
+      <MainLayout>
+        <SyncQueueContent />
+      </MainLayout>
+    </ProtectedRoute>
   );
 }

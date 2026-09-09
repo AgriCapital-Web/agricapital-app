@@ -19,7 +19,7 @@ import GestionStatuts from "@/pages/parametres/GestionStatuts";
 import ConfigurationSysteme from "@/pages/parametres/ConfigurationSysteme";
 import GestionNotifications from "@/pages/parametres/GestionNotifications";
 import GestionBaseDonnees from "@/pages/parametres/GestionBaseDonnees";
-import SyncQueue from "@/pages/SyncQueue";
+import { SyncQueueContent as SyncQueue } from "@/pages/SyncQueue";
 import GestionZones from "@/pages/parametres/GestionZones";
 import JournalAudit from "@/pages/parametres/JournalAudit";
 import GestionCartes from "@/pages/parametres/GestionCartes";
