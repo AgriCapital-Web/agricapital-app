@@ -4520,6 +4520,26 @@ export type Database = {
       }
     }
     Views: {
+      profils_annuaire: {
+        Row: {
+          actif: boolean | null
+          created_at: string | null
+          departement: string | null
+          district_id: string | null
+          email: string | null
+          equipe_id: string | null
+          id: string | null
+          nom_complet: string | null
+          photo_url: string | null
+          poste: string | null
+          region_id: string | null
+          telephone: string | null
+          user_id: string | null
+          username: string | null
+          whatsapp: string | null
+        }
+        Relationships: []
+      }
       v_prix_effectif_offres: {
         Row: {
           code: string | null
@@ -4600,6 +4620,26 @@ export type Database = {
         Args: { _vente_id: string }
         Returns: undefined
       }
+      annuaire_staff: {
+        Args: never
+        Returns: {
+          actif: boolean
+          created_at: string
+          departement: string
+          district_id: string
+          email: string
+          equipe_id: string
+          id: string
+          nom_complet: string
+          photo_url: string
+          poste: string
+          region_id: string
+          telephone: string
+          user_id: string
+          username: string
+          whatsapp: string
+        }[]
+      }
       assign_sp_code: { Args: { _sp_id: string }; Returns: string }
       can_supervise_leads: { Args: { _user_id: string }; Returns: boolean }
       cleanup_expired_otp: { Args: never; Returns: undefined }
@@ -4634,6 +4674,7 @@ export type Database = {
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_demo: { Args: { _user_id: string }; Returns: boolean }
+      is_rh: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       mark_overdue_payments: { Args: never; Returns: undefined }
       notify_hierarchy: {

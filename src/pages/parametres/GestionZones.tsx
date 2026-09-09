@@ -62,7 +62,7 @@ const GestionZones = () => {
 
       // Fetch profiles and roles for assigned users
       const { data: profilesData } = await (supabase as any)
-        .from("profiles")
+        .from("profils_annuaire")
         .select("id, nom_complet, user_id");
 
       const { data: rolesData } = await (supabase as any)

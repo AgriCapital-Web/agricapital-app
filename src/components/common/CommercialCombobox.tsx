@@ -38,7 +38,7 @@ const CommercialCombobox = ({
   useEffect(() => {
     (async () => {
       const [{ data: profiles }, { data: userRoles }] = await Promise.all([
-        (supabase as any).from("profiles").select("id, user_id, nom_complet, email, actif").eq("actif", true).order("nom_complet"),
+        (supabase as any).from("profils_annuaire").select("id, user_id, nom_complet, email, actif").eq("actif", true).order("nom_complet"),
         (supabase as any).from("user_roles").select("user_id, role"),
       ]);
 

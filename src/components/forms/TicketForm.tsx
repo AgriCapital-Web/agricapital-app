@@ -39,7 +39,7 @@ const TicketForm = ({ ticket, plantationId, onSuccess, onCancel }: TicketFormPro
         .order("created_at", { ascending: false });
 
       const { data: techData } = await (supabase as any)
-        .from("profiles")
+        .from("profils_annuaire")
         .select("id, nom_complet")
         .in("id", (
           await (supabase as any).from("user_roles").select("user_id").eq("role", "technicien")

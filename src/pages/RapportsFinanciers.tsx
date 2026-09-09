@@ -46,7 +46,7 @@ const RapportsFinanciers = () => {
       (supabase as any).from("regions").select("*"),
       (supabase as any).from("departements").select("*"),
       (supabase as any).from("equipes").select("*"),
-      (supabase as any).from("profiles").select("id, nom_complet, equipe_id"),
+      (supabase as any).from("profils_annuaire").select("id, nom_complet, equipe_id"),
       (supabase as any).from("souscripteurs").select("id"),
       (supabase as any).from("plantations").select("id, superficie_ha"),
       (supabase as any).from("v_souscripteur_synthese").select("*").order("avancement_pct", { ascending: false }),
