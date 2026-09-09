@@ -69,9 +69,10 @@ const Login = () => {
           <p className="text-white/80 text-base">
             Connectez-vous pour accéder à votre espace de travail.
           </p>
-
+        </div>
 
         <p className="absolute bottom-6 text-white/50 text-xs">
+
           © {new Date().getFullYear()} AgriCapital - Investir la terre. Cultiver l'avenir.
         </p>
       </div>
