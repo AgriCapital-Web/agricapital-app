@@ -1281,6 +1281,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cartes_personnel_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profils_annuaire"
+            referencedColumns: ["id"]
+          },
         ]
       }
       commissions: {
@@ -1354,6 +1361,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
         ]
@@ -1885,10 +1899,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "equipes_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "profils_annuaire"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "equipes_superviseur_id_fkey"
             columns: ["superviseur_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipes_superviseur_id_fkey"
+            columns: ["superviseur_id"]
+            isOneToOne: false
+            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
         ]
@@ -1988,6 +2016,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "historique_actions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profils_annuaire"
+            referencedColumns: ["id"]
+          },
         ]
       }
       historique_activites: {
@@ -2085,6 +2120,13 @@ export type Database = {
             columns: ["technicien_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interventions_techniques_technicien_id_fkey"
+            columns: ["technicien_id"]
+            isOneToOne: false
+            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
         ]
@@ -3003,6 +3045,13 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photos_plantation_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
         ]
@@ -4333,10 +4382,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tickets_techniques_assigne_a_fkey"
+            columns: ["assigne_a"]
+            isOneToOne: false
+            referencedRelation: "profils_annuaire"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tickets_techniques_cree_par_fkey"
             columns: ["cree_par"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_techniques_cree_par_fkey"
+            columns: ["cree_par"]
+            isOneToOne: false
+            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
           {
@@ -4520,6 +4583,75 @@ export type Database = {
       }
     }
     Views: {
+      profils_annuaire: {
+        Row: {
+          actif: boolean | null
+          created_at: string | null
+          departement: string | null
+          district_id: string | null
+          email: string | null
+          equipe_id: string | null
+          id: string | null
+          nom_complet: string | null
+          photo_url: string | null
+          poste: string | null
+          region_id: string | null
+          telephone: string | null
+          user_id: string | null
+          username: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          actif?: boolean | null
+          created_at?: string | null
+          departement?: string | null
+          district_id?: string | null
+          email?: string | null
+          equipe_id?: string | null
+          id?: string | null
+          nom_complet?: string | null
+          photo_url?: string | null
+          poste?: string | null
+          region_id?: string | null
+          telephone?: string | null
+          user_id?: string | null
+          username?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          actif?: boolean | null
+          created_at?: string | null
+          departement?: string | null
+          district_id?: string | null
+          email?: string | null
+          equipe_id?: string | null
+          id?: string | null
+          nom_complet?: string | null
+          photo_url?: string | null
+          poste?: string | null
+          region_id?: string | null
+          telephone?: string | null
+          user_id?: string | null
+          username?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_profiles_equipe"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_prix_effectif_offres: {
         Row: {
           code: string | null
@@ -4634,6 +4766,7 @@ export type Database = {
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_demo: { Args: { _user_id: string }; Returns: boolean }
+      is_rh: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       mark_overdue_payments: { Args: never; Returns: undefined }
       notify_hierarchy: {
