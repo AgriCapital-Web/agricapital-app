@@ -12,7 +12,8 @@ import {
 import { RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 
 /** Écran de suivi des opérations hors ligne en attente (données + pièces jointes). */
-export default function SyncQueue() {
+export function SyncQueueContent() {
+
   const { isOnline, isSyncing, syncNow, pendingCount, pendingFiles, lastSync } = useOfflineSync();
   const [ops, setOps] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
