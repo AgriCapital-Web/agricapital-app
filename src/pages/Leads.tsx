@@ -114,7 +114,7 @@ export default function Leads() {
     queryKey: ["profiles_acteurs"],
     enabled: navigator.onLine,
     queryFn: async () => {
-      const { data } = await (supabase as any).from("profiles").select("id,user_id,nom_complet").eq("actif", true);
+      const { data } = await (supabase as any).from("profils_annuaire").select("id,user_id,nom_complet").eq("actif", true);
       return data || [];
     },
   });

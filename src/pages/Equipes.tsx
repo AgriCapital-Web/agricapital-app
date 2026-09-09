@@ -51,7 +51,7 @@ const Equipes = () => {
       const [{ data: equipesData, error }, { data: regionsData }, { data: profilesData }] = await Promise.all([
         (supabase as any).from("equipes").select(`*, responsable:profiles!equipes_responsable_id_fkey(nom_complet, telephone), region:regions(nom)`).order("created_at", { ascending: false }),
         (supabase as any).from("regions").select("*").order("nom"),
-        (supabase as any).from("profiles").select("id, nom_complet, user_id").order("nom_complet"),
+        (supabase as any).from("profils_annuaire").select("id, nom_complet, user_id").order("nom_complet"),
       ]);
       if (error) throw error;
       setEquipes(equipesData || []);
@@ -72,7 +72,7 @@ const Equipes = () => {
     const targetRole = equipe.type_equipe === "technique" ? "technicien" : "commercial";
 
     const { data: teamMembers } = await (supabase as any)
-      .from("profiles").select("id, nom_complet, telephone, user_id").eq("equipe_id", equipe.id);
+      .from("profils_annuaire").select("id, nom_complet, telephone, user_id").eq("equipe_id", equipe.id);
 
     const membersList = await Promise.all(
       (teamMembers || []).map(async (m: any) => {
@@ -83,7 +83,7 @@ const Equipes = () => {
     setMembers(membersList);
 
     const { data: available } = await (supabase as any)
-      .from("profiles").select("id, nom_complet, user_id").is("equipe_id", null);
+      .from("profils_annuaire").select("id, nom_complet, user_id").is("equipe_id", null);
 
     const availableWithRoles = await Promise.all(
       (available || []).map(async (p: any) => {

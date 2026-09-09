@@ -33,7 +33,7 @@ const Portefeuilles = () => {
           .select("*")
           .order("date_demande", { ascending: false }),
         (supabase as any)
-          .from("profiles")
+          .from("profils_annuaire")
           .select("id, user_id, nom_complet, telephone, email")
       ]);
 
@@ -86,7 +86,7 @@ const Portefeuilles = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
       const { data: profile, error: profileErr } = await (supabase as any)
-        .from("profiles")
+        .from("profils_annuaire")
         .select("id")
         .or(`user_id.eq.${user.id},id.eq.${user.id}`)
         .maybeSingle();
