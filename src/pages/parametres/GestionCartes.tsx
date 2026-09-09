@@ -76,10 +76,18 @@ const GestionCartes = () => {
 
   const carteDe = useCallback((profileId: string) => cartes.find((c) => c.profile_id === profileId), [cartes]);
 
+  /** Rôles exclus : clients / souscripteurs / démo — la carte est réservée aux équipes AgriCapital. */
+  const NON_STAFF = ["user", "souscripteur", "client", "demo", "proprietaire"];
+
   const lignes = useMemo(() => {
     const t = q.trim().toLowerCase();
     return profiles
+      .filter((p) => {
+        const r = roles[p.user_id];
+        return !!r && !NON_STAFF.includes(r);
+      })
       .filter((p) => !t || [p.nom_complet, p.email, p.poste].some((v) => (v || "").toLowerCase().includes(t)))
+
       .map((p, i) => {
         const c = carteDe(p.id);
         return {
