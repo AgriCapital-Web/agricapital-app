@@ -218,7 +218,16 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
               <span className="h-[0.3mm] flex-1" style={{ backgroundColor: "#C9C9C9" }} />
             </div>
             <p className="text-[7pt] font-bold uppercase leading-none" style={{ color: GRIS }}>Fonction</p>
-            <p className="truncate text-[6pt] leading-tight" style={{ color: GRIS }}>
+            <p
+              className="text-[6pt] leading-[1.2]"
+              style={{
+                color: GRIS,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
               {carte.poste || roleLabel(carte.role_code)}
             </p>
             <div className="mt-[1.5mm] flex items-center gap-[1.2mm]">
@@ -236,26 +245,27 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
           </div>
         </div>
 
-        <div className="mt-[2.5mm] space-y-[1.4mm]">
-          <Ligne label="Mission" valeur={missionAuto(carte)} />
-          <Ligne label="Pays" valeur="Côte d'Ivoire" />
-          <Ligne label="Validité" valeur={validiteTexte(carte)} />
-          <Ligne label="Identifiant" valeur={carte.matricule} />
+        <div className="mt-[3.5mm] space-y-[2.2mm]">
+          <Ligne label="Mission" valeur={missionAuto(carte)} icone="mission" lignes={2} />
+          <Ligne label="Pays" valeur="Côte d'Ivoire" icone="pays" />
+          <Ligne label="Validité" valeur={validiteTexte(carte)} icone="validite" />
+          <Ligne label="Identifiant" valeur={carte.matricule} icone="identifiant" />
         </div>
 
-        <div className="mt-[1.5mm] flex items-end justify-between gap-[2mm]">
+        <div className="mt-auto flex items-end justify-between gap-[2mm] pt-[2.5mm]">
           <div className="rounded-[1mm] bg-white p-[0.5mm]" style={{ border: `0.25mm solid #D6D6D6` }}>
-            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={44} includeMargin={false} level="M" />
+            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={48} includeMargin={false} level="M" />
           </div>
-          <div className="w-[22mm] shrink-0 text-center">
+          <div className="w-[23mm] shrink-0 text-center">
             <p className="text-[5pt] font-bold uppercase" style={{ color: VERT }}>Signature direction</p>
-            <div className="relative h-[7.5mm]">
-              <img src={signature} alt="Signature de la direction" className="absolute inset-0 mx-auto h-[7.5mm] object-contain" />
-              <img src={cachet} alt="" className="absolute inset-0 mx-auto h-[7.5mm] object-contain opacity-70" />
+            <div className="relative h-[8mm]">
+              <img src={signature} alt="Signature de la direction" className="absolute inset-0 mx-auto h-[8mm] object-contain" />
+              <img src={cachet} alt="" className="absolute inset-0 mx-auto h-[8mm] object-contain opacity-70" />
             </div>
             <span className="block h-[0.3mm] w-full" style={{ backgroundColor: "#9A9A9A" }} />
           </div>
         </div>
+
       </div>
 
       <DecorBas hauteur="9mm" />
