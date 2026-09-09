@@ -65,29 +65,11 @@ const Login = () => {
             alt="AgriCapital"
             className="w-full max-w-md h-auto mx-auto mb-8 drop-shadow-2xl"
           />
-          <p className="text-white/80 text-lg mb-8">
-            Plateforme intégrée de gestion agricole : souscriptions, foncier, plantations, AgriPlan et paiements
+          <p className="text-white text-xl font-semibold mb-2">Espace équipe</p>
+          <p className="text-white/80 text-base">
+            Connectez-vous pour accéder à votre espace de travail.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left text-white/75">
-            <div className="rounded-lg bg-white/10 p-3">
-              <p className="text-sm font-semibold text-white">Souscriptions & Offres</p>
-              <p className="text-xs">PalmInvest, TerraPalm, AgriPlan</p>
-            </div>
-            <div className="rounded-lg bg-white/10 p-3">
-              <p className="text-sm font-semibold text-white">Foncier & Parcelles</p>
-              <p className="text-xs">Conventions, lots, cartographie</p>
-            </div>
-            <div className="rounded-lg bg-white/10 p-3">
-              <p className="text-sm font-semibold text-white">Plantations & Suivi</p>
-              <p className="text-xs">Visites techniques, récoltes</p>
-            </div>
-            <div className="rounded-lg bg-white/10 p-3">
-              <p className="text-sm font-semibold text-white">Paiements & Commissions</p>
-              <p className="text-xs">Dépôt initial, échéances, portefeuilles</p>
-            </div>
-          </div>
-        </div>
 
         <p className="absolute bottom-6 text-white/50 text-xs">
           © {new Date().getFullYear()} AgriCapital - Investir la terre. Cultiver l'avenir.
