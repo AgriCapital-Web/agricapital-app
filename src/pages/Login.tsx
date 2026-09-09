@@ -79,8 +79,20 @@ const Login = () => {
 
 
       {/* Panneau droit - Formulaire de connexion */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 bg-background min-h-screen lg:min-h-0">
+      <div className="relative flex-1 flex flex-col items-center justify-center p-6 sm:p-8 bg-background min-h-screen lg:min-h-0">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => navigate('/verifier-carte')}
+          className="absolute right-4 top-4 gap-2 sm:right-6 sm:top-6"
+        >
+          <ScanLine className="h-4 w-4" />
+          Scanner une carte
+        </Button>
+
         {/* Logo mobile — sans cadre */}
+
         <div className="lg:hidden mb-8 w-full flex flex-col items-center">
           <img
             src={logoV2}
