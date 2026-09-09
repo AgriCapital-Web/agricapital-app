@@ -1,3 +1,5 @@
+import MainLayout from "@/components/layout/MainLayout";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +14,8 @@ import {
 import { RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 
 /** Écran de suivi des opérations hors ligne en attente (données + pièces jointes). */
-export default function SyncQueue() {
+export function SyncQueueContent() {
+
   const { isOnline, isSyncing, syncNow, pendingCount, pendingFiles, lastSync } = useOfflineSync();
   const [ops, setOps] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
@@ -173,5 +176,15 @@ export default function SyncQueue() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+/** Page complète avec menu latéral et contrôle d'accès. */
+export default function SyncQueue() {
+  return (
+    <ProtectedRoute>
+      <MainLayout>
+        <SyncQueueContent />
+      </MainLayout>
+    </ProtectedRoute>
   );
 }

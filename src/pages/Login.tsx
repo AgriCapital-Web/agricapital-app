@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import logoV2 from "@/assets/logo-agricapital-v2.png";
 import logoWhite from "@/assets/logo-white.png";
-import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+import { Eye, EyeOff, LogIn, UserPlus, ScanLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -65,39 +65,34 @@ const Login = () => {
             alt="AgriCapital"
             className="w-full max-w-md h-auto mx-auto mb-8 drop-shadow-2xl"
           />
-          <p className="text-white/80 text-lg mb-8">
-            Plateforme intégrée de gestion agricole : souscriptions, foncier, plantations, AgriPlan et paiements
+          <p className="text-white text-xl font-semibold mb-2">Espace équipe</p>
+          <p className="text-white/80 text-base">
+            Connectez-vous pour accéder à votre espace de travail.
           </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left text-white/75">
-            <div className="rounded-lg bg-white/10 p-3">
-              <p className="text-sm font-semibold text-white">Souscriptions & Offres</p>
-              <p className="text-xs">PalmInvest, TerraPalm, AgriPlan</p>
-            </div>
-            <div className="rounded-lg bg-white/10 p-3">
-              <p className="text-sm font-semibold text-white">Foncier & Parcelles</p>
-              <p className="text-xs">Conventions, lots, cartographie</p>
-            </div>
-            <div className="rounded-lg bg-white/10 p-3">
-              <p className="text-sm font-semibold text-white">Plantations & Suivi</p>
-              <p className="text-xs">Visites techniques, récoltes</p>
-            </div>
-            <div className="rounded-lg bg-white/10 p-3">
-              <p className="text-sm font-semibold text-white">Paiements & Commissions</p>
-              <p className="text-xs">Dépôt initial, échéances, portefeuilles</p>
-            </div>
-          </div>
         </div>
 
         <p className="absolute bottom-6 text-white/50 text-xs">
+
           © {new Date().getFullYear()} AgriCapital - Investir la terre. Cultiver l'avenir.
         </p>
       </div>
 
 
       {/* Panneau droit - Formulaire de connexion */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-8 bg-background min-h-screen lg:min-h-0">
+      <div className="relative flex-1 flex flex-col items-center justify-center p-6 sm:p-8 bg-background min-h-screen lg:min-h-0">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => navigate('/verifier-carte')}
+          className="absolute right-4 top-4 gap-2 sm:right-6 sm:top-6"
+        >
+          <ScanLine className="h-4 w-4" />
+          Scanner une carte
+        </Button>
+
         {/* Logo mobile — sans cadre */}
+
         <div className="lg:hidden mb-8 w-full flex flex-col items-center">
           <img
             src={logoV2}
