@@ -41,7 +41,9 @@ const Parametres = () => {
 
   const tabs: TabConfig[] = [
     { value: 'utilisateurs', label: 'Utilisateurs', mobileLabel: 'Users', icon: Users, permission: PERMISSIONS.MANAGE_USERS, component: Utilisateurs },
+    { value: 'cartes', label: 'Carte du personnel', mobileLabel: 'Cartes', icon: IdCard, permission: PERMISSIONS.VIEW_AUDIT, component: GestionCartes },
     { value: 'equipes', label: 'Équipes', icon: UsersRound, permission: PERMISSIONS.MANAGE_TEAMS, component: Equipes },
+
     { value: 'roles', label: 'Rôles', icon: Shield, permission: PERMISSIONS.MANAGE_ROLES, component: GestionRoles },
     { value: 'demandes', label: 'Demandes', icon: UserPlus, permission: PERMISSIONS.MANAGE_USERS, component: AccountRequests },
     { value: 'zones', label: 'Zones', icon: MapPinned, permission: PERMISSIONS.MANAGE_TEAMS, component: GestionZones },

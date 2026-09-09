@@ -326,7 +326,7 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
             Vérification du badge
           </p>
           <p className="text-[5pt] leading-[1.4]" style={{ color: "#333" }}>
-            Scannez ce QR code pour vérifier l'authenticité et la validité de ce badge.
+            Scannez ce QR code pour vérifier l'authenticité et la validité de ce badge sur app.agricapital.ci
           </p>
         </div>
       </div>
