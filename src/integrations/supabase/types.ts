@@ -1281,13 +1281,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "cartes_personnel_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profils_annuaire"
-            referencedColumns: ["id"]
-          },
         ]
       }
       commissions: {
@@ -1361,13 +1354,6 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commissions_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
         ]
@@ -1899,24 +1885,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "equipes_responsable_id_fkey"
-            columns: ["responsable_id"]
-            isOneToOne: false
-            referencedRelation: "profils_annuaire"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "equipes_superviseur_id_fkey"
             columns: ["superviseur_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "equipes_superviseur_id_fkey"
-            columns: ["superviseur_id"]
-            isOneToOne: false
-            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
         ]
@@ -2016,13 +1988,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "historique_actions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profils_annuaire"
-            referencedColumns: ["id"]
-          },
         ]
       }
       historique_activites: {
@@ -2120,13 +2085,6 @@ export type Database = {
             columns: ["technicien_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "interventions_techniques_technicien_id_fkey"
-            columns: ["technicien_id"]
-            isOneToOne: false
-            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
         ]
@@ -3045,13 +3003,6 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "photos_plantation_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
         ]
@@ -4382,24 +4333,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tickets_techniques_assigne_a_fkey"
-            columns: ["assigne_a"]
-            isOneToOne: false
-            referencedRelation: "profils_annuaire"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "tickets_techniques_cree_par_fkey"
             columns: ["cree_par"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_techniques_cree_par_fkey"
-            columns: ["cree_par"]
-            isOneToOne: false
-            referencedRelation: "profils_annuaire"
             referencedColumns: ["id"]
           },
           {
@@ -4601,56 +4538,7 @@ export type Database = {
           username: string | null
           whatsapp: string | null
         }
-        Insert: {
-          actif?: boolean | null
-          created_at?: string | null
-          departement?: string | null
-          district_id?: string | null
-          email?: string | null
-          equipe_id?: string | null
-          id?: string | null
-          nom_complet?: string | null
-          photo_url?: string | null
-          poste?: string | null
-          region_id?: string | null
-          telephone?: string | null
-          user_id?: string | null
-          username?: string | null
-          whatsapp?: string | null
-        }
-        Update: {
-          actif?: boolean | null
-          created_at?: string | null
-          departement?: string | null
-          district_id?: string | null
-          email?: string | null
-          equipe_id?: string | null
-          id?: string | null
-          nom_complet?: string | null
-          photo_url?: string | null
-          poste?: string | null
-          region_id?: string | null
-          telephone?: string | null
-          user_id?: string | null
-          username?: string | null
-          whatsapp?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_profiles_equipe"
-            columns: ["equipe_id"]
-            isOneToOne: false
-            referencedRelation: "equipes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_equipe_id_fkey"
-            columns: ["equipe_id"]
-            isOneToOne: false
-            referencedRelation: "equipes"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       v_prix_effectif_offres: {
         Row: {
@@ -4731,6 +4619,26 @@ export type Database = {
       agriplan_recompute_vente: {
         Args: { _vente_id: string }
         Returns: undefined
+      }
+      annuaire_staff: {
+        Args: never
+        Returns: {
+          actif: boolean
+          created_at: string
+          departement: string
+          district_id: string
+          email: string
+          equipe_id: string
+          id: string
+          nom_complet: string
+          photo_url: string
+          poste: string
+          region_id: string
+          telephone: string
+          user_id: string
+          username: string
+          whatsapp: string
+        }[]
       }
       assign_sp_code: { Args: { _sp_id: string }; Returns: string }
       can_supervise_leads: { Args: { _user_id: string }; Returns: boolean }
