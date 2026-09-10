@@ -279,12 +279,11 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
   >
     <DecorBas />
 
-    <div className="relative flex h-full flex-col px-[4mm] pb-[16mm] pt-[3mm]">
-      <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[11mm] object-contain" />
-      <span className="mx-auto mt-[1.2mm] h-[0.3mm] w-[12mm]" style={{ backgroundColor: VERT }} />
+    <div className="relative flex h-full flex-col px-[4mm] pb-[12mm] pt-[3mm]">
+      <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[10mm] object-contain" />
+      <span className="mx-auto mt-[1mm] h-[0.3mm] w-[12mm]" style={{ backgroundColor: VERT }} />
 
-
-      <p className="mt-[2mm] text-center text-[5.4pt] leading-[1.5]" style={{ color: "#333" }}>
+      <p className="mt-[1.8mm] text-center text-[5.2pt] leading-[1.45]" style={{ color: "#333" }}>
         Cette carte est une pièce d'identification professionnelle délivrée par AgriCapital SARL.
         Elle atteste de l'appartenance ou de la collaboration de son titulaire avec l'entreprise
         dans le cadre de ses activités professionnelles.
@@ -308,9 +307,9 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
         </div>
       </div>
 
-      <div className="mt-[2.5mm] flex items-center gap-[2.5mm]">
+      <div className="mt-[2.2mm] flex items-center gap-[2.2mm]">
         <div className="rounded-[1mm] bg-white p-[0.8mm]" style={{ border: `0.3mm solid #D6D6D6` }}>
-          <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={58} includeMargin={false} level="M" />
+          <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={52} includeMargin={false} level="M" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-[1.2mm] text-[5.6pt] font-bold uppercase" style={{ color: VERT }}>
@@ -325,7 +324,7 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
         </div>
       </div>
 
-      <div className="my-[2mm] flex items-center gap-[1mm]">
+      <div className="my-[1.6mm] flex items-center gap-[1mm]">
         <span className="h-[0.3mm] flex-1" style={{ backgroundColor: "#C9C9C9" }} />
         <img src={symbole} alt="" className="h-[3mm] object-contain" />
         <span className="h-[0.3mm] flex-1" style={{ backgroundColor: "#C9C9C9" }} />
