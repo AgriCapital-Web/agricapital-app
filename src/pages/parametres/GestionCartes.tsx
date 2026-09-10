@@ -5,6 +5,7 @@ import { PERMISSIONS, hasPermission, roleLabel } from "@/lib/roles";
 import { logAdminAction } from "@/lib/audit";
 import { uploaderPhotoCarte, CARTE_BUCKET } from "@/lib/photoCarte";
 import { CarteRecto, CarteVerso, CONTRATS, STATUTS_AGENT, contratLabel, CarteData } from "@/components/cartes/CartePersonnel";
+import ScanCarteDialog from "@/components/cartes/ScanCarteDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ const GestionCartes = () => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Row | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const [form, setForm] = useState({
     poste: "",
     departement: "",
@@ -243,7 +245,13 @@ const GestionCartes = () => {
 
   const exporter = async (ref: React.RefObject<HTMLDivElement>, nom: string) => {
     if (!ref.current) return;
-    const canvas = await html2canvas(ref.current, { scale: 4, backgroundColor: "#ffffff" });
+    const canvas = await html2canvas(ref.current, {
+      scale: 8,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+    });
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
     a.download = `${nom}.png`;
@@ -273,9 +281,14 @@ const GestionCartes = () => {
             <Button variant="outline" className="w-full sm:w-auto" onClick={genererToutes}>
               <RefreshCw className="mr-1 h-4 w-4" />Générer toutes
             </Button>
-            <Button variant="secondary" className="w-full sm:w-auto" asChild>
-              <a href="/verifier-carte" target="_blank" rel="noreferrer"><QrCode className="mr-1 h-4 w-4" />Scanner un badge</a>
+            <Button variant="secondary" className="w-full sm:w-auto" onClick={() => setScanOpen(true)}>
+              <QrCode className="mr-1 h-4 w-4" />Scanner un badge
             </Button>
+            <ScanCarteDialog
+              open={scanOpen}
+              onOpenChange={setScanOpen}
+              onCode={(code) => window.open(`/verifier-carte/${code}`, "_blank", "noreferrer")}
+            />
           </div>
         </CardHeader>
         <CardContent>

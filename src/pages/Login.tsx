@@ -9,12 +9,14 @@ import logoWhite from "@/assets/logo-white.png";
 import { Eye, EyeOff, LogIn, UserPlus, ScanLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ScanCarteDialog from "@/components/cartes/ScanCarteDialog";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
@@ -84,12 +86,14 @@ const Login = () => {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => navigate('/verifier-carte')}
+          onClick={() => setScanOpen(true)}
           className="absolute right-4 top-4 gap-2 sm:right-6 sm:top-6"
         >
           <ScanLine className="h-4 w-4" />
           Scanner une carte
         </Button>
+
+        <ScanCarteDialog open={scanOpen} onOpenChange={setScanOpen} onCode={(code) => navigate(`/verifier-carte/${code}`)} />
 
         {/* Logo mobile — sans cadre */}
 

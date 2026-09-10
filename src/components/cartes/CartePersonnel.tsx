@@ -109,19 +109,19 @@ const initiales = (nom: string) =>
 /** Décors d'angle (courbes vertes et orange) identiques aux maquettes. */
 const DecorHaut = () => (
   <>
-    <svg className="pointer-events-none absolute left-0 top-0 h-[18mm] w-[18mm]" viewBox="0 0 100 100" aria-hidden>
-      <path d="M0 0 H70 C30 8 8 30 0 70 Z" fill={VERT} />
+    <svg className="pointer-events-none absolute left-0 top-0 h-[14mm] w-[14mm]" viewBox="0 0 100 100" aria-hidden>
+      <path d="M0 0 H72 C34 6 6 34 0 72 Z" fill={VERT} />
     </svg>
-    <svg className="pointer-events-none absolute right-0 top-0 h-[16mm] w-[26mm]" viewBox="0 0 160 100" aria-hidden>
-      <path d="M160 0 V70 C118 48 70 34 0 30 C70 16 118 8 160 0 Z" fill={ORANGE} />
+    <svg className="pointer-events-none absolute right-0 top-0 h-[9mm] w-[17mm]" viewBox="0 0 170 90" aria-hidden>
+      <path d="M170 0 V90 C132 62 78 40 0 24 C74 12 128 5 170 0 Z" fill={ORANGE} />
     </svg>
   </>
 );
 
-const DecorBas = ({ hauteur = "13mm" }: { hauteur?: string }) => (
+const DecorBas = ({ hauteur = "10mm" }: { hauteur?: string }) => (
   <svg className="pointer-events-none absolute bottom-0 left-0 w-full" style={{ height: hauteur }} viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden>
-    <path d="M0 30 C90 2 210 12 300 0 V60 H0 Z" fill={ORANGE} />
-    <path d="M0 42 C90 16 210 24 300 12 V60 H0 Z" fill={VERT} />
+    <path d="M0 26 C90 0 210 10 300 0 V60 H0 Z" fill={ORANGE} />
+    <path d="M0 40 C90 14 210 22 300 10 V60 H0 Z" fill={VERT} />
   </svg>
 );
 
@@ -162,13 +162,12 @@ const Ligne = ({
     </span>
     <span className="shrink-0 text-[5pt] leading-none" style={{ color: GRIS }}>:</span>
     <span
-      className="min-w-0 flex-1 border-b pb-[0.4mm] text-[5.2pt] leading-[1.25]"
+      className="min-w-0 flex-1 border-b pb-[0.4mm] text-[5.2pt] leading-[2.3mm]"
       style={{
         color: GRIS,
         borderColor: "#D6D6D6",
-        display: "-webkit-box",
-        WebkitLineClamp: lignes,
-        WebkitBoxOrient: "vertical",
+        display: "block",
+        height: `${2.3 * lignes}mm`,
         overflow: "hidden",
       }}
     >
@@ -190,8 +189,9 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
     >
       <DecorHaut />
 
-      <div className="relative flex h-full flex-col px-[3.5mm] pb-[9.5mm] pt-[2.5mm]">
-        <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[10mm] object-contain" />
+      <div className="relative flex h-full flex-col px-[3.5mm] pb-[12.5mm] pt-[3.5mm]">
+        <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[9.5mm] object-contain" />
+
 
         <div className="mt-[2mm] flex items-start gap-[2.5mm]">
           <div
@@ -219,14 +219,8 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
             </div>
             <p className="text-[7pt] font-bold uppercase leading-none" style={{ color: GRIS }}>Fonction</p>
             <p
-              className="text-[6pt] leading-[1.2]"
-              style={{
-                color: GRIS,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
+              className="text-[6pt] leading-[2.6mm]"
+              style={{ color: GRIS, display: "block", height: "5.2mm", overflow: "hidden" }}
             >
               {carte.poste || roleLabel(carte.role_code)}
             </p>
@@ -252,17 +246,17 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
           <Ligne label="Identifiant" valeur={carte.matricule} icone="identifiant" />
         </div>
 
-        <div className="mt-auto flex items-end justify-between gap-[2mm] pt-[2.5mm]">
+        <div className="mt-auto flex items-end justify-between gap-[2mm]">
           <div className="rounded-[1mm] bg-white p-[0.5mm]" style={{ border: `0.25mm solid #D6D6D6` }}>
-            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={48} includeMargin={false} level="M" />
+            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={44} includeMargin={false} level="M" />
           </div>
-          <div className="w-[23mm] shrink-0 text-center">
-            <p className="text-[5pt] font-bold uppercase" style={{ color: VERT }}>Signature direction</p>
-            <div className="relative h-[8mm]">
-              <img src={signature} alt="Signature de la direction" className="absolute inset-0 mx-auto h-[8mm] object-contain" />
-              <img src={cachet} alt="" className="absolute inset-0 mx-auto h-[8mm] object-contain opacity-70" />
+          <div className="w-[24mm] shrink-0 text-center">
+            <div className="relative mx-auto h-[10mm] w-[24mm]">
+              <img src={cachet} alt="" className="absolute left-1/2 top-0 h-[10mm] -translate-x-1/2 object-contain opacity-90" />
+              <img src={signature} alt="Signature de la direction" className="absolute left-1/2 top-[1mm] h-[8mm] -translate-x-1/2 object-contain" />
             </div>
-            <span className="block h-[0.3mm] w-full" style={{ backgroundColor: "#9A9A9A" }} />
+            <span className="mt-[0.4mm] block h-[0.3mm] w-full" style={{ backgroundColor: "#9A9A9A" }} />
+            <p className="mt-[0.5mm] text-[5pt] font-bold uppercase" style={{ color: VERT }}>Signature direction</p>
           </div>
         </div>
 
@@ -285,12 +279,11 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
   >
     <DecorBas />
 
-    <div className="relative flex h-full flex-col px-[4mm] pb-[16mm] pt-[3mm]">
-      <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[11mm] object-contain" />
-      <span className="mx-auto mt-[1.2mm] h-[0.3mm] w-[12mm]" style={{ backgroundColor: VERT }} />
+    <div className="relative flex h-full flex-col px-[4mm] pb-[12mm] pt-[3mm]">
+      <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[10mm] object-contain" />
+      <span className="mx-auto mt-[1mm] h-[0.3mm] w-[12mm]" style={{ backgroundColor: VERT }} />
 
-
-      <p className="mt-[2mm] text-center text-[5.4pt] leading-[1.5]" style={{ color: "#333" }}>
+      <p className="mt-[1.8mm] text-center text-[5.2pt] leading-[1.45]" style={{ color: "#333" }}>
         Cette carte est une pièce d'identification professionnelle délivrée par AgriCapital SARL.
         Elle atteste de l'appartenance ou de la collaboration de son titulaire avec l'entreprise
         dans le cadre de ses activités professionnelles.
@@ -314,9 +307,9 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
         </div>
       </div>
 
-      <div className="mt-[2.5mm] flex items-center gap-[2.5mm]">
+      <div className="mt-[2.2mm] flex items-center gap-[2.2mm]">
         <div className="rounded-[1mm] bg-white p-[0.8mm]" style={{ border: `0.3mm solid #D6D6D6` }}>
-          <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={58} includeMargin={false} level="M" />
+          <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={52} includeMargin={false} level="M" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-[1.2mm] text-[5.6pt] font-bold uppercase" style={{ color: VERT }}>
@@ -331,7 +324,7 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
         </div>
       </div>
 
-      <div className="my-[2mm] flex items-center gap-[1mm]">
+      <div className="my-[1.6mm] flex items-center gap-[1mm]">
         <span className="h-[0.3mm] flex-1" style={{ backgroundColor: "#C9C9C9" }} />
         <img src={symbole} alt="" className="h-[3mm] object-contain" />
         <span className="h-[0.3mm] flex-1" style={{ backgroundColor: "#C9C9C9" }} />

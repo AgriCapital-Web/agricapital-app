@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { BadgeCheck, ShieldAlert, Search, Loader2 } from "lucide-react";
+import { BadgeCheck, ShieldAlert, Search, Loader2, ScanLine } from "lucide-react";
+import ScanCarteDialog from "@/components/cartes/ScanCarteDialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import logo from "@/assets/logo-white.png";
@@ -30,6 +31,7 @@ const VerificationCarte = () => {
   const [loading, setLoading] = useState(false);
   const [carte, setCarte] = useState<CarteVerifiee | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
 
   const verifier = async (valeur: string) => {
     const c = valeur.trim();
@@ -98,6 +100,21 @@ const VerificationCarte = () => {
                 Vérifier
               </Button>
             </form>
+
+            <Button type="button" variant="secondary" className="h-11 w-full gap-2" onClick={() => setScanOpen(true)}>
+              <ScanLine className="h-4 w-4" />Scanner le QR code avec la caméra
+            </Button>
+
+            <ScanCarteDialog
+              open={scanOpen}
+              onOpenChange={setScanOpen}
+              onCode={(c) => {
+                setSaisie(c);
+                navigate(`/verifier-carte/${c}`);
+                verifier(c);
+              }}
+            />
+
 
             {erreur && (
               <div className="flex items-start gap-2 rounded-lg border-2 border-destructive/40 bg-destructive/5 p-3">
