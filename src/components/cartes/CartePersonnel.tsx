@@ -189,8 +189,9 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
     >
       <DecorHaut />
 
-      <div className="relative flex h-full flex-col px-[3.5mm] pb-[9.5mm] pt-[2.5mm]">
-        <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[10mm] object-contain" />
+      <div className="relative flex h-full flex-col px-[3.5mm] pb-[12.5mm] pt-[3.5mm]">
+        <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[9.5mm] object-contain" />
+
 
         <div className="mt-[2mm] flex items-start gap-[2.5mm]">
           <div
@@ -218,14 +219,8 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
             </div>
             <p className="text-[7pt] font-bold uppercase leading-none" style={{ color: GRIS }}>Fonction</p>
             <p
-              className="text-[6pt] leading-[1.2]"
-              style={{
-                color: GRIS,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
+              className="text-[6pt] leading-[2.6mm]"
+              style={{ color: GRIS, display: "block", height: "5.2mm", overflow: "hidden" }}
             >
               {carte.poste || roleLabel(carte.role_code)}
             </p>
