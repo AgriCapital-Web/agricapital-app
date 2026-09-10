@@ -245,7 +245,13 @@ const GestionCartes = () => {
 
   const exporter = async (ref: React.RefObject<HTMLDivElement>, nom: string) => {
     if (!ref.current) return;
-    const canvas = await html2canvas(ref.current, { scale: 4, backgroundColor: "#ffffff" });
+    const canvas = await html2canvas(ref.current, {
+      scale: 8,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+    });
     const a = document.createElement("a");
     a.href = canvas.toDataURL("image/png");
     a.download = `${nom}.png`;
