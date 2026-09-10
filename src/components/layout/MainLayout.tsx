@@ -13,10 +13,11 @@ import { cn } from "@/lib/utils";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
 import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
+import ScanCarteDialog from "@/components/cartes/ScanCarteDialog";
 import {
   LayoutDashboard, Users, Sprout, CreditCard, LogOut, Menu, Receipt,
   BarChart3, Ticket, Wallet, FileText, Settings, UserCircle, Wifi, WifiOff, RefreshCw, Signal,
-  LandPlot, Layers, Search, Target, CloudUpload, Leaf
+  LandPlot, Layers, ScanLine, Target, CloudUpload, Leaf
 } from "lucide-react";
 
 interface MainLayoutProps { children: ReactNode; }
@@ -26,6 +27,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const { isOnline, isSyncing, syncNow, pendingCount, networkQuality } = useOfflineSync();
   const photoUrl = useSignedUrl('photos-profils', profile?.photo_url);
   useGlobalRealtime();
@@ -133,9 +135,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
       <main className="min-w-0 flex-1 pt-14 md:pt-0">
         <header className="sticky top-0 z-30 hidden h-16 items-center gap-4 border-b bg-background/95 px-6 backdrop-blur md:flex">
-          <div className="flex h-10 min-w-[320px] items-center gap-2 rounded-md border bg-muted/50 px-3 text-muted-foreground">
-            <Search className="h-4 w-4" /><span className="text-sm">Recherche opérationnelle</span>
-          </div>
+          <Button variant="outline" className="h-10 gap-2" onClick={() => setScanOpen(true)}>
+            <ScanLine className="h-4 w-4" />Scanner une carte
+          </Button>
           <div className="ml-auto flex items-center gap-3">
             <NetworkIndicator />
             {pendingCount > 0 && <Badge variant="outline" className="border-accent text-accent">{pendingCount} en attente</Badge>}
@@ -148,6 +150,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         </header>
         <div className="p-3 sm:p-5 lg:p-7">{children}</div>
       </main>
+
+      <ScanCarteDialog open={scanOpen} onOpenChange={setScanOpen} onCode={(code) => navigate(`/verifier-carte/${code}`)} />
 
       <AIAssistant mode="admin" context={`Utilisateur: ${profile?.nom_complet || 'Admin'}, Rôles: ${userRoles.join(', ') || 'N/A'}`} />
     </div>
