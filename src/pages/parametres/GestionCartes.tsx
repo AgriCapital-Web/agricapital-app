@@ -273,9 +273,14 @@ const GestionCartes = () => {
             <Button variant="outline" className="w-full sm:w-auto" onClick={genererToutes}>
               <RefreshCw className="mr-1 h-4 w-4" />Générer toutes
             </Button>
-            <Button variant="secondary" className="w-full sm:w-auto" asChild>
-              <a href="/verifier-carte" target="_blank" rel="noreferrer"><QrCode className="mr-1 h-4 w-4" />Scanner un badge</a>
+            <Button variant="secondary" className="w-full sm:w-auto" onClick={() => setScanOpen(true)}>
+              <QrCode className="mr-1 h-4 w-4" />Scanner un badge
             </Button>
+            <ScanCarteDialog
+              open={scanOpen}
+              onOpenChange={setScanOpen}
+              onCode={(code) => window.open(`/verifier-carte/${code}`, "_blank", "noreferrer")}
+            />
           </div>
         </CardHeader>
         <CardContent>
