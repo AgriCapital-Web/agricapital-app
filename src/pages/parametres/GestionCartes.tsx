@@ -5,6 +5,7 @@ import { PERMISSIONS, hasPermission, roleLabel } from "@/lib/roles";
 import { logAdminAction } from "@/lib/audit";
 import { uploaderPhotoCarte, CARTE_BUCKET } from "@/lib/photoCarte";
 import { CarteRecto, CarteVerso, CONTRATS, STATUTS_AGENT, contratLabel, CarteData } from "@/components/cartes/CartePersonnel";
+import ScanCarteDialog from "@/components/cartes/ScanCarteDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ const GestionCartes = () => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Row | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const [form, setForm] = useState({
     poste: "",
     departement: "",
