@@ -246,17 +246,17 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
           <Ligne label="Identifiant" valeur={carte.matricule} icone="identifiant" />
         </div>
 
-        <div className="mt-auto flex items-end justify-between gap-[2mm] pt-[2.5mm]">
+        <div className="mt-auto flex items-end justify-between gap-[2mm]">
           <div className="rounded-[1mm] bg-white p-[0.5mm]" style={{ border: `0.25mm solid #D6D6D6` }}>
-            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={48} includeMargin={false} level="M" />
+            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={44} includeMargin={false} level="M" />
           </div>
-          <div className="w-[23mm] shrink-0 text-center">
-            <p className="text-[5pt] font-bold uppercase" style={{ color: VERT }}>Signature direction</p>
-            <div className="relative h-[8mm]">
-              <img src={signature} alt="Signature de la direction" className="absolute inset-0 mx-auto h-[8mm] object-contain" />
-              <img src={cachet} alt="" className="absolute inset-0 mx-auto h-[8mm] object-contain opacity-70" />
+          <div className="w-[24mm] shrink-0 text-center">
+            <div className="relative mx-auto h-[10mm] w-[24mm]">
+              <img src={cachet} alt="" className="absolute left-1/2 top-0 h-[10mm] -translate-x-1/2 object-contain opacity-90" />
+              <img src={signature} alt="Signature de la direction" className="absolute left-1/2 top-[1mm] h-[8mm] -translate-x-1/2 object-contain" />
             </div>
-            <span className="block h-[0.3mm] w-full" style={{ backgroundColor: "#9A9A9A" }} />
+            <span className="mt-[0.4mm] block h-[0.3mm] w-full" style={{ backgroundColor: "#9A9A9A" }} />
+            <p className="mt-[0.5mm] text-[5pt] font-bold uppercase" style={{ color: VERT }}>Signature direction</p>
           </div>
         </div>
 
