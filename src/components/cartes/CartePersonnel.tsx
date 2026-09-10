@@ -162,13 +162,12 @@ const Ligne = ({
     </span>
     <span className="shrink-0 text-[5pt] leading-none" style={{ color: GRIS }}>:</span>
     <span
-      className="min-w-0 flex-1 border-b pb-[0.4mm] text-[5.2pt] leading-[1.25]"
+      className="min-w-0 flex-1 border-b pb-[0.4mm] text-[5.2pt] leading-[2.3mm]"
       style={{
         color: GRIS,
         borderColor: "#D6D6D6",
-        display: "-webkit-box",
-        WebkitLineClamp: lignes,
-        WebkitBoxOrient: "vertical",
+        display: "block",
+        height: `${2.3 * lignes}mm`,
         overflow: "hidden",
       }}
     >
