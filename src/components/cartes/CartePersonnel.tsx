@@ -109,19 +109,19 @@ const initiales = (nom: string) =>
 /** Décors d'angle (courbes vertes et orange) identiques aux maquettes. */
 const DecorHaut = () => (
   <>
-    <svg className="pointer-events-none absolute left-0 top-0 h-[18mm] w-[18mm]" viewBox="0 0 100 100" aria-hidden>
-      <path d="M0 0 H70 C30 8 8 30 0 70 Z" fill={VERT} />
+    <svg className="pointer-events-none absolute left-0 top-0 h-[14mm] w-[14mm]" viewBox="0 0 100 100" aria-hidden>
+      <path d="M0 0 H72 C34 6 6 34 0 72 Z" fill={VERT} />
     </svg>
-    <svg className="pointer-events-none absolute right-0 top-0 h-[16mm] w-[26mm]" viewBox="0 0 160 100" aria-hidden>
-      <path d="M160 0 V70 C118 48 70 34 0 30 C70 16 118 8 160 0 Z" fill={ORANGE} />
+    <svg className="pointer-events-none absolute right-0 top-0 h-[9mm] w-[17mm]" viewBox="0 0 170 90" aria-hidden>
+      <path d="M170 0 V90 C132 62 78 40 0 24 C74 12 128 5 170 0 Z" fill={ORANGE} />
     </svg>
   </>
 );
 
-const DecorBas = ({ hauteur = "13mm" }: { hauteur?: string }) => (
+const DecorBas = ({ hauteur = "10mm" }: { hauteur?: string }) => (
   <svg className="pointer-events-none absolute bottom-0 left-0 w-full" style={{ height: hauteur }} viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden>
-    <path d="M0 30 C90 2 210 12 300 0 V60 H0 Z" fill={ORANGE} />
-    <path d="M0 42 C90 16 210 24 300 12 V60 H0 Z" fill={VERT} />
+    <path d="M0 26 C90 0 210 10 300 0 V60 H0 Z" fill={ORANGE} />
+    <path d="M0 40 C90 14 210 22 300 10 V60 H0 Z" fill={VERT} />
   </svg>
 );
 
