@@ -70,8 +70,35 @@ serve(async (req) => {
 
     if (action !== "approve") return json({ error: `Action inconnue: ${action}`, step, logs }, 400);
 
-    const finalRole = role || reqRow.role_souhaite;
+    // Le rôle demandé par le demandeur n'est jamais fiable : l'admin doit choisir
+    // explicitement un rôle, validé ici contre une liste blanche.
+    const LEGACY_ROLE_MAP: Record<string, string> = {
+      superviseur_tc: "responsable_commercial",
+      responsable_zone: "responsable_commercial",
+      responsable_technique_agronomique: "responsable_operations",
+      operations: "responsable_operations",
+      chef_equipe: "chef_equipe_commercial",
+      technicien: "chef_equipe_technique",
+      agent_service_client: "service_client",
+      assistant: "assistant_administratif",
+      assistante: "assistant_administratif",
+      secretaire: "assistant_administratif",
+      raf: "comptable",
+    };
+    const ASSIGNABLE_ROLES = new Set([
+      "responsable_operations", "directeur_tc", "responsable_commercial", "comptable",
+      "chef_equipe_commercial", "chef_equipe_technique", "chef_equipe_service_client",
+      "commercial", "service_client", "assistant_administratif",
+    ]);
+    const requested = role || reqRow.role_souhaite;
+    const finalRole = LEGACY_ROLE_MAP[requested] ?? requested;
     if (!finalRole) return json({ error: "Aucun rôle à attribuer", step: "resolve_role", logs }, 400);
+    if (finalRole === "super_admin") {
+      return json({ error: "Le rôle super_admin ne peut pas être attribué via une demande de compte.", step: "resolve_role", logs }, 403);
+    }
+    if (!ASSIGNABLE_ROLES.has(finalRole)) {
+      return json({ error: `Rôle non autorisé à l'attribution: ${finalRole}`, step: "resolve_role", logs }, 400);
+    }
 
     let userId: string | null = reqRow.auth_user_id;
     let tempPassword: string | null = null;

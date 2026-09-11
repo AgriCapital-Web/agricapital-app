@@ -68,7 +68,11 @@ function formatDate(val: any): string {
 
 function escapeCSV(val: any): string {
   if (val === null || val === undefined) return '';
-  const str = String(val);
+  let str = String(val);
+  // Neutralise l'injection de formules (Excel/Sheets) : préfixe ' devant =, +, -, @, tab, CR
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
     return `"${str.replace(/"/g, '""')}"`;
   }
