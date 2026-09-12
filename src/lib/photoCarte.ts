@@ -10,8 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const CARTE_BUCKET = "cartes-personnel";
 
-const TARGET_W = 600;
-const TARGET_H = 800;
+const TARGET_W = 1200;
+const TARGET_H = 1600;
 
 const loadImage = (file: File | Blob) =>
   new Promise<HTMLImageElement>((resolve, reject) => {
@@ -83,14 +83,19 @@ export async function traiterPhotoCarte(file: File | Blob): Promise<Blob> {
   );
 }
 
-/** Traite puis stocke la photo ; renvoie le chemin de l'objet dans le bucket. */
-export async function uploaderPhotoCarte(profileId: string, file: File | Blob): Promise<string> {
+/** Stocke l'original privé puis confie le détourage et le fond uniforme au serveur. */
+export async function uploaderPhotoCarte(profileId: string, carteId: string, file: File | Blob): Promise<string> {
   const blob = await traiterPhotoCarte(file);
-  const path = `${profileId}/${Date.now()}.jpg`;
+  const path = `originals/${profileId}/${Date.now()}.jpg`;
   const { error } = await supabase.storage.from(CARTE_BUCKET).upload(path, blob, {
     contentType: "image/jpeg",
     upsert: true,
   });
   if (error) throw error;
-  return path;
+  const { data, error: processingError } = await supabase.functions.invoke("process-card-photo", {
+    body: { mode: "single", cardId: carteId, sourcePath: path },
+  });
+  if (processingError) throw processingError;
+  if (!data?.path) throw new Error(data?.error || "La photo n'a pas pu être traitée.");
+  return data.path as string;
 }
