@@ -106,22 +106,23 @@ const initiales = (nom: string) =>
     .map((n) => n[0]?.toUpperCase())
     .join("");
 
-/** Décors d'angle (courbes vertes et orange) identiques aux maquettes. */
+/** Courbes officielles, maintenues hors de toutes les zones de contenu. */
 const DecorHaut = () => (
   <>
-    <svg className="pointer-events-none absolute left-0 top-0 h-[14mm] w-[14mm]" viewBox="0 0 100 100" aria-hidden>
-      <path d="M0 0 H72 C34 6 6 34 0 72 Z" fill={VERT} />
+    <svg className="pointer-events-none absolute left-0 top-0 h-[18mm] w-[11mm]" viewBox="0 0 110 180" aria-hidden>
+      <path d="M0 0H110C58 24 24 76 0 154Z" fill={VERT} />
     </svg>
-    <svg className="pointer-events-none absolute right-0 top-0 h-[9mm] w-[17mm]" viewBox="0 0 170 90" aria-hidden>
-      <path d="M170 0 V90 C132 62 78 40 0 24 C74 12 128 5 170 0 Z" fill={ORANGE} />
+    <svg className="pointer-events-none absolute right-0 top-[8mm] h-[12mm] w-[13mm]" viewBox="0 0 130 120" aria-hidden>
+      <path d="M130 0V72C96 94 58 108 0 116C57 90 101 52 130 0Z" fill={ORANGE} />
     </svg>
   </>
 );
 
-const DecorBas = ({ hauteur = "10mm" }: { hauteur?: string }) => (
-  <svg className="pointer-events-none absolute bottom-0 left-0 w-full" style={{ height: hauteur }} viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden>
-    <path d="M0 26 C90 0 210 10 300 0 V60 H0 Z" fill={ORANGE} />
-    <path d="M0 40 C90 14 210 22 300 10 V60 H0 Z" fill={VERT} />
+const DecorBas = () => (
+  <svg className="pointer-events-none absolute bottom-0 left-0 h-[9mm] w-full" viewBox="0 0 300 54" preserveAspectRatio="none" aria-hidden>
+    <path d="M0 17C93 48 215 49 300 9V54H0Z" fill="#E7E7E7" />
+    <path d="M0 25C92 52 214 52 300 14V54H0Z" fill={ORANGE} />
+    <path d="M0 34C99 56 220 54 300 23V54H0Z" fill={VERT} />
   </svg>
 );
 
@@ -142,33 +143,28 @@ const Ligne = ({
   label,
   valeur,
   icone,
-  lignes = 1,
-}: { label: string; valeur: string; icone: IconeCarte; lignes?: number }) => (
-  <div className="flex items-center gap-[1.2mm]">
+}: { label: string; valeur: string; icone: IconeCarte }) => (
+  <div className="grid h-[5.1mm] grid-cols-[5mm_0.5mm_15mm_1mm_1fr] items-center gap-[1mm] border-b" style={{ borderColor: "#C9C9C9" }}>
     <span
-      className="flex h-[4.8mm] w-[4.8mm] shrink-0 items-center justify-center rounded-full"
+      className="flex h-[4.4mm] w-[4.4mm] items-center justify-center rounded-full"
       style={{ backgroundColor: VERT }}
     >
-      <svg viewBox="0 0 24 24" className="h-[2.9mm] w-[2.9mm]" fill="#fff" aria-hidden>
+      <svg viewBox="0 0 24 24" className="h-[2.7mm] w-[2.7mm]" fill="#fff" aria-hidden>
         <path d={PICTOS[icone]} />
       </svg>
     </span>
-    <span className="h-[3.8mm] w-[0.5mm] shrink-0" style={{ backgroundColor: ORANGE }} />
+    <span className="h-[3.6mm] w-[0.5mm]" style={{ backgroundColor: ORANGE }} />
     <span
-      className="w-[13mm] shrink-0 text-[4.8pt] font-bold uppercase leading-[1.15]"
+      className="whitespace-nowrap text-[4.5pt] font-bold uppercase leading-none"
       style={{ color: VERT }}
     >
       {label}
     </span>
-    <span className="shrink-0 text-[5pt] leading-none" style={{ color: GRIS }}>:</span>
+    <span className="text-[4.6pt] leading-none" style={{ color: GRIS }}>:</span>
     <span
-      className="min-w-0 flex-1 border-b pb-[0.4mm] text-[5.2pt] leading-[2.3mm]"
+      className="min-w-0 truncate text-[4.7pt] leading-none"
       style={{
         color: GRIS,
-        borderColor: "#D6D6D6",
-        display: "block",
-        height: `${2.3 * lignes}mm`,
-        overflow: "hidden",
       }}
     >
       {valeur}
@@ -178,128 +174,110 @@ const Ligne = ({
 
 
 
-/** Recto — maquette officielle CARTE_PRO_AGRICAPITAL_RECTO. */
+const CardShell = ({ children }: { children: React.ReactNode }) => (
+  <div className="relative h-[86mm] w-[54mm] shrink-0 overflow-hidden rounded-[2.2mm] bg-white font-sans" style={{ border: `0.35mm solid ${VERT}`, color: GRIS }}>
+    {children}
+  </div>
+);
+
+/** Recto — grille fixe conforme à la maquette officielle. */
 export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ carte }, ref) => {
   const photo = useSignedUrl(carte.photo_bucket || CARTE_BUCKET, carte.photo_url);
   return (
-    <div
-      ref={ref}
-      className="relative h-[86mm] w-[54mm] shrink-0 overflow-hidden rounded-[3mm] bg-white"
-      style={{ border: `0.4mm solid ${VERT}` }}
-    >
+    <div ref={ref}><CardShell>
       <DecorHaut />
-
-      <div className="relative flex h-full flex-col px-[3.5mm] pb-[12.5mm] pt-[3.5mm]">
-        <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[9.5mm] object-contain" />
-
-
-        <div className="mt-[2mm] flex items-start gap-[2.5mm]">
+      <div className="relative z-10 px-[3.2mm] pt-[3mm]">
+        <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[10mm] w-[32mm] object-contain" />
+        <div className="mt-[2.2mm] grid grid-cols-[15.5mm_1fr] gap-[2.4mm]">
           <div
-            className="h-[22mm] w-[16mm] shrink-0 overflow-hidden rounded-[1.5mm] bg-[#EDEDED]"
-            style={{ border: `0.4mm solid ${VERT}` }}
+            className="h-[23mm] w-[15.5mm] overflow-hidden rounded-[1.3mm]"
+            style={{ border: `0.35mm solid ${VERT}`, backgroundColor: "#E7E7E7" }}
           >
-
             {photo ? (
               <img src={photo} alt={carte.nom_complet} className="h-full w-full object-cover" />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-[12pt] font-bold" style={{ color: "#8A8A8A" }}>
+              <div className="flex h-full w-full items-center justify-center text-[12pt] font-bold" style={{ color: "#929292" }}>
                 {initiales(carte.nom_complet)}
               </div>
             )}
           </div>
-
-          <div className="min-w-0 flex-1">
-            <p className="break-words text-[9pt] font-extrabold uppercase leading-[1.05]" style={{ color: VERT }}>
+          <div className="min-w-0 pt-[1.2mm]">
+            <p className="line-clamp-2 break-words text-[8pt] font-extrabold uppercase leading-[1.05]" style={{ color: VERT }}>
               {carte.nom_complet}
             </p>
-            <div className="my-[1mm] flex items-center gap-[1mm]">
+            <div className="my-[1.2mm] flex items-center gap-[1mm]">
               <span className="h-[0.3mm] flex-1" style={{ backgroundColor: "#C9C9C9" }} />
               <img src={symbole} alt="" className="h-[2.6mm] object-contain" />
               <span className="h-[0.3mm] flex-1" style={{ backgroundColor: "#C9C9C9" }} />
             </div>
-            <p className="text-[7pt] font-bold uppercase leading-none" style={{ color: GRIS }}>Fonction</p>
-            <p
-              className="text-[6pt] leading-[2.6mm]"
-              style={{ color: GRIS, display: "block", height: "5.2mm", overflow: "hidden" }}
-            >
+            <p className="text-[6.4pt] font-bold uppercase leading-none">Fonction</p>
+            <p className="mt-[0.6mm] line-clamp-2 h-[5mm] break-words text-[5.4pt] leading-[2.35mm]">
               {carte.poste || roleLabel(carte.role_code)}
             </p>
-            <div className="mt-[1.5mm] flex items-center gap-[1.2mm]">
+            <div className="mt-[1mm] flex items-center gap-[1.2mm]">
               <span
-                className="rounded-[1mm] px-[1.5mm] py-[0.6mm] text-[5.5pt] font-bold uppercase text-white"
-                style={{ backgroundColor: VERT }}
+                className="rounded-[1mm] px-[1.5mm] py-[0.7mm] text-[5.1pt] font-bold uppercase"
+                style={{ backgroundColor: VERT, color: "#FFFFFF" }}
               >
                 Statut
               </span>
               <span className="h-[3mm] w-[0.3mm]" style={{ backgroundColor: "#C9C9C9" }} />
-              <span className="text-[6pt] font-bold uppercase" style={{ color: VERT_CLAIR }}>
+              <span className="truncate text-[5.5pt] font-bold uppercase" style={{ color: VERT_CLAIR }}>
                 {statutAgentLabel(carte.statut_agent)}
               </span>
             </div>
           </div>
         </div>
 
-        <div className="mt-[3.5mm] space-y-[2.2mm]">
-          <Ligne label="Mission" valeur={missionAuto(carte)} icone="mission" lignes={2} />
-          <Ligne label="Pays" valeur="Côte d'Ivoire" icone="pays" />
+        <div className="mt-[2.6mm] space-y-[0.8mm]">
+          <Ligne label="Mission" valeur={missionAuto(carte)} icone="mission" />
+          <Ligne label="Pays" valeur="Côte d’Ivoire" icone="pays" />
           <Ligne label="Validité" valeur={validiteTexte(carte)} icone="validite" />
           <Ligne label="Identifiant" valeur={carte.matricule} icone="identifiant" />
         </div>
-
-        <div className="mt-auto flex items-end justify-between gap-[2mm]">
-          <div className="rounded-[1mm] bg-white p-[0.5mm]" style={{ border: `0.25mm solid #D6D6D6` }}>
-            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={44} includeMargin={false} level="M" />
+        <div className="mt-[2mm] grid grid-cols-[15mm_1fr] items-end gap-[3mm]">
+          <div className="rounded-[1mm] bg-white p-[0.7mm]" style={{ border: "0.25mm solid #CFCFCF" }}>
+            <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={96} includeMargin={false} level="H" className="h-auto w-full" />
           </div>
-          <div className="w-[24mm] shrink-0 text-center">
-            <div className="relative mx-auto h-[10mm] w-[24mm]">
-              <img src={cachet} alt="" className="absolute left-1/2 top-0 h-[10mm] -translate-x-1/2 object-contain opacity-90" />
-              <img src={signature} alt="Signature de la direction" className="absolute left-1/2 top-[1mm] h-[8mm] -translate-x-1/2 object-contain" />
+          <div className="text-center">
+            <div className="relative mx-auto h-[10.5mm] w-full">
+              <img src={signature} alt="Signature de la direction" className="absolute inset-x-0 bottom-[1mm] z-10 mx-auto h-[7mm] w-[24mm] object-contain" />
+              <img src={cachet} alt="Cachet AgriCapital" className="absolute bottom-0 right-[2mm] z-20 h-[10mm] w-[10mm] object-contain" />
             </div>
-            <span className="mt-[0.4mm] block h-[0.3mm] w-full" style={{ backgroundColor: "#9A9A9A" }} />
-            <p className="mt-[0.5mm] text-[5pt] font-bold uppercase" style={{ color: VERT }}>Signature direction</p>
+            <span className="block h-[0.25mm] w-full" style={{ backgroundColor: "#8E8E8E" }} />
+            <p className="mt-[0.7mm] text-[4.8pt] font-bold uppercase" style={{ color: VERT }}>Signature direction</p>
           </div>
         </div>
-
       </div>
-
-      <DecorBas hauteur="9mm" />
-
-
-    </div>
+      <DecorBas />
+    </CardShell></div>
   );
 });
 CarteRecto.displayName = "CarteRecto";
 
-/** Verso — maquette officielle CARTE_PRO_AGRICAPITAL_VERSO. */
+/** Verso — grille fixe conforme à la maquette officielle. */
 export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ carte }, ref) => (
-  <div
-    ref={ref}
-    className="relative h-[86mm] w-[54mm] shrink-0 overflow-hidden rounded-[3mm] bg-white"
-    style={{ border: `0.4mm solid ${VERT}` }}
-  >
+  <div ref={ref}><CardShell>
     <DecorBas />
-
-    <div className="relative flex h-full flex-col px-[4mm] pb-[12mm] pt-[3mm]">
-      <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[10mm] object-contain" />
-      <span className="mx-auto mt-[1mm] h-[0.3mm] w-[12mm]" style={{ backgroundColor: VERT }} />
-
-      <p className="mt-[1.8mm] text-center text-[5.2pt] leading-[1.45]" style={{ color: "#333" }}>
+    <div className="relative z-10 px-[4mm] pt-[3mm]">
+      <img src={logo} alt="AgriCapital — Investir la terre. Cultiver l'avenir." className="mx-auto h-[10mm] w-[32mm] object-contain" />
+      <span className="mx-auto mt-[0.6mm] block h-[0.25mm] w-[7mm]" style={{ backgroundColor: VERT }} />
+      <p className="mt-[1.7mm] text-center text-[4.65pt] leading-[1.42]" style={{ color: "#333333" }}>
         Cette carte est une pièce d'identification professionnelle délivrée par AgriCapital SARL.
         Elle atteste de l'appartenance ou de la collaboration de son titulaire avec l'entreprise
         dans le cadre de ses activités professionnelles.
       </p>
-
-      <div className="mt-[2.5mm] rounded-[2mm] p-[2mm]" style={{ border: `0.3mm solid ${VERT}` }}>
-        <div className="flex items-start gap-[2mm]">
-          <svg viewBox="0 0 24 24" className="h-[7mm] w-[7mm] shrink-0" fill={VERT} aria-hidden>
+      <div className="mt-[2mm] rounded-[1.5mm] px-[2mm] py-[1.6mm]" style={{ border: `0.3mm solid ${VERT}` }}>
+        <div className="grid grid-cols-[6mm_1fr] items-start gap-[1.8mm]">
+          <svg viewBox="0 0 24 24" className="h-[6mm] w-[6mm]" fill={VERT} aria-hidden>
             <path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3Zm0 7a2 2 0 0 1 2 2v1h-4v-1a2 2 0 0 1 2-2Zm-3 4h6v4H9v-4Z" />
           </svg>
           <div className="min-w-0">
-            <p className="text-[5.6pt] font-bold uppercase leading-tight" style={{ color: VERT }}>
+            <p className="whitespace-nowrap text-[4.4pt] font-bold uppercase leading-none" style={{ color: VERT }}>
               Carte personnelle – non transférable
             </p>
             <span className="my-[1mm] block h-[0.3mm] w-full" style={{ backgroundColor: ORANGE }} />
-            <p className="text-[5pt] leading-[1.45]" style={{ color: "#333" }}>
+            <p className="text-[4.35pt] leading-[1.35]" style={{ color: "#333333" }}>
               Toute perte, détérioration ou utilisation frauduleuse doit être signalée à AgriCapital SARL.
               Cette carte doit être restituée à l'entreprise à la fin de la collaboration ou sur demande.
             </p>
@@ -307,48 +285,48 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
         </div>
       </div>
 
-      <div className="mt-[2.2mm] flex items-center gap-[2.2mm]">
-        <div className="rounded-[1mm] bg-white p-[0.8mm]" style={{ border: `0.3mm solid #D6D6D6` }}>
-          <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={52} includeMargin={false} level="M" />
+      <div className="mt-[2mm] grid grid-cols-[14mm_1fr] items-center gap-[2.2mm]">
+        <div className="rounded-[1mm] bg-white p-[0.7mm]" style={{ border: "0.25mm solid #CFCFCF" }}>
+          <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={88} includeMargin={false} level="H" className="h-auto w-full" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-[1.2mm] text-[5.6pt] font-bold uppercase" style={{ color: VERT }}>
-            <svg viewBox="0 0 24 24" className="h-[3.6mm] w-[3.6mm]" fill={VERT} aria-hidden>
+          <p className="flex items-center gap-[1mm] text-[4.8pt] font-bold uppercase leading-[1.15]" style={{ color: VERT }}>
+            <svg viewBox="0 0 24 24" className="h-[3.4mm] w-[3.4mm] shrink-0" fill={VERT} aria-hidden>
               <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1 14.4-4-4 1.4-1.4 2.6 2.6 5.6-5.6L18 9.4l-7 7Z" />
             </svg>
             Vérification du badge
           </p>
-          <p className="text-[5pt] leading-[1.4]" style={{ color: "#333" }}>
+          <p className="mt-[0.8mm] text-[4.15pt] leading-[1.35]" style={{ color: "#333333" }}>
             Scannez ce QR code pour vérifier l'authenticité et la validité de ce badge sur app.agricapital.ci
           </p>
         </div>
       </div>
 
-      <div className="my-[1.6mm] flex items-center gap-[1mm]">
+      <div className="my-[1.5mm] flex items-center gap-[1mm]">
         <span className="h-[0.3mm] flex-1" style={{ backgroundColor: "#C9C9C9" }} />
         <img src={symbole} alt="" className="h-[3mm] object-contain" />
         <span className="h-[0.3mm] flex-1" style={{ backgroundColor: "#C9C9C9" }} />
       </div>
 
-      <div className="flex items-start gap-[2mm]">
+      <div className="grid grid-cols-[20mm_1fr] items-start gap-[2mm]">
         <div className="min-w-0 flex-1">
-          <p className="text-[6pt] font-extrabold uppercase" style={{ color: VERT }}>AgriCapital SARL</p>
-          <p className="text-[4.8pt] leading-[1.4]" style={{ color: "#333" }}>
+          <p className="text-[5.1pt] font-extrabold uppercase" style={{ color: VERT }}>AgriCapital SARL</p>
+          <p className="mt-[0.7mm] text-[3.9pt] leading-[1.45]" style={{ color: "#333333" }}>
             Société à Responsabilité Limitée<br />
             RCCM : CI-DAL-01-2025-B12-00035<br />
             Daloa-Gonaté, Côte d'Ivoire
           </p>
         </div>
-        <div className="min-w-0 flex-1 space-y-[0.7mm]">
+        <div className="min-w-0 space-y-[0.65mm]">
           {[
             { d: "M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2 4.6 1v3.4A2 2 0 0 1 18 21.6 18 18 0 0 1 2.4 6 2 2 0 0 1 4.4 4h3.4l1 4.6-2.2 2.2Z", t: carte.telephone || "+225 07 50 56 60 87" },
             { d: "M2 5h20v14H2V5Zm10 8L3.5 6.6 12 12l8.5-5.4L12 13Z", t: "contact@agricapital.ci" },
             { d: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2c1.6 2 2.4 4 2.4 6s-.8 4-2.4 6c-1.6-2-2.4-4-2.4-6s.8-4 2.4-6ZM4.3 9h3.3a16 16 0 0 0 0 6H4.3a8 8 0 0 1 0-6Zm12.1 0h3.3a8 8 0 0 1 0 6h-3.3a16 16 0 0 0 0-6Z", t: "www.agricapital.ci" },
             { d: "M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z", t: "Cocody, Abidjan – Côte d'Ivoire" },
           ].map((c) => (
-            <p key={c.t} className="flex items-center gap-[1mm] text-[4.6pt] leading-tight" style={{ color: "#333" }}>
-              <span className="flex h-[3.2mm] w-[3.2mm] shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: VERT }}>
-                <svg viewBox="0 0 24 24" className="h-[2.1mm] w-[2.1mm]" fill="#fff" aria-hidden><path d={c.d} /></svg>
+            <p key={c.t} className="flex items-center gap-[0.8mm] text-[3.65pt] leading-tight" style={{ color: "#333333" }}>
+              <span className="flex h-[3mm] w-[3mm] shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: VERT }}>
+                <svg viewBox="0 0 24 24" className="h-[1.9mm] w-[1.9mm]" fill="#fff" aria-hidden><path d={c.d} /></svg>
               </span>
               <span className="truncate">{c.t}</span>
             </p>
@@ -356,6 +334,6 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
         </div>
       </div>
     </div>
-  </div>
+  </CardShell></div>
 ));
 CarteVerso.displayName = "CarteVerso";
