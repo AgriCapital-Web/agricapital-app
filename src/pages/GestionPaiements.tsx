@@ -124,52 +124,16 @@ const GestionPaiements = () => {
       
       // Verify the transaction server-side
       try {
+        // La vérification ET l'enregistrement du paiement sont faits côté serveur :
+        // montant, rattachement et unicité de la transaction y sont contrôlés.
         const { data, error } = await supabase.functions.invoke('kkiapay-verify-transaction', {
-          body: { transactionId: response.transactionId }
+          body: { transactionId: response.transactionId, paiementId: paiement.id }
         });
 
         if (error) throw error;
+        if (data?.error) throw new Error(data.error);
 
-        if (data?.transaction?.isPaymentSuccessful) {
-          // Update payment in database
-          await supabase.from('paiements').update({
-            statut: 'valide',
-            montant_paye: paiement.montant,
-            mode_paiement: 'KKiaPay',
-            date_paiement: new Date().toISOString(),
-            metadata: {
-              ...(paiement.metadata || {}),
-              kkiapay_transaction_id: response.transactionId,
-              kkiapay_method: response.method || 'mobile_money',
-              kkiapay_fees: data.transaction.fees || 0,
-              verified_at: new Date().toISOString()
-            }
-          }).eq('id', paiement.id);
-
-          // If DA payment, activate plantation
-          if (paiement.type_paiement === 'DA' && paiement.plantation_id) {
-            const { data: plantation } = await supabase
-              .from('plantations')
-              .select('superficie_ha, montant_da, montant_da_paye')
-              .eq('id', paiement.plantation_id)
-              .single();
-
-            if (plantation) {
-              const newDaPaye = (plantation.montant_da_paye || 0) + paiement.montant;
-              const isFullyPaid = newDaPaye >= (plantation.montant_da || 0);
-
-              await supabase.from('plantations').update({
-                montant_da_paye: newDaPaye,
-                ...(isFullyPaid ? {
-                  superficie_activee: plantation.superficie_ha,
-                  date_activation: new Date().toISOString(),
-                  statut: 'active',
-                  statut_global: 'active'
-                } : {})
-              }).eq('id', paiement.plantation_id);
-            }
-          }
-
+        if (data?.transaction?.isPaymentSuccessful && data?.applied) {
           toast({
             title: "Paiement réussi ✅",
             description: `${formatMontant(paiement.montant)} payé via KKiaPay`
