@@ -106,8 +106,41 @@ serve(async (req) => {
     const status = result.status?.toUpperCase();
     const isSuccess = status === "SUCCESS";
 
+    const providerAmount = Number(result.amount ?? 0);
+    let applied = false;
+
+    // 3) Validation du paiement ciblé : uniquement côté serveur, montant vérifié
+    if (target && isSuccess) {
+      const due = Number(target.montant ?? 0);
+      if (!Number.isFinite(providerAmount) || providerAmount + 0.01 < due) {
+        return json({
+          success: false,
+          error: "Le montant de la transaction ne correspond pas au paiement",
+        }, 409);
+      }
+
+      const { error: rpcError } = await admin.rpc("finalize_portal_payment", {
+        _paiement_id: target.id,
+        _transaction_id: transactionId,
+        _provider_amount: providerAmount,
+        _metadata: {
+          kkiapay_transaction_id: transactionId,
+          kkiapay_method: result.source ?? "mobile_money",
+          kkiapay_fees: result.fees ?? 0,
+          verified_at: new Date().toISOString(),
+        },
+        _validated_at: new Date().toISOString(),
+      });
+      if (rpcError) {
+        console.error("finalize_portal_payment error", rpcError.message);
+        return json({ success: false, error: "Le paiement n'a pas pu être enregistré" }, 409);
+      }
+      applied = true;
+    }
+
     return json({
       success: true,
+      applied,
       transaction: {
         id: transactionId,
         status,
