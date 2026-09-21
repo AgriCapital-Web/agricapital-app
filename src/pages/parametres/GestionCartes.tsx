@@ -227,7 +227,7 @@ const GestionCartes = () => {
 
   const changerPhoto = async (carte: Row, file: File) => {
     try {
-      const path = await uploaderPhotoCarte(carte.profile_id, file);
+      const path = await uploaderPhotoCarte(carte.profile_id, carte.id, file);
       const { error } = await (supabase as any).from("cartes_personnel").update({ photo_url: path, updated_by: user?.id || null }).eq("id", carte.id);
       if (error) throw error;
       await logAdminAction({
