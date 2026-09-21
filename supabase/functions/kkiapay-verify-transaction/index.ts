@@ -13,13 +13,38 @@ serve(async (req) => {
     const { user, error: authError } = await requireUser(req, admin);
     if (authError) return authError;
 
-    const { transactionId } = await req.json();
+    const body = await req.json();
+    const transactionId = body?.transactionId;
+    const paiementId = body?.paiementId ?? null;
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!transactionId || typeof transactionId !== "string" || transactionId.length > 128) {
       return json({ success: false, error: "Identifiant de transaction invalide" }, 400);
     }
+    if (paiementId !== null && (typeof paiementId !== "string" || !UUID_RE.test(paiementId))) {
+      return json({ success: false, error: "Identifiant de paiement invalide" }, 400);
+    }
 
-    // 2) Autorisation : staff, ou souscripteur propriétaire du paiement lié
+    // 2) Autorisation : staff, ou souscripteur propriétaire du paiement ciblé/lié
     const { data: isStaff } = await admin.rpc("is_staff", { _user_id: user!.id });
+
+    // Paiement ciblé (le cas échéant) : chargé côté serveur, jamais fourni par le client
+    let target: {
+      id: string;
+      souscripteur_id: string | null;
+      montant: number | null;
+      statut: string | null;
+      kkiapay_transaction_id: string | null;
+    } | null = null;
+
+    if (paiementId) {
+      const { data } = await admin
+        .from("paiements")
+        .select("id, souscripteur_id, montant, statut, kkiapay_transaction_id")
+        .eq("id", paiementId)
+        .maybeSingle();
+      if (!data) return json({ success: false, error: "Paiement introuvable" }, 404);
+      target = data as typeof target;
+    }
 
     if (!isStaff) {
       const { data: souscripteur } = await admin
@@ -30,17 +55,33 @@ serve(async (req) => {
 
       let allowed = false;
       if (souscripteur?.id) {
-        const { data: paiement } = await admin
-          .from("paiements")
-          .select("id")
-          .eq("souscripteur_id", souscripteur.id)
-          .contains("metadata", { kkiapay_transaction_id: transactionId })
-          .maybeSingle();
-        allowed = !!paiement;
+        if (target) {
+          allowed = target.souscripteur_id === souscripteur.id;
+        } else {
+          const { data: paiement } = await admin
+            .from("paiements")
+            .select("id")
+            .eq("souscripteur_id", souscripteur.id)
+            .contains("metadata", { kkiapay_transaction_id: transactionId })
+            .maybeSingle();
+          allowed = !!paiement;
+        }
       }
 
       if (!allowed) {
         return json({ success: false, error: "Accès non autorisé à cette transaction" }, 403);
+      }
+    }
+
+    // Une transaction ne peut jamais servir à valider deux paiements différents
+    {
+      const { data: reused } = await admin
+        .from("paiements")
+        .select("id")
+        .eq("kkiapay_transaction_id", transactionId)
+        .maybeSingle();
+      if (reused && (!target || reused.id !== target.id)) {
+        return json({ success: false, error: "Transaction déjà rattachée à un autre paiement" }, 409);
       }
     }
 
