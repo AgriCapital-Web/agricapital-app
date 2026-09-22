@@ -22,25 +22,20 @@ const ForgotPassword = () => {
     setIsLoading(true);
     
     try {
-      let email = identifier.trim().toLowerCase();
+      const value = identifier.trim().toLowerCase();
 
-      if (!email.includes("@")) {
-        const { data: resolveData, error: resolveError } = await supabase.functions.invoke(
-          "resolve-username",
-          { body: { username: email } },
-        );
-
-        email = typeof resolveData?.email === "string" ? resolveData.email.trim().toLowerCase() : "";
-        if (resolveError || !email) {
-          throw new Error("Identifiant introuvable");
-        }
+      if (!value.includes("@")) {
+        // L'email de réinitialisation est envoyé côté serveur : l'adresse n'est jamais divulguée.
+        const { error: resolveError } = await supabase.functions.invoke("resolve-username", {
+          body: { username: value, mode: "recovery" },
+        });
+        if (resolveError) throw resolveError;
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(value, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
       }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) throw error;
 
       setEmailSent(true);
       toast({

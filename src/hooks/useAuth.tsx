@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
           const { data: resolveData } = await supabase.functions.invoke('resolve-username', {
-            body: { username: usernameOrEmail },
+            body: { username: usernameOrEmail, password, mode: 'login' },
           });
           resolved = ((resolveData as any)?.email as string) || null;
         } catch {
@@ -155,9 +155,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           toast({
             variant: 'destructive',
             title: 'Connexion impossible',
-            description: "Nom d'utilisateur introuvable",
+            description: 'Identifiant ou mot de passe incorrect.',
           });
-          return { error: { message: "Nom d'utilisateur introuvable" } };
+          return { error: { message: 'Identifiant ou mot de passe incorrect.' } };
         }
         email = resolved.trim().toLowerCase();
       }
