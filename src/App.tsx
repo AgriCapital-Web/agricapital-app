@@ -31,6 +31,7 @@ import Leads from "./pages/Leads";
 import SyncQueue from "./pages/SyncQueue";
 import PublicLead from "./pages/PublicLead";
 import AgriPlan from "./pages/AgriPlan";
+import DevCarteApercu from "./pages/__DevCarteApercu";
 import VerificationCarte from "./pages/VerificationCarte";
 import NotFound from "./pages/NotFound";
 
@@ -51,6 +52,7 @@ const DomainRouter = () => {
       <Route path="/prospect" element={<PublicLead />} />
 
       {/* Vérification publique d'une carte du personnel (QR code) */}
+      <Route path="/__dev-carte" element={<DevCarteApercu />} />
       <Route path="/verifier-carte" element={<VerificationCarte />} />
       <Route path="/verifier-carte/:code" element={<VerificationCarte />} />
 
