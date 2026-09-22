@@ -12,6 +12,16 @@ serve(async (req) => {
   try {
     const { messages, context, mode } = await req.json();
 
+    // Les rôles de conversation sont imposés par le serveur : seuls "user" et "assistant"
+    // sont acceptés, aucun message "system" ne peut venir de l'appelant.
+    const safeMessages = (Array.isArray(messages) ? messages : [])
+      .slice(-20)
+      .map((m: any) => ({
+        role: m?.role === "assistant" ? "assistant" : "user",
+        content: String(m?.content ?? "").slice(0, 8000),
+      }))
+      .filter((m) => m.content.length > 0);
+
     // Authentification obligatoire pour TOUS les modes (quota IA payant)
     const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "").trim();
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
@@ -149,7 +159,7 @@ Règles:
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages,
+          ...safeMessages,
         ],
         stream: true,
       }),

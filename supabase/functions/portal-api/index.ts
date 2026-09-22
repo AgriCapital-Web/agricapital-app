@@ -332,11 +332,30 @@ serve(async (req) => {
 
         if (req.method === "POST") {
           const body = await req.json();
+
+          // La plantation référencée doit appartenir au souscripteur connecté.
+          let plantationId: string | null = null;
+          if (body.plantation_id) {
+            const souscripteur = await getSouscripteur();
+            const { data: ownedPlantation } = await supabase
+              .from("plantations")
+              .select("id")
+              .eq("id", body.plantation_id)
+              .eq("souscripteur_id", souscripteur?.id ?? "00000000-0000-0000-0000-000000000000")
+              .maybeSingle();
+            if (!ownedPlantation) {
+              return new Response(JSON.stringify({ error: "Plantation introuvable" }), {
+                status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
+              });
+            }
+            plantationId = ownedPlantation.id;
+          }
+
           const { error } = await supabase.from("tickets_techniques").insert({
             titre: body.titre,
             description: body.description,
             priorite: body.priorite || "moyenne",
-            plantation_id: body.plantation_id || null,
+            plantation_id: plantationId,
             cree_par: profile?.id || null,
           });
 

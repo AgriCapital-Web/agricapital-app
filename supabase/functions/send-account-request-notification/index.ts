@@ -56,7 +56,8 @@ serve(async (req) => {
       departement: escapeHtml(requestData?.departement),
       message: escapeHtml(requestData?.message),
     };
-    console.log("Request data received:", requestData);
+    // Aucune donnée personnelle du demandeur n'est journalisée.
+    console.log("Request data received");
 
     // Get all super admins
     const { data: superAdmins, error: adminsError } = await supabaseAdmin
@@ -87,7 +88,7 @@ serve(async (req) => {
 
     // Send notifications to each super admin
     for (const adminProfile of adminProfiles || []) {
-      console.log("Processing notification for admin:", adminProfile.email);
+      console.log("Processing notification for admin");
 
       // Create in-app notification
       const { error: notifError } = await supabaseAdmin.from('notifications').insert({
@@ -101,14 +102,14 @@ serve(async (req) => {
       if (notifError) {
         console.error("Error creating notification:", notifError);
       } else {
-        console.log("In-app notification created for:", adminProfile.email);
+        console.log("In-app notification created");
       }
 
       // Send email notification using Resend
       const resendKey = Deno.env.get('RESEND_API_KEY');
       if (resendKey && adminProfile.email) {
         try {
-          console.log("Sending email to:", adminProfile.email);
+          console.log("Sending admin notification email");
           
           const emailResponse = await fetch('https://api.resend.com/emails', {
             method: 'POST',
@@ -221,7 +222,7 @@ serve(async (req) => {
             phoneNumber = '225' + phoneNumber.substring(1);
           }
           
-          console.log("Sending WhatsApp to:", phoneNumber);
+          console.log("Sending WhatsApp notification to administrator");
           
           const whatsappResponse = await fetch(`https://graph.facebook.com/v17.0/${whatsappPhoneId}/messages`, {
             method: 'POST',
