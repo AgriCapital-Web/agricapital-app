@@ -294,7 +294,14 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
 
       <div className="mt-[2mm] grid grid-cols-[14mm_1fr] items-center gap-[2.2mm]">
         <div className="rounded-[1mm] bg-white p-[0.7mm]" style={{ border: "0.25mm solid #CFCFCF" }}>
-          <QRCodeCanvas value={verificationUrl(carte.code_verification)} size={88} includeMargin={false} level="H" className="h-auto w-full" />
+          <QRCodeCanvas
+            value={verificationUrl(carte.code_verification)}
+            size={1024}
+            includeMargin={false}
+            level="H"
+            className="block h-auto w-full"
+            style={{ width: "100%", height: "auto", imageRendering: "pixelated" }}
+          />
         </div>
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-[1mm] text-[4.8pt] font-bold uppercase leading-[1.15]" style={{ color: VERT }}>
