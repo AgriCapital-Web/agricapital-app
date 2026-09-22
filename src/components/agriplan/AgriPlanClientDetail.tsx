@@ -105,10 +105,10 @@ export default function AgriPlanClientDetail({ clientId, onOpenChange, onChanged
       type_paiement: ech.type === "accompagnement" ? "accompagnement" : "mise_en_place",
       mode_paiement: payForm.mode,
       reference: payForm.reference || null,
-      statut: "valide",
+      // La validation est réservée au service financier (contrôle serveur) :
+      // un paiement saisi ici reste en attente de vérification.
+      statut: "en_attente",
       date_paiement: new Date().toISOString(),
-      date_validation: new Date().toISOString(),
-      valide_par: user?.id || null,
       created_by: user?.id || null,
     });
     if (error) {
@@ -116,7 +116,7 @@ export default function AgriPlanClientDetail({ clientId, onOpenChange, onChanged
       return;
     }
     await trace("paiement", ech.id, "paiement_enregistre", `${formatFCFA(montant)} — ${ech.libelle}`, true);
-    toast.success("Paiement AgriPlan enregistré");
+    toast.success("Paiement enregistré — en attente de validation par la comptabilité");
     setPayOpen(false);
     setPayForm({ echeance_id: "", montant: "", mode: "mobile_money", reference: "" });
     load();
