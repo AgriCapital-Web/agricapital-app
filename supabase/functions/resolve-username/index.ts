@@ -1,25 +1,64 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
 import { adminClient, corsHeaders, json } from "../_shared/auth.ts";
 
+/**
+ * Résolution identifiant → email.
+ * L'adresse email n'est JAMAIS renvoyée sans preuve de possession du compte :
+ *  - mode "login"    : le mot de passe est vérifié côté serveur avant de renvoyer l'email.
+ *  - mode "recovery" : l'email de réinitialisation est envoyé côté serveur, aucune donnée renvoyée.
+ */
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { username } = await req.json();
-    const clean = typeof username === "string" ? username.trim().toLowerCase() : "";
-    if (!clean || clean.length < 3 || clean.length > 64 || !/^[a-z0-9._-]+$/.test(clean)) {
+    const body = await req.json();
+    const username = typeof body?.username === "string" ? body.username.trim().toLowerCase() : "";
+    const password = typeof body?.password === "string" ? body.password : "";
+    const mode = body?.mode === "recovery" ? "recovery" : "login";
+
+    if (!username || username.length < 3 || username.length > 64 || !/^[a-z0-9._-]+$/.test(username)) {
       return json({ error: "Identifiant invalide" }, 400);
     }
 
     const admin = adminClient();
-    const { data, error } = await admin.rpc("resolve_username_email", { _username: clean });
-    if (error) {
-      console.error("resolve_username_email:", error.message);
-      return json({ error: "Nom d'utilisateur introuvable" }, 404);
-    }
-    if (!data) return json({ error: "Nom d'utilisateur introuvable" }, 404);
+    const { data: email, error } = await admin.rpc("resolve_username_email", { _username: username });
 
-    return json({ email: data as string });
+    if (mode === "recovery") {
+      // Réponse identique que l'identifiant existe ou non (pas d'énumération de comptes).
+      if (!error && email) {
+        const siteUrl = Deno.env.get("SITE_URL") ?? "https://app.agricapital.ci";
+        const anon = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          { auth: { autoRefreshToken: false, persistSession: false } },
+        );
+        await anon.auth.resetPasswordForEmail(String(email), {
+          redirectTo: `${siteUrl}/reset-password`,
+        });
+      }
+      return json({ sent: true });
+    }
+
+    if (!password) return json({ error: "Identifiants incorrects" }, 401);
+    if (error || !email) return json({ error: "Identifiants incorrects" }, 401);
+
+    // Vérification des identifiants côté serveur avant toute divulgation de l'email.
+    const anon = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { auth: { autoRefreshToken: false, persistSession: false } },
+    );
+    const { data: signIn, error: signInErr } = await anon.auth.signInWithPassword({
+      email: String(email),
+      password,
+    });
+    if (signInErr || !signIn?.user) {
+      return json({ error: "Identifiants incorrects" }, 401);
+    }
+    await anon.auth.signOut().catch(() => {});
+
+    return json({ email: String(email) });
   } catch (_e) {
     return json({ error: "Requête invalide" }, 400);
   }

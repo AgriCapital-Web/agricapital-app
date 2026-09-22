@@ -9,6 +9,16 @@ const corsHeaders = {
 const json = (p: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(p), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status });
 
+/** Échappe toute valeur fournie par l'utilisateur avant insertion dans un email HTML. */
+const escapeHtml = (value: unknown): string =>
+  String(value ?? "")
+    .slice(0, 500)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const VALID_ROLES = [
   "commercial", "technicien", "chef_equipe_commercial", "chef_equipe_technique",
   "responsable_commercial", "responsable_technique_agronomique", "responsable_zone",
@@ -110,7 +120,7 @@ serve(async (req) => {
             from: "AgriCapital <no-reply@agricapital.ci>",
             to: [cleanEmail],
             subject: "Confirmez votre adresse email — AgriCapital",
-            html: `<p>Bonjour ${nom_complet},</p><p>Confirmez votre adresse email pour que votre demande de compte puisse être validée :</p><p><a href="${actionLink}">Confirmer mon adresse email</a></p>`,
+            html: `<p>Bonjour ${escapeHtml(nom_complet)},</p><p>Confirmez votre adresse email pour que votre demande de compte puisse être validée :</p><p><a href="${escapeHtml(actionLink)}">Confirmer mon adresse email</a></p>`,
           }),
         });
       }
@@ -152,7 +162,7 @@ serve(async (req) => {
     if (reqErr) {
       await admin.auth.admin.deleteUser(userId).catch(() => {});
       console.error("insert account_requests failed", reqErr);
-      return json({ error: reqErr.message, step: "insert_account_request", details: reqErr }, 400);
+      return json({ error: "Votre demande n'a pas pu être enregistrée. Veuillez réessayer." }, 400);
     }
 
     // Notification interne aux administrateurs (appel serveur-à-serveur authentifié)
