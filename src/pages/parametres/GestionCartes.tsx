@@ -338,7 +338,7 @@ const GestionCartes = () => {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2"><IdCard className="h-5 w-5" />Cartes du personnel</CardTitle>
-            <CardDescription>Génération, validation et impression des cartes professionnelles (54 × 86 mm).</CardDescription>
+            <CardDescription>Génération, validation et impression des cartes professionnelles — maquette 1023 × 1444 px (ratio 0,708).</CardDescription>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <div className="relative w-full sm:w-48">
