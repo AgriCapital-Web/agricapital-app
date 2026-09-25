@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
+import { offlineInsert, offlineUpdate } from "@/lib/offlineWrite";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { uploadFile } from "@/utils/storage";
@@ -81,11 +82,7 @@ const PlanteurForm = ({ planteur, onSuccess, onCancel }: PlanteurFormProps) => {
       };
 
       if (planteur) {
-        const { error } = await (supabase as any)
-          .from("souscripteurs")
-          .update(payload)
-          .eq("id", planteur.id);
-        
+        const { error } = await offlineUpdate("souscripteurs", planteur.id, payload);
         if (error) throw error;
         
         toast({
@@ -93,10 +90,7 @@ const PlanteurForm = ({ planteur, onSuccess, onCancel }: PlanteurFormProps) => {
           description: "Planteur modifié avec succès",
         });
       } else {
-        const { error } = await (supabase as any)
-          .from("souscripteurs")
-          .insert(payload);
-        
+        const { error } = await offlineInsert("souscripteurs", payload);
         if (error) throw error;
         
         toast({
