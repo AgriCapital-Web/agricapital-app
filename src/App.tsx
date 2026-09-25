@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
 import Index from "./pages/Index";
@@ -34,6 +34,7 @@ import AgriPlan from "./pages/AgriPlan";
 import DevCarteApercu from "./pages/__DevCarteApercu";
 import VerificationCarte from "./pages/VerificationCarte";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -56,7 +57,8 @@ const DomainRouter = () => {
       <Route path="/verifier-carte" element={<VerificationCarte />} />
       <Route path="/verifier-carte/:code" element={<VerificationCarte />} />
 
-      {/* Protected routes */}
+      {/* Protected routes: garde-fou global d'authentification. Les pages conservent leurs contrôles métier propres. */}
+      <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/leads" element={<Leads />} />
       <Route path="/synchronisation" element={<SyncQueue />} />
@@ -99,6 +101,8 @@ const DomainRouter = () => {
       {/* Admin */}
       <Route path="/parametres" element={<Parametres />} />
       
+      </Route>
+
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
