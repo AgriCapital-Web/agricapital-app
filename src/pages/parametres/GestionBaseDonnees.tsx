@@ -300,7 +300,7 @@ const GestionBaseDonnees = () => {
                 Sauvegarde Automatique
               </CardTitle>
               <CardDescription>
-                Configurez les sauvegardes automatiques vers un stockage externe
+                La sauvegarde automatique n’est pas activée dans cette version. Les exports manuels restent disponibles.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -310,11 +310,11 @@ const GestionBaseDonnees = () => {
                   <div>
                     <p className="font-medium">Sauvegarde automatique</p>
                     <p className="text-sm text-muted-foreground">
-                      Activer les sauvegardes périodiques
+                      Fonction non connectée
                     </p>
                   </div>
                 </div>
-                <Switch checked={autoBackup} onCheckedChange={setAutoBackup} />
+                <Switch checked={false} disabled aria-label="Sauvegarde automatique non configurée" />
               </div>
 
               {autoBackup && (
@@ -350,7 +350,7 @@ const GestionBaseDonnees = () => {
                   <p className="font-medium">Historique des sauvegardes</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Aucune sauvegarde automatique enregistrée
+                  Aucune sauvegarde automatique : utilisez l’export manuel pour créer une copie vérifiable.
                 </p>
               </div>
             </CardContent>
