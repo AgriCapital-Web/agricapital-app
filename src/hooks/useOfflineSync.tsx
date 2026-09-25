@@ -219,7 +219,7 @@ export function useOfflineSync() {
     }
 
     const stats = await getSyncQueueStats();
-    setPendingCount(stats.pending);
+    setPendingCount(stats.pending + stats.error);
 
     // If online, sync immediately
     if (navigator.onLine) {
