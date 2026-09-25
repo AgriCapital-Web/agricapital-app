@@ -3,6 +3,8 @@ import { logActivity } from "@/utils/traceability";
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
+import { offlineUpdate, offlineDelete } from "@/lib/offlineWrite";
+import { getCachedSouscripteurs, getCachedPlantations } from "@/lib/offlineDb";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -55,11 +57,28 @@ const Souscriptions = () => {
 
       setSouscripteurs(enrichedData);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: getSafeErrorMessage(error),
-      });
+      if (!navigator.onLine) {
+        const [cachedSouscripteurs, cachedPlantations] = await Promise.all([
+          getCachedSouscripteurs(),
+          getCachedPlantations(),
+        ]);
+        const enrichedData = cachedSouscripteurs.map((s: any) => {
+          const plantations = cachedPlantations.filter((p: any) => p.souscripteur_id === s.id);
+          return {
+            ...s,
+            nombre_plantations: plantations.length,
+            total_hectares: plantations.reduce((sum: number, p: any) => sum + Number(p.superficie_ha || 0), 0),
+          };
+        });
+        setSouscripteurs(enrichedData);
+        toast({ title: "Mode hors ligne", description: "Données locales affichées. Les modifications seront synchronisées au retour du réseau." });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: getSafeErrorMessage(error),
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -81,11 +100,7 @@ const Souscriptions = () => {
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
       const souscripteur = souscripteurs.find(s => s.id === id);
-      const { error } = await supabase
-        .from("souscripteurs")
-        .update({ statut: newStatus, statut_global: newStatus })
-        .eq("id", id);
-
+      const { error } = await offlineUpdate("souscripteurs", id, { statut: newStatus, statut_global: newStatus });
       if (error) throw error;
 
       await logActivity({
@@ -114,11 +129,7 @@ const Souscriptions = () => {
   const handleDelete = async () => {
     if (!souscripteurToDelete) return;
     try {
-      const { error } = await supabase
-        .from("souscripteurs")
-        .delete()
-        .eq("id", souscripteurToDelete.id);
-
+      const { error } = await offlineDelete("souscripteurs", souscripteurToDelete.id);
       if (error) throw error;
 
       toast({
