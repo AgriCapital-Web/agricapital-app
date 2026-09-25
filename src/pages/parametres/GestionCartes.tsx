@@ -421,7 +421,7 @@ const GestionCartes = () => {
                 <CarteRecto carte={dataSelection} />
                 <CarteVerso carte={dataSelection} />
               </TabsContent>
-            </Tabs>
+            </Tabs>}
             <div
               aria-hidden="true"
               className="pointer-events-none fixed left-[-10000px] top-0"
