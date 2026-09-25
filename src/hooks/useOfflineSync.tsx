@@ -120,7 +120,9 @@ export function useOfflineSync() {
         let result: any;
 
         if (op.operation === 'insert') {
-          result = await (supabase as any).from(op.table).insert(op.data);
+          // Les inserts hors ligne utilisent un UUID client : l'upsert rend la reprise idempotente
+          // si l'application est interrompue après l'écriture serveur mais avant le marquage local.
+          result = await (supabase as any).from(op.table).upsert(op.data, { onConflict: 'id' });
         } else if (op.operation === 'update') {
           // Résolution de conflit multi-appareils (merge par champ / last-write-wins)
           const res = await resolveUpdateConflict(op.table, op.record_id, op.data, op.timestamp);
