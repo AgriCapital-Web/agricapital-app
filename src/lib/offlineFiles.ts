@@ -180,12 +180,23 @@ export async function flushFileQueue(): Promise<number> {
         .upload(f.path, f.blob, { upsert: true, contentType: f.contentType });
       if (error) throw error;
 
-      // Rattachement éventuel de l'URL à la ligne concernée
+      // Les photos de cartes passent par le traitement serveur après l'upload.
+      let storedPath = f.path;
+      if (f.bucket === 'cartes-personnel' && f.table === 'cartes_personnel' && f.record_id && f.column === 'photo_url') {
+        const { data: processed, error: processingError } = await supabase.functions.invoke('process-card-photo', {
+          body: { mode: 'single', cardId: f.record_id, sourcePath: f.path },
+        });
+        if (processingError || !processed?.path) {
+          throw processingError || new Error('Traitement de la photo de carte échoué.');
+        }
+        storedPath = processed.path as string;
+      }
+
+      // Rattachement du chemin de stockage (jamais d'URL publique pour les buckets privés).
       if (f.table && f.record_id && f.column) {
-        const { data: pub } = supabase.storage.from(f.bucket).getPublicUrl(f.path);
         await (supabase as any)
           .from(f.table)
-          .update({ [f.column]: pub?.publicUrl || f.path })
+          .update({ [f.column]: storedPath })
           .eq('id', f.record_id);
       }
 
