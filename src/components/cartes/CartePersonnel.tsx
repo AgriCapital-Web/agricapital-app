@@ -298,18 +298,55 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
                 />
               ) : (
                 <div
+                  aria-label="Emplacement photo"
                   style={{
                     width: "100%",
                     height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#929292",
-                    fontSize: 42,
-                    fontWeight: 700,
+                    position: "relative",
+                    overflow: "hidden",
+                    backgroundColor: "#F2F2F2",
                   }}
                 >
-                  {initiales(carte.nom_complet)}
+                  <div style={{
+                    position: "absolute",
+                    top: 26,
+                    left: "50%",
+                    width: 58,
+                    height: 58,
+                    transform: "translateX(-50%)",
+                    borderRadius: "50%",
+                    backgroundColor: "#8A8A8A",
+                  }} />
+                  <div style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: -8,
+                    width: 138,
+                    height: 112,
+                    transform: "translateX(-50%)",
+                    borderRadius: "70px 70px 0 0",
+                    backgroundColor: "#777777",
+                  }} />
+                  <div style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: 42,
+                    width: 34,
+                    height: 42,
+                    transform: "translateX(-50%)",
+                    backgroundColor: "#EEEEEE",
+                    clipPath: "polygon(0 0, 100% 0, 72% 100%, 28% 100%)",
+                  }} />
+                  <div style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: 0,
+                    width: 20,
+                    height: 72,
+                    transform: "translateX(-50%) rotate(0deg)",
+                    backgroundColor: "#4F4F4F",
+                    clipPath: "polygon(50% 0, 100% 22%, 72% 100%, 28% 100%, 0 22%)",
+                  }} />
                 </div>
               )}
             </div>
