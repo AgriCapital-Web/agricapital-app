@@ -50,8 +50,8 @@ const GestionBaseDonnees = () => {
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState("json");
   const [exporting, setExporting] = useState(false);
-  const [autoBackup, setAutoBackup] = useState(false);
-  const [backupFrequency, setBackupFrequency] = useState("daily");
+  const [autoBackup] = useState(false);
+  const [backupFrequency] = useState("daily");
   const [lastBackup, setLastBackup] = useState<string | null>(null);
 
   const handleExport = async () => {
