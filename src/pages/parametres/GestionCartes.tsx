@@ -425,7 +425,7 @@ const GestionCartes = () => {
             <div
               aria-hidden="true"
               className="pointer-events-none fixed left-[-10000px] top-0"
-              style={{ width: 480, height: 764, overflow: "visible" }}
+              style={{ width: 480, height: 678, overflow: "visible" }}
             >
               <CarteRecto ref={rectoRef} carte={dataSelection} />
               <CarteVerso ref={versoRef} carte={dataSelection} />
