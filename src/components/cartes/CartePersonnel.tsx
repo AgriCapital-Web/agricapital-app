@@ -450,19 +450,6 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
             <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
               <div style={{ position: "relative", height: 62 }}>
                 <img
-                  src={cachet}
-                  alt="Cachet AgriCapital"
-                  style={{
-                    position: "absolute",
-                    left: 4,
-                    bottom: 0,
-                    height: 54,
-                    width: 54,
-                    objectFit: "contain",
-                    zIndex: 12,
-                  }}
-                />
-                <img
                   src={signature}
                   alt="Signature de la direction"
                   style={{
@@ -473,6 +460,19 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
                     width: 104,
                     objectFit: "contain",
                     zIndex: 10,
+                  }}
+                />
+                <img
+                  src={cachet}
+                  alt="Cachet AgriCapital"
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    bottom: -6,
+                    height: 68,
+                    width: 68,
+                    objectFit: "contain",
+                    zIndex: 12,
                   }}
                 />
               </div>
