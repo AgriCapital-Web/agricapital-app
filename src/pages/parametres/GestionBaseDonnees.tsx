@@ -25,25 +25,25 @@ import {
   AlertTriangle
 } from "lucide-react";
 
+// Catalogue synchronisé avec le schéma Supabase du projet.
 const TABLES = [
-  "souscripteurs",
-  "plantations", 
-  "paiements",
-  "commissions",
-  "equipes",
-  "profiles",
-  "offres",
-  "promotions",
-  "regions",
-  "districts",
-  "departements",
-  "sous_prefectures",
-  "villages",
-  "documents",
-  "notes",
-  "tickets_support",
-  "notifications"
-];
+  "account_requests", "activity_notes", "admin_audit_logs",
+  "agriplan_clients", "agriplan_documents", "agriplan_echeances", "agriplan_evenements",
+  "agriplan_lead_relances", "agriplan_leads", "agriplan_messages", "agriplan_offre",
+  "agriplan_plantations", "agriplan_ventes", "agriplan_visites",
+  "agriplant_suivi_historique", "agriplant_suivis",
+  "app_roles", "cartes_personnel", "commissions", "configurations_systeme",
+  "conventions_foncieres", "cotitulaires_mandataires", "departements", "departements_entreprise",
+  "districts", "documents", "documents_convention", "documents_souscription", "domaines",
+  "equipes", "grille_remuneration", "historique_actions", "historique_activites",
+  "interventions_techniques", "kkiapay_events", "lead_historique", "lead_relances", "leads",
+  "lots_hectares", "notification_templates", "notifications", "offres", "otp_codes",
+  "paiements", "parcelles", "photos_plantation", "plantations", "portail_messages",
+  "portefeuilles", "profiles", "promotions", "proprietaires_terres", "rate_limits",
+  "regions", "remboursements", "retraits_portefeuille", "role_permissions",
+  "sous_prefectures", "souscripteurs", "souscription_lots", "souscriptions_brouillon",
+  "tickets_techniques", "transferts_paiements", "user_roles", "villages", "zone_assignments",
+] as const;
 
 const GestionBaseDonnees = () => {
   const { toast } = useToast();
@@ -281,7 +281,7 @@ const GestionBaseDonnees = () => {
                       <div className="flex flex-wrap gap-1">
                         <Badge variant="outline" className="text-xs">
                           <Shield className="h-3 w-3 mr-1" />
-                          RLS activé
+                          Accès contrôlé par RLS
                         </Badge>
                       </div>
                     </CardContent>
