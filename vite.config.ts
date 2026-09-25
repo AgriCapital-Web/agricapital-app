@@ -26,20 +26,8 @@ export default defineConfig(({ mode }) => ({
         skipWaiting: true,
         navigateFallbackDenylist: [/^\/~oauth/],
 
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*supabase\.co\/rest\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "supabase-api-cache",
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60
-              },
-              networkTimeoutSeconds: 3
-            }
-          }
-        ]
+        // Les données Supabase ne sont pas mises en cache par Workbox :
+        // le cache métier offline est géré explicitement via IndexedDB.
       }
     })
   ].filter(Boolean),
