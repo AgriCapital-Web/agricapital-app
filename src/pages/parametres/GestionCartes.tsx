@@ -268,26 +268,58 @@ const GestionCartes = () => {
   };
 
   const exporter = async (ref: React.RefObject<HTMLDivElement>, nom: string) => {
-    if (!ref.current) {
+    const element = ref.current;
+    if (!element) {
       toast.error("La carte n'est pas prête à être exportée.");
       return;
     }
     try {
       if (document.fonts?.ready) await document.fonts.ready;
-      const images = Array.from(ref.current.querySelectorAll("img"));
-      await Promise.all(images.map((img) => (img.decode ? img.decode().catch(() => undefined) : Promise.resolve())));
-      const canvas = await html2canvas(ref.current, {
-        scale: 8,
+
+      // Le rendu exporté doit être strictement celui de la prévisualisation :
+      // même composant, mêmes dimensions 480 × 678, aucune transformation CSS.
+      // On attend explicitement les images asynchrones (notamment les URLs signées
+      // Supabase) afin d'éviter qu'une photo ou un asset manque dans le PNG.
+      const images = Array.from(element.querySelectorAll("img"));
+      await Promise.all(
+        images.map(async (img) => {
+          if (!img.complete || img.naturalWidth === 0) {
+            await new Promise<void>((resolve) => {
+              const done = () => {
+                img.removeEventListener("load", done);
+                img.removeEventListener("error", done);
+                resolve();
+              };
+              img.addEventListener("load", done, { once: true });
+              img.addEventListener("error", done, { once: true });
+            });
+          }
+          if (img.decode) await img.decode().catch(() => undefined);
+        }),
+      );
+
+      const canvas = await html2canvas(element, {
+        width: 480,
+        height: 678,
+        scale: 1023 / 480,
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: false,
         logging: false,
+        imageTimeout: 15000,
+        scrollX: 0,
+        scrollY: 0,
       });
+
+      // La maquette officielle est 1023 × 1444 px : l'export reprend exactement
+      // cette définition, au lieu du 3840 × 5424 px précédent.
       const a = document.createElement("a");
       a.href = canvas.toDataURL("image/png");
       a.download = `${nom}.png`;
+      document.body.appendChild(a);
       a.click();
-      toast.success(`${nom}.png téléchargé.`);
+      a.remove();
+      toast.success(`${nom}.png exporté en 1023 × 1444 px.`);
     } catch (e: any) {
       toast.error(e?.message || "Échec de l'export de la carte.");
     }
@@ -425,8 +457,13 @@ const GestionCartes = () => {
             </Tabs>
             <div
               aria-hidden="true"
-              className="pointer-events-none fixed left-[-10000px] top-0"
-              style={{ width: 480, height: 678, overflow: "visible" }}
+              className="pointer-events-none absolute left-0 top-0"
+              style={{
+                width: 480,
+                height: 678,
+                overflow: "visible",
+                opacity: 0.001,
+              }}
             >
               <CarteRecto ref={rectoRef} carte={dataSelection} />
               <CarteVerso ref={versoRef} carte={dataSelection} />
