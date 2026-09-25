@@ -24,7 +24,7 @@ import { roleLabel } from "@/lib/roles";
  */
 
 const W = 480;
-const H = 764;
+const H = 678;
 
 const VERT = "#0B4A2E";
 const VERT_CLAIR = "#137A45";
@@ -235,7 +235,9 @@ const CardShell = ({ children }: { children: React.ReactNode }) => (
       boxSizing: "border-box",
     }}
   >
-    {children}
+    <div style={{ position: "relative", width: W, height: 764, transform: `scaleY(${H / 764})`, transformOrigin: "top left" }}>
+      {children}
+    </div>
   </div>
 );
 
