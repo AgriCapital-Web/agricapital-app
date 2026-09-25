@@ -540,7 +540,7 @@ export const CarteVerso = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 16 }}>
-          <QR code={carte.code_verification} taille={96} />
+          <QR code={carte.code_verification} taille={68} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p
               style={{
