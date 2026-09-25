@@ -43,7 +43,7 @@ const TABLES = [
   "regions", "remboursements", "retraits_portefeuille", "role_permissions",
   "sous_prefectures", "souscripteurs", "souscription_lots", "souscriptions_brouillon",
   "tickets_techniques", "transferts_paiements", "user_roles", "villages", "zone_assignments",
-] as const;
+ ];
 
 const GestionBaseDonnees = () => {
   const { toast } = useToast();
