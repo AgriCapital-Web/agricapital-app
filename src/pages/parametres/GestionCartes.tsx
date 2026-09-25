@@ -243,19 +243,54 @@ const GestionCartes = () => {
     }
   };
 
+  const retraiterPhotosLot = async () => {
+    try {
+      toast.info("Retraitement des photos en cours…");
+      const { data, error } = await supabase.functions.invoke("process-card-photo", {
+        body: { mode: "batch" },
+      });
+      if (error) throw error;
+      const processed = Number(data?.processed || 0);
+      const failed = Number(data?.failed || 0);
+      if (failed > 0) {
+        toast.warning(`Retraitement terminé : ${processed} photo(s) traitée(s), ${failed} échec(s).`);
+      } else {
+        toast.success(
+          processed > 0
+            ? `Retraitement terminé : ${processed} photo(s) traitée(s).`
+            : "Aucune photo existante à retraiter."
+        );
+      }
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Le retraitement des photos a échoué.");
+    }
+  };
+
   const exporter = async (ref: React.RefObject<HTMLDivElement>, nom: string) => {
-    if (!ref.current) return;
-    const canvas = await html2canvas(ref.current, {
-      scale: 8,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-    });
-    const a = document.createElement("a");
-    a.href = canvas.toDataURL("image/png");
-    a.download = `${nom}.png`;
-    a.click();
+    if (!ref.current) {
+      toast.error("La carte n'est pas prête à être exportée.");
+      return;
+    }
+    try {
+      if (document.fonts?.ready) await document.fonts.ready;
+      const images = Array.from(ref.current.querySelectorAll("img"));
+      await Promise.all(images.map((img) => img.decode?.().catch(() => undefined)));
+      const canvas = await html2canvas(ref.current, {
+        scale: 8,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+      });
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = `${nom}.png`;
+      a.click();
+      toast.success(`${nom}.png téléchargé.`);
+    } catch (e: any) {
+      toast.error(e?.message || "Échec de l'export de la carte.");
+    }
   };
 
   if (!peutGerer) {
@@ -280,6 +315,9 @@ const GestionCartes = () => {
             </div>
             <Button variant="outline" className="w-full sm:w-auto" onClick={genererToutes}>
               <RefreshCw className="mr-1 h-4 w-4" />Générer toutes
+            </Button>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={retraiterPhotosLot}>
+              <RefreshCw className="mr-1 h-4 w-4" />Retraiter les photos
             </Button>
             <Button variant="secondary" className="w-full sm:w-auto" onClick={() => setScanOpen(true)}>
               <QrCode className="mr-1 h-4 w-4" />Scanner un badge
@@ -374,16 +412,26 @@ const GestionCartes = () => {
                 <TabsTrigger value="both">Recto / Verso</TabsTrigger>
               </TabsList>
               <TabsContent value="recto" className="flex justify-center overflow-x-auto py-4">
-                <CarteRecto ref={rectoRef} carte={dataSelection} />
+                <CarteRecto carte={dataSelection} />
               </TabsContent>
               <TabsContent value="verso" className="flex justify-center overflow-x-auto py-4">
-                <CarteVerso ref={versoRef} carte={dataSelection} />
+                <CarteVerso carte={dataSelection} />
               </TabsContent>
               <TabsContent value="both" className="flex flex-wrap justify-center gap-4 py-4">
                 <CarteRecto carte={dataSelection} />
                 <CarteVerso carte={dataSelection} />
               </TabsContent>
             </Tabs>
+            {dataSelection && (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none fixed left-[-10000px] top-0"
+                style={{ width: 480, height: 764, overflow: "visible" }}
+              >
+                <CarteRecto ref={rectoRef} carte={dataSelection} />
+                <CarteVerso ref={versoRef} carte={dataSelection} />
+              </div>
+            )}
           )}
           <DialogFooter className="flex-wrap gap-2">
             <label className="inline-flex">
