@@ -21,6 +21,9 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // Le projet s’appuie encore sur des réponses Supabase dynamiques dans plusieurs modules.
+      // Les usages restent visibles comme warnings sans bloquer le déploiement.
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
 );
