@@ -58,6 +58,7 @@ const GestionCartes = () => {
   });
   const rectoRef = useRef<HTMLDivElement>(null);
   const versoRef = useRef<HTMLDivElement>(null);
+  const [carteTab, setCarteTab] = useState("recto");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -438,31 +439,23 @@ const GestionCartes = () => {
           <DialogHeader><DialogTitle>Carte de {selected?.nom_complet}</DialogTitle></DialogHeader>
           {dataSelection && (
             <>
-            <Tabs defaultValue="recto">
+            <Tabs value={carteTab} onValueChange={setCarteTab}>
               <TabsList>
                 <TabsTrigger value="recto">Recto</TabsTrigger>
                 <TabsTrigger value="verso">Verso</TabsTrigger>
                 <TabsTrigger value="both">Recto / Verso</TabsTrigger>
               </TabsList>
               <TabsContent value="recto" className="flex justify-center overflow-x-auto py-4">
-                <CarteRecto carte={dataSelection} />
+                <CarteRecto ref={rectoRef} carte={dataSelection} />
               </TabsContent>
               <TabsContent value="verso" className="flex justify-center overflow-x-auto py-4">
-                <CarteVerso carte={dataSelection} />
+                <CarteVerso ref={versoRef} carte={dataSelection} />
               </TabsContent>
               <TabsContent value="both" className="flex flex-wrap justify-center gap-4 py-4">
-                <CarteRecto carte={dataSelection} />
-                <CarteVerso carte={dataSelection} />
+                <CarteRecto ref={rectoRef} carte={dataSelection} />
+                <CarteVerso ref={versoRef} carte={dataSelection} />
               </TabsContent>
             </Tabs>
-            <div
-              aria-hidden="true"
-              className="pointer-events-none fixed left-[-10000px] top-0"
-              style={{ width: 480, height: 678, overflow: "visible" }}
-            >
-              <CarteRecto ref={rectoRef} carte={dataSelection} />
-              <CarteVerso ref={versoRef} carte={dataSelection} />
-            </div>
             </>
           )}
           <DialogFooter className="flex-wrap gap-2">
@@ -479,10 +472,32 @@ const GestionCartes = () => {
               <Button variant="outline" asChild><span><Upload className="mr-1 h-4 w-4" />Photo</span></Button>
             </label>
             <Button variant="outline" onClick={() => carteSelection && ouvrirEdition(carteSelection)}>Modifier</Button>
-            <Button variant="outline" onClick={() => exporter(rectoRef, `carte-recto-${dataSelection?.matricule}`)}>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (carteTab !== "recto") {
+                  setCarteTab("recto");
+                  await new Promise<void>((resolve) => {
+                    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+                  });
+                }
+                await exporter(rectoRef, `carte-recto-${dataSelection?.matricule}`);
+              }}
+            >
               <Download className="mr-1 h-4 w-4" />Recto
             </Button>
-            <Button variant="outline" onClick={() => exporter(versoRef, `carte-verso-${dataSelection?.matricule}`)}>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (carteTab !== "verso") {
+                  setCarteTab("verso");
+                  await new Promise<void>((resolve) => {
+                    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+                  });
+                }
+                await exporter(versoRef, `carte-verso-${dataSelection?.matricule}`);
+              }}
+            >
               <Download className="mr-1 h-4 w-4" />Verso
             </Button>
             <Button onClick={() => window.print()}><Printer className="mr-1 h-4 w-4" />Imprimer</Button>
