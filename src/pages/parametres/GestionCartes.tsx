@@ -405,6 +405,7 @@ const GestionCartes = () => {
         <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-3xl overflow-y-auto">
           <DialogHeader><DialogTitle>Carte de {selected?.nom_complet}</DialogTitle></DialogHeader>
           {dataSelection && (
+            <>
             <Tabs defaultValue="recto">
               <TabsList>
                 <TabsTrigger value="recto">Recto</TabsTrigger>
@@ -430,6 +431,7 @@ const GestionCartes = () => {
               <CarteRecto ref={rectoRef} carte={dataSelection} />
               <CarteVerso ref={versoRef} carte={dataSelection} />
             </div>
+            </>
           )}
           <DialogFooter className="flex-wrap gap-2">
             <label className="inline-flex">
