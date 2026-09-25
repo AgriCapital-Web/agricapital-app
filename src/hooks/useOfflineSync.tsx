@@ -195,7 +195,7 @@ export function useOfflineSync() {
     recordId: string,
     data: any
   ) => {
-    await addToSyncQueue({ table, operation, record_id: recordId, data, timestamp: Date.now() });
+    await addToSyncQueue({ table, operation, record_id: recordId, data: { ...data, id: recordId }, timestamp: Date.now() });
 
     // Optimistic local update
     const storeMap: Record<string, string> = {
@@ -211,6 +211,9 @@ export function useOfflineSync() {
     if (store && operation !== 'delete') {
       const { putItem } = await import('@/lib/offlineDb');
       await putItem(store, { id: recordId, ...data, _offline: true, updated_at: new Date().toISOString() });
+    } else if (store && operation === 'delete') {
+      const { deleteItem } = await import('@/lib/offlineDb');
+      await deleteItem(store, recordId);
     }
 
     const stats = await getSyncQueueStats();
