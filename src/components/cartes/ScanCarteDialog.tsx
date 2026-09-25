@@ -124,7 +124,7 @@ const ScanCarteDialog = ({ open, onOpenChange, onCode }: Props) => {
       );
       setStarting(false);
     }
-  }, [arreter, cameraIndex, essai, traiterValeur]);
+  }, [arreter, cameraIndex, traiterValeur]);
 
   useEffect(() => {
     if (!open) {
