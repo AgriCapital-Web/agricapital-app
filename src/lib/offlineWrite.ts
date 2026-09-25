@@ -44,7 +44,9 @@ export async function offlineInsert(table: string, values: any): Promise<{ data:
     updated_at: new Date().toISOString(),
   };
   if (store) { try { await putItem(store, record); } catch {} }
-  await addToSyncQueue({ table, operation: 'insert', record_id: tempId, data: values, timestamp: Date.now() });
+  // Conserver l'UUID local dans la mutation : le serveur doit créer le même identifiant
+  // afin que les relations et les références locales restent cohérentes après synchronisation.
+  await addToSyncQueue({ table, operation: 'insert', record_id: tempId, data: record, timestamp: Date.now() });
   return { data: record, error: null, offline: true };
 }
 
