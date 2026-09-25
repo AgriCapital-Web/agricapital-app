@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { supabase } from "@/integrations/supabase/client";
+import { offlineUpdate, offlineDelete } from "@/lib/offlineWrite";
+import { getCachedPlantations } from "@/lib/offlineDb";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -54,11 +56,17 @@ const Plantations = () => {
       if (error) throw error;
       setPlantations(data || []);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: getSafeErrorMessage(error),
-      });
+      if (!navigator.onLine) {
+        const cached = await getCachedPlantations();
+        setPlantations(cached);
+        toast({ title: "Mode hors ligne", description: "Plantations locales affichées. Les modifications seront synchronisées au retour du réseau." });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: getSafeErrorMessage(error),
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -94,11 +102,7 @@ const Plantations = () => {
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from("plantations")
-        .update({ statut: newStatus, statut_global: newStatus })
-        .eq("id", id);
-
+      const { error } = await offlineUpdate("plantations", id, { statut: newStatus, statut_global: newStatus });
       if (error) throw error;
 
       toast({
@@ -118,11 +122,7 @@ const Plantations = () => {
   const handleDelete = async () => {
     if (!plantationToDelete) return;
     try {
-      const { error } = await supabase
-        .from("plantations")
-        .delete()
-        .eq("id", plantationToDelete.id);
-
+      const { error } = await offlineDelete("plantations", plantationToDelete.id);
       if (error) throw error;
 
       toast({
