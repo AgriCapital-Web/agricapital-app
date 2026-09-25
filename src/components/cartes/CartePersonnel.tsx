@@ -235,7 +235,7 @@ const CardShell = ({ children }: { children: React.ReactNode }) => (
       boxSizing: "border-box",
     }}
   >
-    <div style={{ position: "relative", width: W, height: 764, transform: `scaleY(${H / 764})`, transformOrigin: "top left" }}>
+    <div style={{ position: "relative", width: W, height: H }}>
       {children}
     </div>
   </div>
