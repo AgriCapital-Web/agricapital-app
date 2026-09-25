@@ -91,8 +91,6 @@ const Login = () => {
           Scanner / vérifier une carte
         </Button>
 
-        <ScanCarteDialog open={scanOpen} onOpenChange={setScanOpen} onCode={(code) => navigate(`/verifier-carte/${code}`)} />
-
         {/* Logo mobile — sans cadre */}
 
         <div className="lg:hidden mb-8 w-full flex flex-col items-center">
