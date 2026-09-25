@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ const fdate = (d?: string | null) => (d ? format(new Date(d), "dd MMMM yyyy", { 
 const VerificationCarte = () => {
   const { code } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [saisie, setSaisie] = useState(code || "");
   const [loading, setLoading] = useState(false);
   const [carte, setCarte] = useState<CarteVerifiee | null>(null);
@@ -59,8 +60,9 @@ const VerificationCarte = () => {
 
   useEffect(() => {
     if (code) verifier(code);
+    if (searchParams.get("scan") === "1") setScanOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
+  }, [code, searchParams]);
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-primary via-primary to-primary-hover px-3 py-8 sm:px-4">
