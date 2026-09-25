@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
+import { offlineInsert, offlineUpdate } from "@/lib/offlineWrite";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -327,17 +328,10 @@ const PaiementForm = ({ paiement, onSuccess, onCancel }: PaiementFormProps) => {
       };
 
       if (paiement) {
-        const { error } = await (supabase as any)
-          .from("paiements")
-          .update(paiementData)
-          .eq("id", paiement.id);
-
+        const { error } = await offlineUpdate("paiements", paiement.id, paiementData);
         if (error) throw error;
       } else {
-        const { error } = await (supabase as any)
-          .from("paiements")
-          .insert([paiementData]);
-
+        const { error } = await offlineInsert("paiements", paiementData);
         if (error) throw error;
       }
 
