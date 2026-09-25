@@ -31,3 +31,6 @@ jobs:
 
     - name: Lint
       run: bun run lint
+
+    - name: Tests
+      run: bun run vitest run
