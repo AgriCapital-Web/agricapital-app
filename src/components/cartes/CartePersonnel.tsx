@@ -15,7 +15,7 @@ import { roleLabel } from "@/lib/roles";
  * officielles recto / verso.
  *
  * Toute la mise en page est exprimée en pixels sur une grille fixe de
- * 480 × 764 px (ratio exact d'une carte 54 × 86 mm). Les unités mm/pt et les
+ * 480 × 678 px, calée sur le ratio de la maquette officielle fournie. Les unités mm/pt et les
  * troncatures CSS (truncate, line-clamp) sont volontairement évitées : elles
  * sont mal converties par html2canvas et provoquaient chevauchements et textes
  * coupés à l'export / impression. Les valeurs trop longues sont raccourcies en
