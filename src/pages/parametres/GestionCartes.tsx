@@ -275,7 +275,7 @@ const GestionCartes = () => {
     try {
       if (document.fonts?.ready) await document.fonts.ready;
       const images = Array.from(ref.current.querySelectorAll("img"));
-      await Promise.all(images.map((img) => img.decode?.().catch(() => undefined)));
+      await Promise.all(images.map((img) => (img.decode ? img.decode().catch(() => undefined) : Promise.resolve())));
       const canvas = await html2canvas(ref.current, {
         scale: 8,
         backgroundColor: "#ffffff",
