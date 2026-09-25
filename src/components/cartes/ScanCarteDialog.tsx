@@ -2,159 +2,170 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import QrScanner from "qr-scanner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ImageUp, Loader2, RefreshCw, ScanLine } from "lucide-react";
+import { ImageUp, Loader2, RefreshCw, ScanLine, SwitchCamera } from "lucide-react";
 
 interface Props {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  /** Reçoit le code de vérification extrait du QR code. */
   onCode: (code: string) => void;
 }
 
-/** Extrait le code de vérification d'une URL /verifier-carte/<code> ou d'un code brut. */
+const CODE_RE = /^[A-Za-z0-9-]{6,64}$/;
+
+/** Extrait un code depuis l'URL publique de vérification ou un code brut. */
 export const extraireCode = (valeur: string) => {
   const v = valeur.trim();
-  const m = v.match(/verifier-carte\/([A-Za-z0-9-]{6,64})/);
-  return m ? m[1] : v;
+  if (!v) return "";
+  try {
+    const url = new URL(v);
+    const match = url.pathname.match(/\/verifier-carte\/([A-Za-z0-9-]{6,64})\/?$/i);
+    if (match?.[1]) return match[1];
+  } catch {
+    // Le QR peut contenir directement le code.
+  }
+  const match = v.match(/(?:^|\/|verifier-carte\/)([A-Za-z0-9-]{6,64})\/?$/i);
+  return match?.[1] || v;
 };
 
-type Detecteur = { detect: (source: CanvasImageSource) => Promise<Array<{ rawValue: string }>> };
+const isValidCode = (code: string) => CODE_RE.test(code);
 
-/**
- * Lecteur de QR code par caméra. Le flux est ouvert manuellement via
- * getUserMedia (plus fiable en iframe et sur mobile) puis analysé image par
- * image avec BarcodeDetector si disponible, sinon avec qr-scanner.
- */
 const ScanCarteDialog = ({ open, onOpenChange, onCode }: Props) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const boucleRef = useRef<number | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const scannerRef = useRef<QrScanner | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [essai, setEssai] = useState(0);
+  const [cameras, setCameras] = useState<QrScanner.Camera[]>([]);
+  const [cameraIndex, setCameraIndex] = useState(0);
+  const [scanningImage, setScanningImage] = useState(false);
 
   const arreter = useCallback(() => {
-    if (boucleRef.current !== null) {
-      window.clearTimeout(boucleRef.current);
-      boucleRef.current = null;
-    }
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
+    scannerRef.current?.stop();
+    scannerRef.current?.destroy();
+    scannerRef.current = null;
   }, []);
+
+  const traiterValeur = useCallback(
+    (raw: string) => {
+      const code = extraireCode(raw);
+      if (!isValidCode(code)) {
+        setErreur("QR détecté, mais son contenu n'est pas un code de vérification AgriCapital valide.");
+        return false;
+      }
+      arreter();
+      onOpenChange(false);
+      onCode(code);
+      return true;
+    },
+    [arreter, onCode, onOpenChange],
+  );
+
+  const demarrer = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    arreter();
+    setErreur(null);
+    setStarting(true);
+
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setErreur("La caméra nécessite HTTPS. Utilisez « Photo du QR » si la caméra n'est pas disponible.");
+      setStarting(false);
+      return;
+    }
+
+    try {
+      const available = await QrScanner.listCameras(true);
+      setCameras(available);
+      const preferred = available.findIndex((camera) => /back|rear|environment|arrière|principale/i.test(camera.label));
+      const nextIndex = preferred >= 0 ? preferred : Math.min(cameraIndex, Math.max(available.length - 1, 0));
+      setCameraIndex(nextIndex);
+
+      const preferredCamera = available[nextIndex]?.id || "environment";
+      const scanner = new QrScanner(
+        video,
+        (result) => {
+          const raw = typeof result === "string" ? result : result.data;
+          traiterValeur(raw);
+        },
+        {
+          preferredCamera,
+          maxScansPerSecond: 8,
+          returnDetailedScanResult: true,
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          onDecodeError: () => undefined,
+        },
+      );
+
+      scannerRef.current = scanner;
+      await scanner.start();
+      if (scannerRef.current !== scanner) {
+        scanner.stop();
+        scanner.destroy();
+        return;
+      }
+      setStarting(false);
+    } catch (error) {
+      if (scannerRef.current) {
+        scannerRef.current.stop();
+        scannerRef.current.destroy();
+        scannerRef.current = null;
+      }
+      const name = error instanceof DOMException ? error.name : "";
+      setErreur(
+        name === "NotAllowedError" || name === "SecurityError"
+          ? "Accès caméra refusé. Autorisez la caméra pour ce site dans les réglages du navigateur, puis appuyez sur « Réessayer »."
+          : name === "NotFoundError"
+            ? "Aucune caméra n'a été détectée sur cet appareil."
+            : name === "NotReadableError"
+              ? "La caméra est déjà utilisée par une autre application. Fermez-la puis réessayez."
+              : "Impossible d'ouvrir la caméra. Vérifiez l'autorisation du navigateur ou utilisez « Photo du QR ».",
+      );
+      setStarting(false);
+    }
+  }, [arreter, cameraIndex, essai, traiterValeur]);
 
   useEffect(() => {
     if (!open) {
       arreter();
       return;
     }
-    let annule = false;
-    setErreur(null);
-    setStarting(true);
 
-    const demarrer = async () => {
-      const video = videoRef.current;
-      if (!video) return;
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setErreur("Ce navigateur ne permet pas d'ouvrir la caméra. Utilisez « Photo du QR ».");
-        setStarting(false);
-        return;
-      }
-      if (!window.isSecureContext && !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
-        setErreur("La caméra exige une connexion sécurisée (HTTPS). Utilisez « Photo du QR ».");
-        setStarting(false);
-        return;
-      }
-      try {
-        let stream: MediaStream;
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: false,
-          });
-        } catch {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        }
-        if (annule) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-        video.srcObject = stream;
-        video.setAttribute("playsinline", "true");
-        await video.play().catch(() => undefined);
-        if (annule) return;
-        setStarting(false);
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (!cancelled) void demarrer();
+    }, 120);
 
-        const Detector = (window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detecteur }).BarcodeDetector;
-        const detecteur = Detector ? new Detector({ formats: ["qr_code"] }) : null;
-        const canvas = canvasRef.current ?? document.createElement("canvas");
-        canvasRef.current = canvas;
-
-        const analyser = async () => {
-          if (annule || !videoRef.current) return;
-          const v = videoRef.current;
-          if (v.readyState >= 2 && v.videoWidth) {
-            canvas.width = v.videoWidth;
-            canvas.height = v.videoHeight;
-            const ctx = canvas.getContext("2d");
-            ctx?.drawImage(v, 0, 0, canvas.width, canvas.height);
-            try {
-              let valeur: string | null = null;
-              if (detecteur) {
-                const codes = await detecteur.detect(canvas);
-                valeur = codes[0]?.rawValue ?? null;
-              } else {
-                const res = await QrScanner.scanImage(canvas, { returnDetailedScanResult: true });
-                valeur = res.data;
-              }
-              if (valeur) {
-                onCode(extraireCode(valeur));
-                onOpenChange(false);
-                return;
-              }
-            } catch {
-              /* aucun QR code dans cette image */
-            }
-          }
-          boucleRef.current = window.setTimeout(() => void analyser(), 180);
-        };
-        void analyser();
-      } catch (error) {
-        if (annule) return;
-        const denied = error instanceof DOMException && (error.name === "NotAllowedError" || error.name === "SecurityError");
-        const absente = error instanceof DOMException && error.name === "NotFoundError";
-        setErreur(
-          denied
-            ? "Accès caméra refusé. Autorisez la caméra pour ce site puis réessayez."
-            : absente
-              ? "Aucune caméra détectée sur cet appareil."
-              : "Impossible d'ouvrir la caméra. Réessayez ou utilisez « Photo du QR ».",
-        );
-        setStarting(false);
-      }
-    };
-
-    void demarrer();
     return () => {
-      annule = true;
+      cancelled = true;
+      window.clearTimeout(timer);
       arreter();
     };
-  }, [open, essai, onCode, onOpenChange, arreter]);
+  }, [open, essai, demarrer, arreter]);
+
+  const changerCamera = async () => {
+    if (cameras.length < 2) return;
+    const next = (cameraIndex + 1) % cameras.length;
+    setCameraIndex(next);
+    setEssai((n) => n + 1);
+  };
 
   const scannerImage = async (file?: File) => {
     if (!file) return;
     setErreur(null);
-    setStarting(true);
+    setScanningImage(true);
     try {
-      const result = await QrScanner.scanImage(file, { returnDetailedScanResult: true });
-      onCode(extraireCode(result.data));
-      onOpenChange(false);
+      const result = await QrScanner.scanImage(file, {
+        returnDetailedScanResult: true,
+        alsoTryWithoutScanRegion: true,
+      });
+      const raw = typeof result === "string" ? result : result.data;
+      if (!traiterValeur(raw)) return;
     } catch {
-      setErreur("Aucun QR code lisible n'a été trouvé dans cette image.");
+      setErreur("Aucun QR code lisible n'a été trouvé dans cette photo. Prenez une photo nette et bien éclairée du QR.");
     } finally {
-      setStarting(false);
+      setScanningImage(false);
     }
   };
 
@@ -162,34 +173,66 @@ const ScanCarteDialog = ({ open, onOpenChange, onCode }: Props) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><ScanLine className="h-5 w-5" />Scanner une carte</DialogTitle>
-          <DialogDescription>Présentez le QR code devant la caméra.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2">
+            <ScanLine className="h-5 w-5" />
+            Scanner une carte AgriCapital
+          </DialogTitle>
+          <DialogDescription>
+            Autorisez la caméra puis placez le QR code dans la zone de lecture.
+          </DialogDescription>
         </DialogHeader>
-        <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-black">
+
+        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-black">
           <video ref={videoRef} className="h-full w-full object-cover" muted playsInline autoPlay />
           {starting && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/70">
-              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/55">
+              <div className="rounded-lg bg-background/95 px-4 py-3 text-center shadow-lg">
+                <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-primary" />
+                <p className="text-sm font-medium">Ouverture de la caméra…</p>
+              </div>
             </div>
           )}
-          {!erreur && !starting && <div className="pointer-events-none absolute inset-[15%] rounded-md border-2 border-primary" />}
         </div>
+
         {erreur ? (
-          <p className="text-sm text-destructive">{erreur}</p>
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            {erreur}
+          </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Placez le QR code de la carte dans le cadre.</p>
+          <p className="text-sm text-muted-foreground">
+            Le lecteur utilise la caméra arrière lorsque plusieurs caméras sont disponibles.
+          </p>
         )}
+
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <Button variant="outline" onClick={() => setEssai((n) => n + 1)}>
+          <Button variant="outline" onClick={() => setEssai((n) => n + 1)} disabled={starting || scanningImage}>
             <RefreshCw className="mr-2 h-4 w-4" />Réessayer
           </Button>
+
           <label className="inline-flex">
-            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => void scannerImage(event.target.files?.[0])} />
-            <Button variant="secondary" className="w-full" asChild>
-              <span><ImageUp className="mr-2 h-4 w-4" />Photo du QR</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(event) => void scannerImage(event.target.files?.[0])}
+              disabled={scanningImage}
+            />
+            <Button variant="secondary" className="w-full" asChild disabled={scanningImage}>
+              <span>
+                {scanningImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageUp className="mr-2 h-4 w-4" />}
+                Photo du QR
+              </span>
             </Button>
           </label>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Fermer</Button>
+
+          {cameras.length > 1 ? (
+            <Button variant="outline" onClick={changerCamera} disabled={starting}>
+              <SwitchCamera className="mr-2 h-4 w-4" />Changer caméra
+            </Button>
+          ) : (
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>Fermer</Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
