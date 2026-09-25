@@ -276,10 +276,10 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
           <img
             src={logo}
             alt="AgriCapital — Investir la terre. Cultiver l'avenir."
-            style={{ display: "block", margin: "0 auto", height: 66, width: 250, objectFit: "contain" }}
+            style={{ display: "block", margin: "0 auto", height: 72, width: 210, objectFit: "contain" }}
           />
 
-          <div style={{ display: "flex", gap: 16, marginTop: 18 }}>
+          <div style={{ display: "flex", gap: 22, marginTop: 56 }}>
             <div
               style={{
                 width: 136,
@@ -384,7 +384,7 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
           </div>
 
           <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginTop: 20 }}>
-            <QR code={carte.code_verification} taille={104} />
+            <QR code={carte.code_verification} taille={84} />
 
             <div style={{ width: 118, flexShrink: 0 }}>
               <p
