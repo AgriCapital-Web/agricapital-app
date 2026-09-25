@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { offlineInsert, offlineUpdate } from "@/lib/offlineWrite";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -128,21 +129,16 @@ const PlantationForm = ({ plantation, onSuccess, onCancel }: PlantationFormProps
       };
 
       if (plantation) {
-        const { error } = await (supabase as any)
-          .from("plantations")
-          .update(payload)
-          .eq("id", plantation.id);
+        const { error } = await offlineUpdate("plantations", plantation.id, payload);
         if (error) throw error;
         toast({ title: "Plantation modifiée" });
       } else {
-        const { error } = await (supabase as any)
-          .from("plantations")
-          .insert({
-            ...payload,
-            created_by: user.id,
-            statut: "actif",
-            statut_global: "en_attente_da",
-          });
+        const { error } = await offlineInsert("plantations", {
+          ...payload,
+          created_by: user.id,
+          statut: "actif",
+          statut_global: "en_attente_da",
+        });
         if (error) throw error;
         toast({ title: "✅ Souscripteur converti en plantation", description: nomPlantation });
       }
