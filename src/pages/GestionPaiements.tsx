@@ -57,6 +57,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSafeErrorMessage } from "@/lib/safeError";
+import { getCachedItems, STORES } from "@/lib/offlineDb";
 
 interface Paiement {
   id: string;
