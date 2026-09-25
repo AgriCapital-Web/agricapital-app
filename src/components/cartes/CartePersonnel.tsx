@@ -5,7 +5,6 @@ import { fr } from "date-fns/locale";
 import logo from "@/assets/logo-agricapital-v2.png";
 import symbole from "@/assets/symbole-agricapital.png";
 import signature from "@/assets/signature-direction.png";
-import cachet from "@/assets/cachet-agricapital.png";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
 import { CARTE_BUCKET } from "@/lib/photoCarte";
 import { roleLabel } from "@/lib/roles";
@@ -417,18 +416,13 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
                   alt="Signature de la direction"
                   style={{
                     position: "absolute",
-                    left: 0,
+                    right: 0,
                     bottom: 4,
                     height: 44,
                     width: 104,
                     objectFit: "contain",
                     zIndex: 10,
                   }}
-                />
-                <img
-                  src={cachet}
-                  alt="Cachet AgriCapital"
-                  style={{ position: "absolute", right: 0, bottom: 0, height: 56, width: 56, objectFit: "contain", zIndex: 20 }}
                 />
               </div>
               <span style={{ display: "block", height: 1, width: "100%", backgroundColor: "#8E8E8E" }} />
