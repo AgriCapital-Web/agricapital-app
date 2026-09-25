@@ -415,8 +415,8 @@ export const CarteRecto = forwardRef<HTMLDivElement, { carte: CarteData }>(({ ca
           <div style={{ marginTop: 18 }}>
             <Ligne label="Mission" valeur={coupe(missionAuto(carte), 34)} icone="mission" />
             <Ligne label="Zone d’intervention" valeur={coupe(carte.zone_intervention || carte.departement || "Côte d’Ivoire", 28)} icone="pays" />
-            <Ligne label="Validité" valeur={coupe(validiteTexte(carte), 34)} icone="validite" />
-            <Ligne label="Identifiant" valeur={coupe(carte.matricule, 34)} icone="identifiant" />
+            <Ligne label="Période de validité" valeur={coupe(validiteTexte(carte), 34)} icone="validite" />
+            <Ligne label="Identifiant officiel" valeur={coupe(carte.matricule, 34)} icone="identifiant" />
           </div>
 
           <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginTop: 20 }}>
