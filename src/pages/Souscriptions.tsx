@@ -103,14 +103,16 @@ const Souscriptions = () => {
       const { error } = await offlineUpdate("souscripteurs", id, { statut: newStatus, statut_global: newStatus });
       if (error) throw error;
 
-      await logActivity({
-        tableName: 'souscripteurs',
-        recordId: id,
-        action: 'STATUS_CHANGE',
-        details: `Statut changé de "${souscripteur?.statut}" à "${newStatus}"`,
-        ancienValeurs: { statut: souscripteur?.statut },
-        nouvellesValeurs: { statut: newStatus },
-      });
+      if (navigator.onLine) {
+        await logActivity({
+          tableName: 'souscripteurs',
+          recordId: id,
+          action: 'STATUS_CHANGE',
+          details: `Statut changé de "${souscripteur?.statut}" à "${newStatus}"`,
+          ancienValeurs: { statut: souscripteur?.statut },
+          nouvellesValeurs: { statut: newStatus },
+        });
+      }
 
       toast({
         title: "Succès",
