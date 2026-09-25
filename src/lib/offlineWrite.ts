@@ -19,6 +19,11 @@ const TABLE_TO_STORE: Record<string, string> = {
   parcelles: STORES.PARCELLES,
 };
 
+function isNetworkError(error: any): boolean {
+  const message = String(error?.message || error || '').toLowerCase();
+  return !navigator.onLine || /failed to fetch|network|fetch failed|connection|timeout|offline|load failed/.test(message);
+}
+
 function genUuid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return (crypto as any).randomUUID();
   return 'off-' + Date.now() + '-' + Math.random().toString(16).slice(2);
@@ -31,7 +36,17 @@ export async function offlineInsert(table: string, values: any): Promise<{ data:
     if (!error && data && store) {
       try { await putItem(store, data); } catch {}
     }
-    return { data, error, offline: false };
+    if (!error || !isNetworkError(error)) return { data, error, offline: false };
+    // Le réseau était disponible au moment du test mais la requête a échoué :
+    // basculer en file locale plutôt que perdre la saisie terrain.
+    if (store) {
+      const tempId = values?.id || genUuid();
+      const record = { ...values, id: tempId, _offline: true, _pending: 'insert', created_at: values?.created_at || new Date().toISOString(), updated_at: new Date().toISOString() };
+      try { await putItem(store, record); } catch {}
+      await addToSyncQueue({ table, operation: 'insert', record_id: tempId, data: { ...values, id: tempId }, timestamp: Date.now() });
+      return { data: record, error: null, offline: true };
+    }
+    return { data: null, error, offline: false };
   }
   // Offline path
   const tempId = values?.id || genUuid();
@@ -61,7 +76,7 @@ export async function offlineUpdate(table: string, id: string, values: any): Pro
         await putItem(store, { ...(existing || { id }), ...values, updated_at: new Date().toISOString() });
       } catch {}
     }
-    return { error, offline: false };
+    if (!error || !isNetworkError(error)) return { error, offline: false };
   }
   if (store) {
     try {
@@ -78,7 +93,7 @@ export async function offlineDelete(table: string, id: string): Promise<{ error:
   if (navigator.onLine) {
     const { error } = await (supabase as any).from(table).delete().eq('id', id);
     if (!error && store) { try { await deleteItem(store, id); } catch {} }
-    return { error, offline: false };
+    if (!error || !isNetworkError(error)) return { error, offline: false };
   }
   if (store) { try { await deleteItem(store, id); } catch {} }
   await addToSyncQueue({ table, operation: 'delete', record_id: id, data: {}, timestamp: Date.now() });
