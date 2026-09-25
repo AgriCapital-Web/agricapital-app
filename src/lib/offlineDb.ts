@@ -83,7 +83,7 @@ export async function putItems(storeName: string, items: any[]): Promise<void> {
   });
 }
 
-export async function getItem(storeName: string, key: string): Promise<any> {
+export async function getItem(storeName: string, key: IDBValidKey): Promise<any> {
   const store = await getStore(storeName);
   return new Promise((resolve, reject) => {
     const req = store.get(key);
@@ -101,7 +101,7 @@ export async function getAllItems(storeName: string): Promise<any[]> {
   });
 }
 
-export async function deleteItem(storeName: string, key: string): Promise<void> {
+export async function deleteItem(storeName: string, key: IDBValidKey): Promise<void> {
   const store = await getStore(storeName, 'readwrite');
   return new Promise((resolve, reject) => {
     const req = store.delete(key);
@@ -156,7 +156,7 @@ export async function getPendingSyncOps(): Promise<SyncOperation[]> {
 }
 
 export async function markOpStatus(id: number, status: SyncOperation['status'], errorMsg?: string): Promise<void> {
-  const item = await getItem(STORES.SYNC_QUEUE, String(id));
+  const item = await getItem(STORES.SYNC_QUEUE, id);
   if (item) {
     item.status = status;
     if (errorMsg) item.error_message = errorMsg;
