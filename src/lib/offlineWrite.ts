@@ -17,6 +17,7 @@ const TABLE_TO_STORE: Record<string, string> = {
   lead_relances: STORES.LEAD_RELANCES,
   proprietaires_terres: STORES.PROPRIETAIRES_TERRES,
   parcelles: STORES.PARCELLES,
+  cartes_personnel: STORES.CARTES_PERSONNEL,
 };
 
 function isNetworkError(error: any): boolean {
