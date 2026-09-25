@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'agricapital_offline';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 export const STORES = {
   SOUSCRIPTEURS: 'souscripteurs',
