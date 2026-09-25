@@ -87,11 +87,23 @@ export async function traiterPhotoCarte(file: File | Blob): Promise<Blob> {
 export async function uploaderPhotoCarte(profileId: string, carteId: string, file: File | Blob): Promise<string> {
   const blob = await traiterPhotoCarte(file);
   const path = `originals/${profileId}/${Date.now()}.jpg`;
-  const { error } = await supabase.storage.from(CARTE_BUCKET).upload(path, blob, {
-    contentType: "image/jpeg",
-    upsert: true,
+  const { uploadOrQueueFile } = await import("@/lib/offlineFiles");
+  const queued = await uploadOrQueueFile({
+    bucket: CARTE_BUCKET,
+    path,
+    file: blob,
+    table: "cartes_personnel",
+    record_id: carteId,
+    column: "photo_url",
+    field: "photo_url",
   });
-  if (error) throw error;
+
+  if (queued.error) throw queued.error;
+  if (queued.queued) {
+    // La photo sera traitée par l'Edge Function au retour du réseau.
+    return path;
+  }
+
   const { data, error: processingError } = await supabase.functions.invoke("process-card-photo", {
     body: { mode: "single", cardId: carteId, sourcePath: path },
   });
